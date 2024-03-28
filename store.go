@@ -10,11 +10,11 @@ type Store interface {
 	CreateTask(task *Task) (*Task, error)
 	GetTask(id string) (*Task, error)
 	// Posts
-	CreatePost(p *PostRequest) (*PostResponse, error)
-	GetUserPosts(id string) (*Page[PostResponse], error)
-	GetPostsById(id string) (*PostResponse, error)
-	UpdatePostsById(id string, p *PostRequest) (*PostResponse, error)
-	DeletePostsById(id string) error
+	CreatePost(userId int64, p *PostRequest) (*PostResponse, error)
+	GetUserPosts(id int64) (*[]PostResponse, error)
+	GetPostById(id int64) (*PostResponse, error)
+	UpdatePostById(id int64, p *PostRequest) (*PostResponse, error)
+	DeletePostById(id int64) error
 }
 
 type Storage struct {
@@ -25,6 +25,7 @@ func NewStore(db *sql.DB) *Storage {
 	return &Storage{db: db}
 }
 
+// GetUserId implements Store
 func (s *Storage) GetUserById(id string) (*User, error) {
 	var u User
 	err := s.db.QueryRow(`
@@ -40,6 +41,7 @@ func (s *Storage) GetUserById(id string) (*User, error) {
 	return &u, err
 }
 
+// CreateUser implements Store
 func (s *Storage) CreateUser(u *User) (*User, error) {
 	rows, err := s.db.Exec(`
 	INSERT INTO users (email, first_name, last_name, password)
@@ -63,6 +65,7 @@ func (s *Storage) CreateUser(u *User) (*User, error) {
 	return u, nil
 }
 
+// CreateTask implements Store
 func (s *Storage) CreateTask(t *Task) (*Task, error) {
 	rows, err := s.db.Exec(`
 	INSERT INTO tasks (name, status, project_id, assigned_to)
@@ -86,6 +89,7 @@ func (s *Storage) CreateTask(t *Task) (*Task, error) {
 	return t, nil
 }
 
+// GetTask implements Store
 func (s *Storage) GetTask(id string) (*Task, error) {
 	var t Task
 	err := s.db.QueryRow(`
@@ -102,26 +106,95 @@ func (s *Storage) GetTask(id string) (*Task, error) {
 }
 
 // CreatePost implements Store.
-func (s *Storage) CreatePost(p *PostRequest) (*PostResponse, error) {
-	panic("unimplemented")
+func (s *Storage) CreatePost(userId int64, p *PostRequest) (*PostResponse, error) {
+	rows, err := s.db.Exec(`
+	INSERT INTO posts (content, author_id)
+	VALUES (?, ?)`,
+		p.Content,
+		userId,
+	)
+	if err != nil {
+		return &PostResponse{}, err
+	}
+
+	id, err := rows.LastInsertId()
+	if err != nil {
+		return &PostResponse{}, err
+	}
+
+	pr, err := s.GetPostById(id)
+	if err != nil {
+		return &PostResponse{}, err
+	}
+
+	return pr, nil
 }
 
-// DeletePostsById implements Store.
-func (s *Storage) DeletePostsById(id string) error {
-	panic("unimplemented")
+// DeletePostById implements Store.
+func (s *Storage) DeletePostById(id int64) error {
+	if _, err := s.db.Exec("DELETE FROM posts WHERE id = ?", id); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-// GetPostsById implements Store.
-func (s *Storage) GetPostsById(id string) (*PostResponse, error) {
-	panic("unimplemented")
+// GetPostById implements Store.
+func (s *Storage) GetPostById(id int64) (*PostResponse, error) {
+	var pr PostResponse
+	err := s.db.QueryRow(`
+	SELECT id, content, author_id, created_at, updated_at
+	FROM posts WHERE id = ?`, id).Scan(
+		&pr.Id,
+		&pr.Content,
+		&pr.AuthorId,
+		&pr.Created,
+		&pr.Updated,
+	)
+	return &pr, err
 }
 
 // GetUserPosts implements Store.
-func (s *Storage) GetUserPosts(id string) (*Page[PostResponse], error) {
-	panic("unimplemented")
+func (s *Storage) GetUserPosts(id int64) (*[]PostResponse, error) {
+	var (
+		record   = PostResponse{}
+		pubsResp = []PostResponse{}
+	)
+	rows, err := s.db.Query(`
+	SELECT id, content, author_id, created_at, updated_at
+	FROM posts WHERE author_id = ?;`, id)
+
+	for rows.Next() {
+		rows.Scan(
+			&record.Id,
+			&record.Content,
+			&record.AuthorId,
+			&record.Created,
+			&record.Updated,
+		)
+
+		pubsResp = append(pubsResp, record)
+	}
+
+	return &pubsResp, err
 }
 
-// UpdatePostsById implements Store.
-func (s *Storage) UpdatePostsById(id string, p *PostRequest) (*PostResponse, error) {
-	panic("unimplemented")
+// UpdatePostById implements Store.
+func (s *Storage) UpdatePostById(id int64, p *PostRequest) (*PostResponse, error) {
+	_, err := s.db.Exec(`
+	UPDATE posts p SET p.content = ?
+	WHERE p.id = ?;`,
+		p.Content,
+		id,
+	)
+	if err != nil {
+		return &PostResponse{}, err
+	}
+
+	pr, err := s.GetPostById(id)
+	if err != nil {
+		return &PostResponse{}, err
+	}
+
+	return pr, nil
 }

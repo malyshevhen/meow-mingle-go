@@ -41,6 +41,18 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store Store) http.HandlerFunc {
 	}
 }
 
+func GetAuthUserId(t string) (int64, error) {
+	token, err := validateJWT(t)
+	if err != nil {
+		return 0, err
+	}
+
+	claims := token.Claims.(jwt.MapClaims)
+	id := claims["userId"].(int64)
+
+	return id, nil
+}
+
 func validateJWT(t string) (*jwt.Token, error) {
 	secret := Envs.JWTSecret
 

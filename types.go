@@ -7,6 +7,13 @@ type ErrorResponse struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+func NewErrorResponse(message string) *ErrorResponse {
+	return &ErrorResponse{
+		Error: message,
+		Timestamp: time.Now(),
+	}
+}
+
 type Task struct {
 	ID           int64     `json:"id"`
 	Name         string    `json:"name"`

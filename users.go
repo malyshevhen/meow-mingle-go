@@ -30,7 +30,7 @@ func (ts *UserService) RegisterRoutes(r *mux.Router) {
 func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		WriteJson(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid payload"})
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
 
@@ -39,31 +39,31 @@ func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) 
 	var user *User
 	err = json.Unmarshal(body, &user)
 	if err != nil {
-		WriteJson(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid payload"})
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
 
 	if err := validateUserPayload(user); err != nil {
-		WriteJson(w, http.StatusBadRequest, ErrorResponse{Error: err.Error()})
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse(err.Error()))
 		return
 	}
 
 	hashedPwd, err := HashPwd(user.Password)
 	if err != nil {
-		WriteJson(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid payload"})
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
 	user.Password = hashedPwd
 
 	u, err := ts.store.CreateUser(user)
 	if err != nil {
-		WriteJson(w, http.StatusInternalServerError, ErrorResponse{Error: "Error creating task"})
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error creating task"))
 		return
 	}
 
 	token, err := createAndSetAuthCookie(u.ID, w)
 	if err != nil {
-		WriteJson(w, http.StatusInternalServerError, ErrorResponse{Error: "Error creating task"})
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error creating task"))
 		return
 	}
 
@@ -76,7 +76,7 @@ func (ts *UserService) handleGetUser(w http.ResponseWriter, r *http.Request) {
 
 	u, err := ts.store.GetUserById(id)
 	if err != nil {
-		WriteJson(w, http.StatusNotFound, ErrorResponse{Error: "user is not found"})
+		WriteJson(w, http.StatusNotFound, NewErrorResponse("user is not found"))
 		return
 	}
 

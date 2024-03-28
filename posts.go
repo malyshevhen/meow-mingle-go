@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -25,21 +26,17 @@ func (ps *PostService) RegisterRoutes(r *mux.Router) {
 }
 
 func (ps *PostService) handleCreatePost(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
+	p, err := readPostReqType(r)
 	if err != nil {
 		return
 	}
 
-	defer r.Body.Close()
+	// TODO: validate payload
 
-	var p *PostRequest
-	if err := json.Unmarshal(body, &p); err != nil {
-		return
-	}
+	token := GetTokenFromRequest(r)
+	userId, err := GetAuthUserId(token)
 
-	// TODO: validation
-
-	pResp, err := ps.store.CreatePost(p)
+	pResp, err := ps.store.CreatePost(userId, p)
 	if err != nil {
 		return
 	}
@@ -48,8 +45,10 @@ func (ps *PostService) handleCreatePost(w http.ResponseWriter, r *http.Request) 
 }
 
 func (ps *PostService) handleGetUserPosts(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id, err := parseIdParam(r)
+	if err != nil {
+		return
+	}
 
 	p, err := ps.store.GetUserPosts(id)
 	if err != nil {
@@ -59,11 +58,13 @@ func (ps *PostService) handleGetUserPosts(w http.ResponseWriter, r *http.Request
 	WriteJson(w, http.StatusOK, p)
 }
 
-func (ps *PostService) handleGetPostsById(w http.ResponseWriter, r *http.Request)    {
-	vars := mux.Vars(r)
-	id := vars["id"]
+func (ps *PostService) handleGetPostsById(w http.ResponseWriter, r *http.Request) {
+	id, err := parseIdParam(r)
+	if err != nil {
+		return
+	}
 
-	p, err := ps.store.GetPostsById(id)
+	p, err := ps.store.GetPostById(id)
 	if err != nil {
 		return
 	}
@@ -72,22 +73,17 @@ func (ps *PostService) handleGetPostsById(w http.ResponseWriter, r *http.Request
 }
 
 func (ps *PostService) handleUpdatePostsById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-
-	body, err := io.ReadAll(r.Body)
+	id, err := parseIdParam(r)
 	if err != nil {
 		return
 	}
 
-	defer r.Body.Close()
-
-	var p *PostRequest
-	if err := json.Unmarshal(body, &p); err != nil {
+	p, err := readPostReqType(r)
+	if err != nil {
 		return
 	}
 
-	pr, err := ps.store.UpdatePostsById(id, p)
+	pr, err := ps.store.UpdatePostById(id, p)
 	if err != nil {
 		return
 	}
@@ -96,13 +92,42 @@ func (ps *PostService) handleUpdatePostsById(w http.ResponseWriter, r *http.Requ
 }
 
 func (ps *PostService) handleDeletePostsById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
+	id, err := parseIdParam(r)
+	if err != nil {
+		return
+	}
 
-	err := ps.store.DeletePostsById(id)
+	err = ps.store.DeletePostById(id)
 	if err != nil {
 		return
 	}
 
 	WriteJson(w, http.StatusNoContent, nil)
+}
+
+
+func readPostReqType(r *http.Request) (*PostRequest, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	var p *PostRequest
+	if err := json.Unmarshal(body, &p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
+func parseIdParam(r *http.Request) (int64, error) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	numId, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, nil
+	}
+
+	return int64(numId), nil
 }
