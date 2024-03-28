@@ -29,6 +29,9 @@ func (s *ApiServer) Serve() {
 	userService := NewUserService(s.store)
 	userService.RegisterRoutes(subrouter)
 
+	postsService := NewPostService(s.store)
+	postsService.RegisterRoutes(subrouter)
+
 	log.Printf("Server starting at port: %s\n", s.addr)
 
 	log.Fatal(http.ListenAndServe(s.addr, subrouter))
