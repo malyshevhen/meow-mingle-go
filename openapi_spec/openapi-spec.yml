@@ -482,14 +482,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  /users/posts/comments/{commentId}:
+  /users/posts/comments/{id}:
     put:
       tags:
         - Comments
       description: Update comment
       operationId: updateComment
       parameters:
-        - name: commentId
+        - name: id
           in: path
           required: true
           schema:
@@ -526,7 +526,7 @@ paths:
       description: Delete existing comment
       operationId: deleteCommentById
       parameters:
-        - name: commentId
+        - name: id
           in: query
           required: true
           schema:
