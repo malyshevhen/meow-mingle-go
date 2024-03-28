@@ -1,10 +1,6 @@
 package main
 
-import (
-	"log"
-
-	"github.com/go-sql-driver/mysql"
-)
+import "github.com/go-sql-driver/mysql"
 
 func main() {
 	cfg := mysql.Config{
@@ -19,12 +15,7 @@ func main() {
 
 	sqlStorage := NewMySQLStorage(cfg)
 
-	db, err := sqlStorage.Init()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	store := NewStorage(db)
+	store := NewStorage(sqlStorage.db)
 	server := NewApiServer(":8080", store)
 	server.Serve()
 }
