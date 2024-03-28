@@ -63,6 +63,10 @@ paths:
           description: Subscribed successfully
         304:
           description: Already subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         404:
           description: User not found
           content:
