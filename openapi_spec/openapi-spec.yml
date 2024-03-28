@@ -1,0 +1,702 @@
+openapi: '3.0.3'
+
+info:
+  title: Meow Mingle social media app
+  version: 0.0.1
+
+servers:
+  - url: http://127.0.0.1:8080
+
+tags:
+  - name: Comments
+  - name: Fee
+  - name: Posts
+  - name: Reactions
+  - name: Subscription
+  - name: Users
+  - name: Registration
+
+paths:
+  /users/register:
+    post:
+      tags:
+        - Registration
+      operationId: register
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        201:
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        400:
+          description: Request not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{id}/subscriptions:
+    patch:
+      tags:
+        - Subscription
+      operationId: subscribe
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            nullable: false
+      responses:
+        204:
+          description: Subscribed successfully
+        304:
+          description: Already subscribed
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Subscription
+      operationId: unsubscribe
+      parameters:
+        - name: userId
+          in: query
+          required: true
+          schema:
+            type: string
+            nullable: false
+      responses:
+        200:
+          description: Unsubscribed successfully
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users:
+    patch:
+      tags:
+        - Users
+      operationId: updateUsername
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            nullable: false
+      responses:
+        200:
+          description: Username updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        400:
+          description: Username not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Users
+      operationId: deleteUser
+      responses:
+        200:
+          description: User deleted successfully
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/posts:
+    post:
+      tags:
+        - Posts
+      description: Add new post
+      operationId: publishPost
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+      responses:
+        201:
+          description: Post created successfully
+        400:
+          description: Request not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{id}/posts:
+    get:
+      tags:
+        - Posts
+      description: Retrieve posts by specific user id
+      operationId: getUserPosts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Feed retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagePost'
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/posts/{id}:
+    put:
+      tags:
+        - Posts
+      description: Update post content
+      operationId: updatePost
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            nullable: false
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostRequest'
+      responses:
+        200:
+          description: Post updated successfully
+        400:
+          description: Request not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Posts
+      description: Delete post
+      operationId: deletePost
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            nullable: false
+      responses:
+        204:
+          description: Post deleted successfully
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        400:
+          description: Request not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/posts/{id}/likes:
+    post:
+      tags:
+        - Reactions
+      description: Add like to post
+      operationId: addLike
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            nullable: false
+      responses:
+        201:
+          description: Like added
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Reactions
+      description: Remove like from post
+      operationId: removeLike
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            nullable: false
+      responses:
+        204:
+          description: Like removed
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/own/feed:
+    get:
+      tags:
+        - Feed
+      description: Get owner feed
+      operationId: getOwnFeed
+      parameters:
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Feed retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagePost'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/{id}/feed:
+    get:
+      tags:
+        - Feed
+      description: Get user feed by id of the user
+      operationId: getUserFeed
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Feed retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagePost'
+        404:
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/posts/{id}/comments:
+    post:
+      tags:
+        - Comments
+      operationId: addComment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        201:
+          description: Comment added successfully
+        400:
+          description: Request not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Comments
+      operationId: getPostComments
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: size
+          in: query
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+      responses:
+        200:
+          description: Comment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageComments'
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /users/posts/comments/{commentId}:
+    put:
+      tags:
+        - Comments
+      description: Update comment
+      operationId: updateComment
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      responses:
+        200:
+          description: Comment updated successfully
+        400:
+          description: Request not valid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+        - Comments
+      description: Delete existing comment
+      operationId: deleteCommentById
+      parameters:
+        - name: commentId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        204:
+          description: Comment deleted successfully
+        404:
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        timestamp:
+          type: integer
+    CommentRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 3
+          maxLength: 300
+          nullable: false
+    CommentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: false
+        authorId:
+          type: string
+          nullable: false
+        content:
+          type: string
+          minLength: 3
+          maxLength: 300
+          nullable: false
+        created:
+          type: string
+          format: date
+          nullable: false
+        updated:
+          type: string
+          format: date
+          nullable: false
+    PostRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 3
+          maxLength: 300
+          nullable: false
+    PostResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: false
+        authorId:
+          type: string
+          nullable: false
+        content:
+          type: string
+          nullable: false
+        likes:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserInfo'
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+        created:
+          type: string
+          format: date
+          nullable: false
+        updated:
+          type: string
+          format: date
+          nullable: false
+    UserRegistration:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 20
+          nullable: false
+        email:
+          type: string
+          format: email
+          pattern: '^[\w.-]+@[\w.-]+\.\w+$'
+          nullable: false
+        password:
+          type: string
+          pattern: '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,20}$'
+          nullable: false
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: false
+        username:
+          type: string
+          nullable: false
+    PagePost:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        first:
+          type: boolean
+        last:
+          type: boolean
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostResponse'
+        number:
+          type: integer
+          format: int32
+        numberOfElements:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
+    PageComments:
+      type: object
+      properties:
+        totalPages:
+          type: integer
+          format: int32
+        totalElements:
+          type: integer
+          format: int64
+        first:
+          type: boolean
+        last:
+          type: boolean
+        size:
+          type: integer
+          format: int32
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+        number:
+          type: integer
+          format: int32
+        numberOfElements:
+          type: integer
+          format: int32
+        empty:
+          type: boolean
