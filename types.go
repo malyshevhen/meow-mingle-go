@@ -9,7 +9,7 @@ type ErrorResponse struct {
 
 func NewErrorResponse(message string) *ErrorResponse {
 	return &ErrorResponse{
-		Error: message,
+		Error:     message,
 		Timestamp: time.Now(),
 	}
 }
@@ -40,6 +40,7 @@ type CommentResponse struct {
 	Id       int64     `json:"id"`
 	Content  string    `json:"content"`
 	AuthorId int64     `json:"authorId"`
+	PostId   int64     `json:"postId"`
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
 }

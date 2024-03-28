@@ -15,13 +15,17 @@ type Store interface {
 	GetPostById(id int64) (*PostResponse, error)
 	UpdatePostById(id int64, p *PostRequest) (*PostResponse, error)
 	DeletePostById(id int64) error
+	CreateComment(postId int64, userId int64, c *CommentRequest) (*CommentResponse, error)
+	GetCommentById(id int64) (*CommentResponse, error)
+	UpdateCommentById(id int64, c *CommentRequest) (*CommentResponse, error)
+	DeleteCommentById(id int64) error
 }
 
 type Storage struct {
 	db *sql.DB
 }
 
-func NewStore(db *sql.DB) *Storage {
+func NewStorage(db *sql.DB) *Storage {
 	return &Storage{db: db}
 }
 
@@ -162,7 +166,7 @@ func (s *Storage) GetUserPosts(id int64) (*[]PostResponse, error) {
 	)
 	rows, err := s.db.Query(`
 	SELECT id, content, author_id, created_at, updated_at
-	FROM posts WHERE author_id = ?;`, id)
+	FROM posts WHERE author_id = ?`, id)
 
 	for rows.Next() {
 		rows.Scan(
@@ -183,7 +187,7 @@ func (s *Storage) GetUserPosts(id int64) (*[]PostResponse, error) {
 func (s *Storage) UpdatePostById(id int64, p *PostRequest) (*PostResponse, error) {
 	_, err := s.db.Exec(`
 	UPDATE posts p SET p.content = ?
-	WHERE p.id = ?;`,
+	WHERE p.id = ?`,
 		p.Content,
 		id,
 	)
@@ -197,4 +201,75 @@ func (s *Storage) UpdatePostById(id int64, p *PostRequest) (*PostResponse, error
 	}
 
 	return pr, nil
+}
+
+// CreateComment implements Store.
+func (s *Storage) CreateComment(postId int64, userId int64, c *CommentRequest) (*CommentResponse, error) {
+	rows, err := s.db.Exec(`
+	INSERT INTO comments (content, author_id, post_id)
+	VALUES (?, ?, ?)`,
+		c.Content,
+		userId,
+		postId,
+	)
+	if err != nil {
+		return &CommentResponse{}, err
+	}
+
+	id, err := rows.LastInsertId()
+	if err != nil {
+		return &CommentResponse{}, err
+	}
+
+	cr, err := s.GetCommentById(id)
+	if err != nil {
+		return &CommentResponse{}, err
+	}
+
+	return cr, nil
+}
+
+// DeleteCommentById implements Store.
+func (s *Storage) DeleteCommentById(id int64) error {
+	if _, err := s.db.Exec("DELETE FROM comments WHERE id = ?", id); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GetCommentById implements Store.
+func (s *Storage) GetCommentById(id int64) (*CommentResponse, error) {
+	var cr CommentResponse
+	err := s.db.QueryRow(`
+	SELECT id, content, author_id, post_id, created_at, updated_at
+	FROM comments WHERE id = ?`, id).Scan(
+		&cr.Id,
+		&cr.Content,
+		&cr.AuthorId,
+		&cr.PostId,
+		&cr.Created,
+		&cr.Updated,
+	)
+	return &cr, err
+}
+
+// UpdateCommentById implements Store.
+func (s *Storage) UpdateCommentById(id int64, c *CommentRequest) (*CommentResponse, error) {
+	_, err := s.db.Exec(`
+	UPDATE comments c SET c.content = ?
+	WHERE c.id = ?`,
+		c.Content,
+		id,
+	)
+	if err != nil {
+		return &CommentResponse{}, err
+	}
+
+	cr, err := s.GetCommentById(id)
+	if err != nil {
+		return &CommentResponse{}, err
+	}
+
+	return cr, nil
 }

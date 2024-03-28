@@ -24,7 +24,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	store := NewStore(db)
+	store := NewStorage(db)
 	server := NewApiServer(":8080", store)
 	server.Serve()
 }
