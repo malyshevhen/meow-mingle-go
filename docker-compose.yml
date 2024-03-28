@@ -12,9 +12,9 @@ services:
     ports:
       - 3306:3306
     environment:
-      MYSQL_ROOT_
+      MYSQL_ROOT_PASSWORD: example
     volumes:
-    - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:roPASSWORD: example
+    - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
   adminer:
     image: adminer
