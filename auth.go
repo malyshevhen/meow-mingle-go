@@ -17,14 +17,14 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store Store) http.HandlerFunc {
 
 		token, err := validateJWT(tokenString)
 		if err != nil {
-			log.Println("failed to authenticate token")
-			WriteJson(w, http.StatusUnauthorized, ErrorResponse{Error: "permission denied"})
+			log.Printf("%-15s ==> Authentication failed: Invalid JWT token 🚫", "AuthMW")
+			WriteJson(w, http.StatusUnauthorized, NewErrorResponse("Permission denied. Invalid JWT token."))
 			return
 		}
 
 		if !token.Valid {
-			log.Println("failed to authenticate token")
-			WriteJson(w, http.StatusUnauthorized, ErrorResponse{Error: "permission denied"})
+			log.Printf("%-15s ==> Authentication failed: JWT token not valid ❌", "AuthMW")
+			WriteJson(w, http.StatusUnauthorized, NewErrorResponse("Permission denied. JWT token not valid."))
 			return
 		}
 
@@ -33,10 +33,12 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store Store) http.HandlerFunc {
 
 		_, err = store.GetUserById(id)
 		if err != nil {
-			WriteJson(w, http.StatusBadRequest, ErrorResponse{Error: "Id is required"})
+			log.Printf("%-15s ==> Authentication failed: User ID not found 🆘", "AuthMW")
+			WriteJson(w, http.StatusBadRequest, NewErrorResponse("User ID not found."))
 			return
 		}
 
+		log.Printf("%-15s ==> User %s authenticated successfully ✅", "AuthMW", id)
 		handlerFunc(w, r)
 	}
 }
@@ -44,61 +46,89 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store Store) http.HandlerFunc {
 func GetAuthUserId(t string) (int64, error) {
 	token, err := validateJWT(t)
 	if err != nil {
+		log.Printf("%-15s ==> 😢 Authentication failed: Invalid JWT token", "AuthMW")
 		return 0, err
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
-	id := claims["userId"].(int64)
+	id := claims["userId"].(string)
+	numId, err := strconv.Atoi(id)
+	if err != nil {
+		log.Printf("%-15s ==> 😕 Failed to convert user ID to integer", "AuthMW")
+		return 0, nil
+	}
 
-	return id, nil
+	log.Printf("%-15s ==> 🎉 User ID converted to integer successfully!", "AuthMW")
+	return int64(numId), nil
 }
 
 func validateJWT(t string) (*jwt.Token, error) {
 	secret := Envs.JWTSecret
 
-	return jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
+	log.Printf("%-15s ==> 🕵 Validating JWT token...", "AuthMW")
+
+	token, err := jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Printf("%-15s ==> ❌ Unexpected signing method!", "AuthMW")
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
 
+		log.Printf("%-15s ==> 🔑 Comparing secret...", "AuthMW")
 		return []byte(secret), nil
 	})
+
+	if err != nil {
+		log.Printf("%-15s ==> 🚨 JWT validation failed!", "AuthMW")
+	} else {
+		log.Printf("%-15s ==> ✅ JWT token validated successfully!", "AuthMW")
+	}
+
+	return token, err
 }
 
 func GetTokenFromRequest(r *http.Request) string {
+	log.Printf("%-15s ==> 🕵️ Validating for Authorization header...", "AuthMW")
+
 	tokenAuth := r.Header.Get("Authorization")
-	tokenQuery := r.URL.Query().Get("token")
 
 	if tokenAuth != "" {
+		log.Printf("%-15s ==> 🎉 Authorization header found!", "AuthMW")
 		return tokenAuth
 	}
 
-	if tokenQuery != "" {
-		return tokenQuery
-	}
-
+	log.Printf("%-15s ==> 😢 No Authorization header found.", "AuthMW")
 	return ""
 }
 
 func HashPwd(s string) (string, error) {
+	log.Printf("%-15s ==> 🌈 Starting password hashing...", "AuthMW")
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
+
 	if err != nil {
+		log.Printf("%-15s ==> 😱 Error generating password hash: %v", "AuthMW", err)
 		return "", err
 	}
 
+	log.Printf("%-15s ==> ✨ Password hashed successfully!", "AuthMW")
 	return string(hash), nil
 }
 
 func CreateJwt(secret []byte, id int64) (string, error) {
+	log.Printf("%-15s ==> 🌟 Starting JWT token creation...", "AuthMW")
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    strconv.Itoa(int(id)),
 		"expiresAt": time.Now().Add(time.Hour * 24 * 120).Unix(),
 	})
 
+	log.Printf("%-15s ==> 🔏 Signing JWT token...", "AuthMW")
 	signedToken, err := token.SignedString(secret)
 	if err != nil {
+		log.Printf("%-15s ==> ❌ Error signing JWT token: %v", "AuthMW", err)
 		return "", err
 	}
 
+	log.Printf("%-15s ==> ✅ JWT token created successfully!", "AuthMW")
 	return signedToken, nil
 }

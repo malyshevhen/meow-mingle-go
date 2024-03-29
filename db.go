@@ -14,15 +14,15 @@ type MySQLStorage struct {
 func NewMySQLStorage(config mysql.Config) *MySQLStorage {
 	db, err := sql.Open("mysql", config.FormatDSN())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("😱 Failed to open MySQL connection: ", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("😨 Failed to ping MySQL: ", err)
 	}
 
-	log.Println("Connected to the MySQL DB")
+	log.Println("🎉 Connected to the MySQL DB")
 
 	return &MySQLStorage{db: db}
 }
