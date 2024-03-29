@@ -41,7 +41,7 @@ func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) 
 	var user *User
 	err = json.Unmarshal(body, &user)
 	if err != nil {
-		log.Printf("%-15s ==> 😕 Error unmarshaling JSON: %v\n", "UserService", err)
+		log.Printf("%-15s ==> 😕 Error unmarshal JSON: %v\n", "UserService", err)
 		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
