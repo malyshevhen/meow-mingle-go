@@ -37,8 +37,14 @@ func NewStorage(db *sql.DB) *Storage {
 func (s *Storage) GetUserById(id string) (*User, error) {
 	log.Printf("%-15s ==> 🧐 Looking for user with I %s\n", "Store", id)
 
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Printf("%-15s ==> Transaction opening is fail: %v\n", "Store", err)
+	}
+	defer tx.Rollback()
+
 	var u User
-	err := s.db.QueryRow(`
+	err = tx.QueryRow(`
 	SELECT id, email, first_name, last_name, password, created_at
 	FROM users WHERE id = ?`, id).Scan(
 		&u.ID,
@@ -48,11 +54,14 @@ func (s *Storage) GetUserById(id string) (*User, error) {
 		&u.Password,
 		&u.CreatedAt,
 	)
-
 	if err != nil {
 		log.Printf("%-15s ==> 😞 Failed to find user with I %s\n", "Store", id)
 	} else {
 		log.Printf("%-15s ==> 🎉 Found user with I %s\n", "Store", id)
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("%-15s ==> Transaction committing is fail: %v\n", "Store", err)
 	}
 
 	return &u, err
@@ -60,7 +69,13 @@ func (s *Storage) GetUserById(id string) (*User, error) {
 
 // CreateUser implements Store
 func (s *Storage) CreateUser(u *User) (*User, error) {
-	rows, err := s.db.Exec(`
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Printf("%-15s ==> Transaction opening is fail: %v\n", "Store", err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Exec(`
 	INSERT INTO users (email, first_name, last_name, password)
 	VALUES (?, ?, ?, ?)`,
 		u.Email,
@@ -85,12 +100,22 @@ func (s *Storage) CreateUser(u *User) (*User, error) {
 
 	u.ID = id
 
+	if err := tx.Commit(); err != nil {
+		log.Printf("%-15s ==> Transaction committing is fail: %v\n", "Store", err)
+	}
+
 	return u, nil
 }
 
 // CreateTask implements Store
 func (s *Storage) CreateTask(t *Task) (*Task, error) {
-	rows, err := s.db.Exec(`
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Printf("%-15s ==> Transaction opening is fail: %v\n", "Store", err)
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Exec(`
 	INSERT INTO tasks (name, status, project_id, assigned_to)
 	VALUES (?, ?, ?, ?)`,
 		t.Name,
@@ -114,6 +139,10 @@ func (s *Storage) CreateTask(t *Task) (*Task, error) {
 	log.Printf("%-15s ==> 🆔 Got task ID %v\n", "Store", id)
 
 	t.ID = id
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("%-15s ==> Transaction committing is fail: %v\n", "Store", err)
+	}
 
 	return t, nil
 }
@@ -332,8 +361,20 @@ func (s *Storage) CreateComment(postId int64, userId int64, c *CommentRequest) (
 func (s *Storage) DeleteCommentById(id int64) error {
 	log.Printf("%-15s ==> 🗑️ Deleting comment with ID: %d\n", "Store", id)
 
-	if _, err := s.db.Exec("DELETE FROM comments WHERE id = ?", id); err != nil {
+	tx, err := s.db.Begin()
+	if err != nil {
+		log.Printf("%-15s ==> ☹️ Transaction is not open: %v\n", "Store", err)
+		return err
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.Exec("DELETE FROM comments WHERE id = ?", id); err != nil {
 		log.Printf("%-15s ==> 😞 Error deleting comment with ID: %d %v\n", "Store", id, err)
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("%-15s ==> ☹️ Transaction commit is fail: %v\n", "Store", err)
 		return err
 	}
 
