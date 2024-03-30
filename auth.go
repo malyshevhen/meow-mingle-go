@@ -29,12 +29,16 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store Store) http.HandlerFunc {
 		}
 
 		claims := token.Claims.(jwt.MapClaims)
-		id := claims["userId"].(string)
+		stringId := claims["userId"].(string)
 
-		_, err = store.GetUserById(id)
+		id, err := strconv.Atoi(stringId)
 		if err != nil {
-			log.Printf("%-15s ==> Authentication failed: User ID not found 🆘", "AuthMW")
-			WriteJson(w, http.StatusBadRequest, NewErrorResponse("User ID not found."))
+			return
+		}
+
+		if _, err := store.GetUserById(int64(id)); err != nil {
+			log.Printf("%-15s ==> Authentication failed: User Id not found 🆘", "AuthMW")
+			WriteJson(w, http.StatusBadRequest, NewErrorResponse("User Id not found."))
 			return
 		}
 
@@ -54,11 +58,11 @@ func GetAuthUserId(t string) (int64, error) {
 	id := claims["userId"].(string)
 	numId, err := strconv.Atoi(id)
 	if err != nil {
-		log.Printf("%-15s ==> 😕 Failed to convert user ID to integer", "AuthMW")
+		log.Printf("%-15s ==> 😕 Failed to convert user Id to integer", "AuthMW")
 		return 0, nil
 	}
 
-	log.Printf("%-15s ==> 🎉 User ID converted to integer successfully!", "AuthMW")
+	log.Printf("%-15s ==> 🎉 User Id converted to integer successfully!", "AuthMW")
 	return int64(numId), nil
 }
 

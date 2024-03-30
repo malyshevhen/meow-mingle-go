@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -38,7 +39,7 @@ func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) 
 
 	defer r.Body.Close()
 
-	var user *User
+	var user *UserRequest
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		log.Printf("%-15s ==> 😕 Error unmarshal JSON: %v\n", "UserService", err)
@@ -84,13 +85,18 @@ func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) 
 
 func (ts *UserService) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id := vars["id"]
+	strId := vars["id"]
 
-	log.Printf("%-15s ==> 🕵️ Searching for user with ID:%s\n", "UserService", id)
+	log.Printf("%-15s ==> 🕵️ Searching for user with Id:%s\n", "UserService", strId)
 
-	u, err := ts.store.GetUserById(id)
+	id, err := strconv.Atoi(strId)
 	if err != nil {
-		log.Printf("%-15s ==> 😕 User not found for ID:%s\n", "UserService", id)
+		return
+	}
+
+	u, err := ts.store.GetUserById(int64(id))
+	if err != nil {
+		log.Printf("%-15s ==> 😕 User not found for Id:%s\n", "UserService", id)
 		WriteJson(w, http.StatusNotFound, NewErrorResponse("user is not found"))
 		return
 	}
@@ -118,7 +124,7 @@ func createAndSetAuthCookie(id int64, w http.ResponseWriter) (string, error) {
 	return token, nil
 }
 
-func validateUserPayload(user *User) error {
+func validateUserPayload(user *UserRequest) error {
 	log.Printf("%-15s ==> 📧 Checking if email is provided..", "UserService.")
 	if user.Email == "" {
 		log.Printf("%-15s ==> ❌ Email is required but not provided", "UserService")

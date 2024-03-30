@@ -60,21 +60,11 @@ func (m *MockStore) UpdatePostById(id int64, p *PostRequest) (*PostResponse, err
 }
 
 // GetUserById implements Store.
-func (m *MockStore) GetUserById(id string) (*User, error) {
-	return &User{}, m.Err
+func (m *MockStore) GetUserById(id int64) (*UserRequest, error) {
+	return &UserRequest{}, m.Err
 }
 
 // CreateUser implements Store.
-func (m *MockStore) CreateUser(user *User) (*User, error) {
-	return &User{}, m.Err
-}
-
-// GetTask implements Store.
-func (m *MockStore) GetTask(id string) (*Task, error) {
-	return &Task{}, m.Err
-}
-
-// CreateTask implements Store.
-func (m *MockStore) CreateTask(task *Task) (*Task, error) {
-	return &Task{}, m.Err
+func (m *MockStore) CreateUser(user *UserRequest) (*UserRequest, error) {
+	return &UserRequest{}, m.Err
 }

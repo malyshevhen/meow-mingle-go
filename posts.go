@@ -41,8 +41,8 @@ func (ps *PostService) handleCreatePost(w http.ResponseWriter, r *http.Request) 
 	token := GetTokenFromRequest(r)
 	userId, err := GetAuthUserId(token)
 	if err != nil {
-		log.Printf("%-15s ==> 😱 Error getting user ID from token %v\n", "PostService ", err)
-		WriteJson(w, http.StatusUnauthorized, NewErrorResponse("Error getting user ID from token"))
+		log.Printf("%-15s ==> 😱 Error getting user Id from token %v\n", "PostService ", err)
+		WriteJson(w, http.StatusUnauthorized, NewErrorResponse("Error getting user Id from token"))
 		return
 	}
 
@@ -60,8 +60,8 @@ func (ps *PostService) handleCreatePost(w http.ResponseWriter, r *http.Request) 
 func (ps *PostService) handleGetUserPosts(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID param %v\n", "PostService ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id param %v\n", "PostService ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
@@ -79,27 +79,27 @@ func (ps *PostService) handleGetUserPosts(w http.ResponseWriter, r *http.Request
 func (ps *PostService) handleGetPostsById(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID para:%v\n", "PostService ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id para:%v\n", "PostService ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
 	p, err := ps.store.GetPostById(id)
 	if err != nil {
-		log.Printf("%-15s ==> 😫 Error getting post by ID from stor:%v\n", "PostService ", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error getting post by ID from store"))
+		log.Printf("%-15s ==> 😫 Error getting post by Id from stor:%v\n", "PostService ", err)
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error getting post by Id from store"))
 		return
 	}
 
-	log.Printf("%-15s ==> 🤩 Successfully retrieved post by ID\n", "PostService")
+	log.Printf("%-15s ==> 🤩 Successfully retrieved post by Id\n", "PostService")
 	WriteJson(w, http.StatusOK, p)
 }
 
 func (ps *PostService) handleUpdatePostsById(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID para %v\n", "PostService: ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id para %v\n", "PostService: ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
@@ -112,39 +112,39 @@ func (ps *PostService) handleUpdatePostsById(w http.ResponseWriter, r *http.Requ
 
 	pr, err := ps.store.UpdatePostById(id, p)
 	if err != nil {
-		log.Printf("%-15s ==> 🤯 Error updating post by ID in store %v\n", "PostService: ", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error updating post by ID in store"))
+		log.Printf("%-15s ==> 🤯 Error updating post by Id in store %v\n", "PostService: ", err)
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error updating post by Id in store"))
 		return
 	}
 
-	log.Printf("%-15s ==> 🎉 Successfully updated post by ID\n", "PostService ")
+	log.Printf("%-15s ==> 🎉 Successfully updated post by Id\n", "PostService ")
 	WriteJson(w, http.StatusOK, pr)
 }
 
 func (ps *PostService) handleDeletePostsById(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID param %v\n", "PostService ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id param %v\n", "PostService ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
 	err = ps.store.DeletePostById(id)
 	if err != nil {
-		log.Printf("%-15s ==> 😫 Error deleting post by ID from store %v\n", "PostService ", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error deleting post by ID from store"))
+		log.Printf("%-15s ==> 😫 Error deleting post by Id from store %v\n", "PostService ", err)
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error deleting post by Id from store"))
 		return
 	}
 
-	log.Printf("%-15s ==> 🗑️ Successfully deleted post by ID\n", "PostService")
+	log.Printf("%-15s ==> 🗑️ Successfully deleted post by Id\n", "PostService")
 	WriteJson(w, http.StatusNoContent, nil)
 }
 
 func (ps *PostService) handleCreateComment(w http.ResponseWriter, r *http.Request) {
 	postId, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing post ID param %v\n", "PostService ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing post ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing post Id param %v\n", "PostService ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing post Id param"))
 		return
 	}
 
@@ -158,8 +158,8 @@ func (ps *PostService) handleCreateComment(w http.ResponseWriter, r *http.Reques
 	token := GetTokenFromRequest(r)
 	userId, err := GetAuthUserId(token)
 	if err != nil {
-		log.Printf("%-15s ==> 😱 Error getting authenticated user ID %v\n", "PostService ", err)
-		WriteJson(w, http.StatusUnauthorized, NewErrorResponse("Error getting authenticated user ID"))
+		log.Printf("%-15s ==> 😱 Error getting authenticated user Id %v\n", "PostService ", err)
+		WriteJson(w, http.StatusUnauthorized, NewErrorResponse("Error getting authenticated user Id"))
 		return
 	}
 
@@ -177,27 +177,27 @@ func (ps *PostService) handleCreateComment(w http.ResponseWriter, r *http.Reques
 func (ps *PostService) handleGetComments(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID para %v\n", "PostService ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id para %v\n", "PostService ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
 	c, err := ps.store.GetCommentsByPostId(id)
 	if err != nil {
-		log.Printf("%-15s ==> 😫 Error getting comment by ID from stor %v\n", "PostService ", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error getting comment by ID from store"))
+		log.Printf("%-15s ==> 😫 Error getting comment by Id from stor %v\n", "PostService ", err)
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error getting comment by Id from store"))
 		return
 	}
 
-	log.Printf("%-15s ==> 🎉 Successfully got comment by ID\n", "PostService!")
+	log.Printf("%-15s ==> 🎉 Successfully got comment by Id\n", "PostService!")
 	WriteJson(w, http.StatusOK, c)
 }
 
 func (ps *PostService) handleUpdateComments(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID para %v\n", "PostService ", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id para %v\n", "PostService ", err)
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
@@ -210,31 +210,31 @@ func (ps *PostService) handleUpdateComments(w http.ResponseWriter, r *http.Reque
 
 	cr, err := ps.store.UpdateCommentById(id, c)
 	if err != nil {
-		log.Printf("%-15s ==> 😱 Error updating comment by ID in stor %v\n", "PostService ", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error updating comment by ID in store"))
+		log.Printf("%-15s ==> 😱 Error updating comment by Id in stor %v\n", "PostService ", err)
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error updating comment by Id in store"))
 		return
 	}
 
-	log.Printf("%-15s ==> 🎉 Successfully updated comment by ID\n", "PostService")
+	log.Printf("%-15s ==> 🎉 Successfully updated comment by Id\n", "PostService")
 	WriteJson(w, http.StatusOK, cr)
 }
 
 func (ps *PostService) handleDeleteComments(w http.ResponseWriter, r *http.Request) {
 	id, err := parseIdParam(r)
 	if err != nil {
-		log.Printf("%-15s ==> 😿 Error parsing ID para\n ", "PostService")
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing ID param"))
+		log.Printf("%-15s ==> 😿 Error parsing Id para\n ", "PostService")
+		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Error parsing Id param"))
 		return
 	}
 
 	err = ps.store.DeleteCommentById(id)
 	if err != nil {
-		log.Printf("%-15s ==> 😱 Error deleting comment by ID from stor\n ", "PostService")
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error deleting comment by ID from store"))
+		log.Printf("%-15s ==> 😱 Error deleting comment by Id from stor\n ", "PostService")
+		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error deleting comment by Id from store"))
 		return
 	}
 
-	log.Printf("%-15s ==> 🎉 Successfully deleted comment by ID\n", "PostService")
+	log.Printf("%-15s ==> 🎉 Successfully deleted comment by Id\n", "PostService")
 	WriteJson(w, http.StatusNoContent, nil)
 }
 
