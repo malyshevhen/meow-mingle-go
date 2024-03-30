@@ -15,6 +15,7 @@ type Store interface {
 	GetPostById(id int64) (*PostResponse, error)
 	UpdatePostById(id int64, p *PostRequest) (*PostResponse, error)
 	DeletePostById(id int64) error
+	// Comments
 	CreateComment(postId int64, userId int64, c *CommentRequest) (*CommentResponse, error)
 	GetCommentById(id int64) (*CommentResponse, error)
 	GetCommentsByPostId(id int64) ([]*CommentResponse, error)
@@ -102,8 +103,6 @@ func (s *Storage) CreatePost(userId int64, p *PostRequest) (*PostResponse, error
 }
 
 // DeletePostById implements Store.
-//
-// TODO: replace Methods to helper functions
 func (s *Storage) DeletePostById(id int64) error {
 	log.Printf("%-15s ==> 🗑️ Attempting to delete post with Id %d\n", "Store ", id)
 
@@ -219,29 +218,27 @@ func (s *Storage) UpdatePostById(id int64, p *PostRequest) (*PostResponse, error
 func (s *Storage) CreateComment(postId int64, userId int64, c *CommentRequest) (*CommentResponse, error) {
 	log.Printf("%-15s ==> 📝 Creating new comment for post Id %d, by user Id %d\n", "Store", postId, userId)
 
-	rows, err := s.db.Exec(`
-	INSERT INTO comments (content, author_id, post_id)
-	VALUES (?, ?, ?)`,
-		c.Content,
-		userId,
-		postId,
-	)
+	tx, err := s.db.Begin()
 	if err != nil {
-		log.Printf("%-15s ==> 😞 Error creating comment for post Id %d by user Id %d %v\n", "Store", postId, userId, err)
-		return &CommentResponse{}, err
+		log.Printf("%-15s ==> Transaction opening is fail: %v\n", "Store", err)
 	}
+	defer tx.Rollback()
 
-	id, err := rows.LastInsertId()
+	id, err := saveComment(tx, c, userId, postId)
 	if err != nil {
 		log.Printf("%-15s ==> 😞 Error getting Id for new comment for post Id %d, by user Id %d %v\n", "Store", postId, userId, err)
 		return &CommentResponse{}, err
 	}
 
 	log.Printf("%-15s ==> 📚 Retrieving new comment with Id %d,for post Id %d by user Id %d\n", "Store", id, postId, userId)
-	cr, err := s.GetCommentById(id)
+	cr, err := fetchCommentById(tx, id)
 	if err != nil {
 		log.Printf("%-15s ==> 😞 Error getting new comment with Id %d for post Id %d, by user Id %d: %v\n", "Store", id, postId, userId, err)
 		return &CommentResponse{}, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Printf("%-15s ==> Transaction committing is fail: %v\n", "Store", err)
 	}
 
 	log.Printf("%-15s ==> 🙌 Successfully created and retrieved new comment with Id %d for post Id %d, by user Id %d\n", "Store", id, postId, userId)
@@ -493,6 +490,28 @@ func deletePost(tx *sql.Tx, id int64) error {
 	}
 
 	return nil
+}
+
+func saveComment(tx *sql.Tx, c *CommentRequest, userId, postId int64) (int64, error) {
+	rows, err := tx.Exec(`
+	INSERT INTO comments (content, author_id, post_id)
+	VALUES (?, ?, ?)`,
+		c.Content,
+		userId,
+		postId,
+	)
+	if err != nil {
+		log.Printf("%-15s ==> 😞 Error creating comment for post Id %d by user Id %d %v\n", "Store", postId, userId, err)
+		return 0, err
+	}
+
+	id, err := rows.LastInsertId()
+	if err != nil {
+		log.Printf("%-15s ==> 😞 Error getting Id for new comment for post Id %d, by user Id %d %v\n", "Store", postId, userId, err)
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func fetchCommentById(tx *sql.Tx, id int64) (*CommentResponse, error) {
