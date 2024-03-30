@@ -15,7 +15,10 @@ func main() {
 
 	sqlStorage := NewMySQLStorage(cfg)
 
-	store := NewStorage(sqlStorage.db)
-	server := NewApiServer(":8080", store)
+	userService := NewUserService(sqlStorage.db)
+	postService := NewPostService(sqlStorage.db)
+	commentService := NewCommentService(sqlStorage.db)
+
+	server := NewApiServer(":8080", userService, postService, commentService)
 	server.Serve()
 }

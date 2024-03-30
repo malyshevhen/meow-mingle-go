@@ -8,14 +8,19 @@ import (
 )
 
 type ApiServer struct {
-	addr  string
-	store Store
+	addr           string
+	userService    *UserService
+	postService    *PostService
+	commentService *CommentService
 }
 
-func NewApiServer(addr string, store Store) *ApiServer {
+func NewApiServer(addr string, userService *UserService, postService *PostService,
+	commentService *CommentService) *ApiServer {
 	return &ApiServer{
-		addr:  addr,
-		store: store,
+		addr:           addr,
+		userService:    userService,
+		postService:    postService,
+		commentService: commentService,
 	}
 }
 
@@ -23,11 +28,14 @@ func (s *ApiServer) Serve() {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/api/v1").Subrouter()
 
-	userService := NewUserService(s.store)
+	userService := NewUserController(s.userService)
 	userService.RegisterRoutes(subrouter)
 
-	postsService := NewPostService(s.store)
+	postsService := NewPostController(s.userService, s.postService)
 	postsService.RegisterRoutes(subrouter)
+
+	commentController := NewCommentController(s.userService, s.commentService)
+	commentController.RegisterRoutes(subrouter)
 
 	log.Printf("Server starting at port: %s\n", s.addr)
 

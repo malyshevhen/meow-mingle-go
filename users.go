@@ -16,20 +16,22 @@ var errFirstNameRequired = errors.New("first name is required")
 var errLastNameRequired = errors.New("last name is required")
 var errPasswordRequired = errors.New("password is required")
 
-type UserService struct {
-	store Store
+type UserController struct {
+	store *UserService
 }
 
-func NewUserService(s Store) *UserService {
-	return &UserService{store: s}
+func NewUserController(usrServ *UserService) *UserController {
+	return &UserController{
+		store: usrServ,
+	}
 }
 
-func (ts *UserService) RegisterRoutes(r *mux.Router) {
+func (ts *UserController) RegisterRoutes(r *mux.Router) {
 	r.HandleFunc("/users/register", ts.handleCreateUser).Methods("POST")
 	r.HandleFunc("/users/{id}", WithJWTAuth(ts.handleGetUser, ts.store)).Methods("GET")
 }
 
-func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+func (ts *UserController) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("%-15s ==> 😞 Error reading request body: %v\n", "UserService", err)
@@ -83,7 +85,7 @@ func (ts *UserService) handleCreateUser(w http.ResponseWriter, r *http.Request) 
 	WriteJson(w, http.StatusCreated, token)
 }
 
-func (ts *UserService) handleGetUser(w http.ResponseWriter, r *http.Request) {
+func (ts *UserController) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	strId := vars["id"]
 
@@ -96,7 +98,7 @@ func (ts *UserService) handleGetUser(w http.ResponseWriter, r *http.Request) {
 
 	u, err := ts.store.GetUserById(int64(id))
 	if err != nil {
-		log.Printf("%-15s ==> 😕 User not found for Id:%s\n", "UserService", id)
+		log.Printf("%-15s ==> 😕 User not found for Id:%d\n", "UserService", id)
 		WriteJson(w, http.StatusNotFound, NewErrorResponse("user is not found"))
 		return
 	}
