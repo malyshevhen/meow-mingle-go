@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,30 +12,69 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type JWTAuthMiddleware = func(handlerFunc http.HandlerFunc, store *UserService) http.HandlerFunc
+type ContextKey string
 
-func WithJWTAuth(handlerFunc http.HandlerFunc, us *UserService) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		tokenString := GetTokenFromRequest(r)
+const UserKey ContextKey = "user"
 
-		id, err := GetAuthUserId(tokenString)
+type SecurityContextHolder struct {
+	contextMap map[string]interface{}
+}
+
+type AuthUserService interface {
+	GetUserById(id int64) (*UserRequest, error)
+}
+
+func InitSecurityContext(authUserService AuthUserService) *SecurityContextHolder {
+	sCtx := &SecurityContextHolder{
+		contextMap: make(map[string]interface{}),
+	}
+
+	sCtx.contextMap["userService"] = authUserService
+
+	return sCtx
+}
+
+func (sCtx *SecurityContextHolder) WithJWTAuth(handlerFunc apiHandler) apiHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		id, err := sCtx.GetAuthUserId(r)
 		if err != nil {
-			return
+			return &BasicError{
+				Code:    http.StatusUnauthorized,
+				Message: "Access denied",
+			}
 		}
 
-		if _, err := us.GetUserById(int64(id)); err != nil {
-			log.Printf("%-15s ==> Authentication failed: User Id not found 🆘", "AuthMW")
-			WriteJson(w, http.StatusBadRequest, NewErrorResponse("User Id not found."))
-			return
+		us, ok := sCtx.contextMap["userService"].(AuthUserService)
+		if !ok {
+			return &BasicError{
+				Code:    http.StatusUnauthorized,
+				Message: "Access denied",
+			}
 		}
+
+		user, err := us.GetUserById(int64(id))
+		if err != nil {
+			log.Printf("%-15s ==> Authentication failed: User Id not found 🆘", "AuthMW")
+			return &BasicError{
+				Code:    http.StatusUnauthorized,
+				Message: "Access denied",
+			}
+
+		}
+
+		ctx := r.Context()
+		req := r.WithContext(context.WithValue(ctx, UserKey, user))
+		*r = *req
 
 		log.Printf("%-15s ==> User %d authenticated successfully ✅", "AuthMW", id)
-		handlerFunc(w, r)
+		return handlerFunc(w, r)
 	}
 }
 
-func GetAuthUserId(t string) (int64, error) {
-	token, err := validateJWT(t)
+func (sCtx *SecurityContextHolder) GetAuthUserId(r *http.Request) (int64, error) {
+	tokenString := GetTokenFromRequest(r)
+
+	token, err := validateJWT(tokenString)
 	if err != nil {
 		log.Printf("%-15s ==> 😢 Authentication failed: Invalid JWT token", "AuthMW")
 		return 0, err
@@ -48,7 +88,7 @@ func GetAuthUserId(t string) (int64, error) {
 		return 0, nil
 	}
 
-	log.Printf("%-15s ==> 🎉 User Id converted to integer successfully!", "AuthMW")
+	log.Printf("%-15s ==> 🎉 User Id converted to integer successfully! ID: %d\n", "AuthMW", numId)
 	return int64(numId), nil
 }
 

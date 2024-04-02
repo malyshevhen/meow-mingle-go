@@ -19,6 +19,8 @@ func main() {
 	postService := NewPostService(sqlStorage.db)
 	commentService := NewCommentService(sqlStorage.db)
 
-	server := NewApiServer(":8080", userService, postService, commentService)
+	sCtx := InitSecurityContext(userService)
+
+	server := NewApiServer(":8080", userService, postService, commentService, sCtx)
 	server.Serve()
 }

@@ -3,41 +3,45 @@ package main
 import (
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
+
+type apiHandler func(w http.ResponseWriter, r *http.Request) error
 
 type ApiServer struct {
 	addr           string
 	userService    *UserService
 	postService    *PostService
 	commentService *CommentService
+	sCtx           *SecurityContextHolder
 }
 
-func NewApiServer(addr string, userService *UserService, postService *PostService,
-	commentService *CommentService) *ApiServer {
+func NewApiServer(addr string, us *UserService, ps *PostService,
+	cs *CommentService, sCtx *SecurityContextHolder) *ApiServer {
 	return &ApiServer{
 		addr:           addr,
-		userService:    userService,
-		postService:    postService,
-		commentService: commentService,
+		userService:    us,
+		postService:    ps,
+		commentService: cs,
+		sCtx:           sCtx,
 	}
 }
 
 func (s *ApiServer) Serve() {
-	router := mux.NewRouter()
-	subrouter := router.PathPrefix("/api/v1").Subrouter()
+	subrouter := http.NewServeMux()
 
-	userService := NewUserController(s.userService)
-	userService.RegisterRoutes(subrouter)
+	userController := NewUserController(s.sCtx, s.userService)
+	userController.RegisterRoutes(subrouter)
 
-	postsService := NewPostController(s.userService, s.postService)
-	postsService.RegisterRoutes(subrouter)
+	postsController := NewPostController(s.postService, s.sCtx)
+	postsController.RegisterRoutes(subrouter)
 
-	commentController := NewCommentController(s.userService, s.commentService)
+	commentController := NewCommentController(s.commentService, s.sCtx)
 	commentController.RegisterRoutes(subrouter)
+
+	router := http.NewServeMux()
+	router.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
 
 	log.Printf("Server starting at port: %s\n", s.addr)
 
-	log.Fatal(http.ListenAndServe(s.addr, subrouter))
+	log.Fatal(http.ListenAndServe(s.addr, router))
 }

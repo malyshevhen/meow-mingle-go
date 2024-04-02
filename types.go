@@ -60,3 +60,13 @@ type Page[T any] struct {
 	Last             bool  `json:"last"`
 	Empty            bool  `json:"empty"`
 }
+
+type PostLike struct {
+	UserId int64 `json:"userId"`
+	PostId int64 `json:"postId"`
+}
+
+type CommentLike struct {
+	UserId    int64 `json:"userId"`
+	CommentId int64 `json:"commentId"`
+}

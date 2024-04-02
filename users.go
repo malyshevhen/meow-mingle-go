@@ -1,14 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 var errEmailRequired = errors.New("email is required")
@@ -18,17 +15,27 @@ var errPasswordRequired = errors.New("password is required")
 
 type UserController struct {
 	store *UserService
+	sCtx  *SecurityContextHolder
 }
 
-func NewUserController(usrServ *UserService) *UserController {
+func NewUserController(sCtx *SecurityContextHolder, usrService *UserService) *UserController {
 	return &UserController{
-		store: usrServ,
+		store: usrService,
+		sCtx:  sCtx,
 	}
 }
 
-func (ts *UserController) RegisterRoutes(r *mux.Router) {
-	r.HandleFunc("/users/register", ts.handleCreateUser).Methods("POST")
-	r.HandleFunc("/users/{id}", WithJWTAuth(ts.handleGetUser, ts.store)).Methods("GET")
+func (uc *UserController) RegisterRoutes(r *http.ServeMux) {
+	middlewareStack := func(handler apiHandler) http.HandlerFunc {
+		return MiddlewareChain(
+			handler,
+			LoggerMiddleware,
+			ErrorHandler,
+			uc.sCtx.WithJWTAuth,
+		)
+	}
+	r.HandleFunc("POST /users/register", uc.handleCreateUser)
+	r.HandleFunc("GET /users/{id}", middlewareStack(uc.handleGetUser))
 }
 
 func (ts *UserController) handleCreateUser(w http.ResponseWriter, r *http.Request) {
@@ -38,18 +45,16 @@ func (ts *UserController) handleCreateUser(w http.ResponseWriter, r *http.Reques
 		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
-
 	defer r.Body.Close()
 
-	var user *UserRequest
-	err = json.Unmarshal(body, &user)
+	user, err := Unmarshal[UserRequest](body)
 	if err != nil {
 		log.Printf("%-15s ==> 😕 Error unmarshal JSON: %v\n", "UserService", err)
 		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
 
-	log.Printf("%-15s ==> 👀 Validating user payload...", "UserService")
+	log.Printf("%-15s ==> 👀 Validating user payload: %v\n", "UserService", user)
 	if err := validateUserPayload(user); err != nil {
 		log.Printf("%-15s ==> ❌ Validation failed: %v\n", "UserService", err)
 		WriteJson(w, http.StatusBadRequest, NewErrorResponse(err.Error()))
@@ -63,6 +68,7 @@ func (ts *UserController) handleCreateUser(w http.ResponseWriter, r *http.Reques
 		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
 		return
 	}
+
 	user.Password = hashedPwd
 
 	log.Printf("%-15s ==> 📝 Creating user in database...\n", "UserService")
@@ -85,26 +91,45 @@ func (ts *UserController) handleCreateUser(w http.ResponseWriter, r *http.Reques
 	WriteJson(w, http.StatusCreated, token)
 }
 
-func (ts *UserController) handleGetUser(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	strId := vars["id"]
-
-	log.Printf("%-15s ==> 🕵️ Searching for user with Id:%s\n", "UserService", strId)
-
+func (ts *UserController) handleGetUser(w http.ResponseWriter, r *http.Request) error {
+	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
-		return
+		return &BasicError{
+			Code:    http.StatusBadRequest,
+			Message: "Invalid param",
+		}
 	}
+
+	user, ok := r.Context().Value(UserKey).(*UserRequest)
+	if !ok {
+		log.Printf("%-15s ==> ❌ No authorities found in context: %v\n", "UserService", user)
+		return &BasicError{
+			Code:    http.StatusUnauthorized,
+			Message: "access denied",
+		}
+	}
+
+	if id != int(user.ID) {
+		log.Printf("%-15s ==> ❌ User with ID: %d have no permissions to access account with ID: %d\n", "UserService", user.ID, id)
+		return &BasicError{
+			Code:    http.StatusUnauthorized,
+			Message: "access denied",
+		}
+
+	}
+
+	log.Printf("%-15s ==> 🕵️ Searching for user with Id:%s\n", "UserService", strId)
 
 	u, err := ts.store.GetUserById(int64(id))
 	if err != nil {
 		log.Printf("%-15s ==> 😕 User not found for Id:%d\n", "UserService", id)
-		WriteJson(w, http.StatusNotFound, NewErrorResponse("user is not found"))
-		return
+		return err
 	}
 
 	log.Printf("%-15s ==> 👍 Found user: %d\n", "UserService", u.ID)
-	WriteJson(w, http.StatusOK, u)
+
+	return WriteJson(w, http.StatusOK, u)
 }
 
 func createAndSetAuthCookie(id int64, w http.ResponseWriter) (string, error) {

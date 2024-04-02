@@ -2,17 +2,26 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
-func WriteJson(w http.ResponseWriter, status int, v any) {
+func WriteJson(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
+
 	if v != nil {
-		json.NewEncoder(w).Encode(v)
+		if err := json.NewEncoder(w).Encode(v); err != nil {
+			return &BasicError{
+				Code:    http.StatusInternalServerError,
+				Message: err.Error(),
+			}
+		}
 	}
 
-	// 📝 Add descriptive logging with emojis
-	log.Printf("WriteJson ===> 📝 Responded with JSON status %d and payload: %+v", status, v)
+	return nil
+}
+
+func Unmarshal[T any](v []byte) (value *T, err error) {
+	json.Unmarshal(v, &value)
+	return
 }
