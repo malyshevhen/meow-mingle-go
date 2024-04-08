@@ -1,26 +1,29 @@
 package main
 
-import "github.com/go-sql-driver/mysql"
+import (
+	"database/sql"
+	"log"
+
+	_ "github.com/lib/pq"
+	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+)
 
 func main() {
-	cfg := mysql.Config{
-		User:                 Envs.DBUser,
-		Passwd:               Envs.DBPasswd,
-		Addr:                 Envs.DBAddress,
-		DBName:               Envs.DBName,
-		Net:                  "tcp",
-		AllowNativePasswords: true,
-		ParseTime:            true,
+	DB, err := sql.Open("postgres", Envs.DBSource)
+	if err != nil {
+		log.Fatalln(err)
 	}
 
-	sqlStorage := NewMySQLStorage(cfg)
+	defer DB.Close()
 
-	userService := NewUserService(sqlStorage.db)
-	postService := NewPostService(sqlStorage.db)
-	commentService := NewCommentService(sqlStorage.db)
+	if err := DB.Ping(); err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Successfully Connected")
+	}
 
-	sCtx := InitSecurityContext(userService)
+	store := db.NewStore(DB)
 
-	server := NewApiServer(":8080", userService, postService, commentService, sCtx)
+	server := NewApiServer(":8080", store)
 	server.Serve()
 }

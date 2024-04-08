@@ -21,7 +21,7 @@ func WriteJson(w http.ResponseWriter, status int, v any) error {
 	return nil
 }
 
-func Unmarshal[T any](v []byte) (value *T, err error) {
+func Unmarshal[T any](v []byte) (value T, err error) {
 	json.Unmarshal(v, &value)
 	return
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,66 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type ContextKey string
-
-const UserKey ContextKey = "user"
-
-type SecurityContextHolder struct {
-	contextMap map[string]interface{}
-}
-
-type AuthUserService interface {
-	GetUserById(id int64) (*UserRequest, error)
-}
-
-func InitSecurityContext(authUserService AuthUserService) *SecurityContextHolder {
-	sCtx := &SecurityContextHolder{
-		contextMap: make(map[string]interface{}),
-	}
-
-	sCtx.contextMap["userService"] = authUserService
-
-	return sCtx
-}
-
-func (sCtx *SecurityContextHolder) WithJWTAuth(handlerFunc apiHandler) apiHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		id, err := sCtx.GetAuthUserId(r)
-		if err != nil {
-			return &BasicError{
-				Code:    http.StatusUnauthorized,
-				Message: "Access denied",
-			}
-		}
-
-		us, ok := sCtx.contextMap["userService"].(AuthUserService)
-		if !ok {
-			return &BasicError{
-				Code:    http.StatusUnauthorized,
-				Message: "Access denied",
-			}
-		}
-
-		user, err := us.GetUserById(int64(id))
-		if err != nil {
-			log.Printf("%-15s ==> Authentication failed: User Id not found 🆘", "AuthMW")
-			return &BasicError{
-				Code:    http.StatusUnauthorized,
-				Message: "Access denied",
-			}
-
-		}
-
-		ctx := r.Context()
-		req := r.WithContext(context.WithValue(ctx, UserKey, user))
-		*r = *req
-
-		log.Printf("%-15s ==> User %d authenticated successfully ✅", "AuthMW", id)
-		return handlerFunc(w, r)
-	}
-}
-
-func (sCtx *SecurityContextHolder) GetAuthUserId(r *http.Request) (int64, error) {
+func GetAuthUserId(r *http.Request) (int64, error) {
 	tokenString := GetTokenFromRequest(r)
 
 	token, err := validateJWT(tokenString)

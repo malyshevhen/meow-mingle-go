@@ -14,7 +14,7 @@ func NewErrorResponse(message string) *ErrorResponse {
 	}
 }
 
-type UserRequest struct {
+type User struct {
 	ID        int64     `json:"id"`
 	Email     string    `json:"email"`
 	FirstName string    `json:"firstName"`
@@ -32,6 +32,7 @@ type CommentResponse struct {
 	Content  string    `json:"content"`
 	AuthorId int64     `json:"authorId"`
 	PostId   int64     `json:"postId"`
+	Likes    int       `json:"likes"`
 	Created  time.Time `json:"created"`
 	Updated  time.Time `json:"updated"`
 }
@@ -44,7 +45,7 @@ type PostResponse struct {
 	Id       int64             `json:"id"`
 	Content  string            `json:"content"`
 	AuthorId int64             `json:"authorId"`
-	Comments []CommentResponse `json:"comments"`
+	Likes    int               `json:"likes"`
 	Created  time.Time         `json:"created"`
 	Updated  time.Time         `json:"updated"`
 }

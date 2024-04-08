@@ -3,45 +3,34 @@ package main
 import (
 	"log"
 	"net/http"
+
+	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 )
 
 type apiHandler func(w http.ResponseWriter, r *http.Request) error
 
 type ApiServer struct {
-	addr           string
-	userService    *UserService
-	postService    *PostService
-	commentService *CommentService
-	sCtx           *SecurityContextHolder
+	addr  string
+	store *db.Store
 }
 
-func NewApiServer(addr string, us *UserService, ps *PostService,
-	cs *CommentService, sCtx *SecurityContextHolder) *ApiServer {
+func NewApiServer(addr string, store *db.Store) *ApiServer {
 	return &ApiServer{
-		addr:           addr,
-		userService:    us,
-		postService:    ps,
-		commentService: cs,
-		sCtx:           sCtx,
+		addr:  addr,
+		store: store,
 	}
 }
 
 func (s *ApiServer) Serve() {
-	subrouter := http.NewServeMux()
+	submuxer := http.NewServeMux()
 
-	userController := NewUserController(s.sCtx, s.userService)
-	userController.RegisterRoutes(subrouter)
+	router := NewRouter(s.store)
+	router.RegisterRoutes(submuxer)
 
-	postsController := NewPostController(s.postService, s.sCtx)
-	postsController.RegisterRoutes(subrouter)
-
-	commentController := NewCommentController(s.commentService, s.sCtx)
-	commentController.RegisterRoutes(subrouter)
-
-	router := http.NewServeMux()
-	router.Handle("/api/v1/", http.StripPrefix("/api/v1", subrouter))
+	muxer := http.NewServeMux()
+	muxer.Handle("/api/v1/", http.StripPrefix("/api/v1", submuxer))
 
 	log.Printf("Server starting at port: %s\n", s.addr)
 
-	log.Fatal(http.ListenAndServe(s.addr, router))
+	log.Fatal(http.ListenAndServe(s.addr, muxer))
 }
