@@ -6,6 +6,8 @@ import (
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 )
 
+type ApiHandler func(w http.ResponseWriter, r *http.Request) error
+
 type Router struct {
 	store *db.Store
 }
@@ -17,7 +19,13 @@ func NewRouter(store *db.Store) *Router {
 }
 
 func (r *Router) RegisterRoutes(mux *http.ServeMux) {
-	middlewareChain := func(handler apiHandler) http.HandlerFunc {
+	var (
+		userMux    = http.NewServeMux()
+		postMux    = http.NewServeMux()
+		commentMux = http.NewServeMux()
+	)
+
+	authenticated := func(handler ApiHandler) http.HandlerFunc {
 		return MiddlewareChain(
 			handler,
 			LoggerMiddleware,
@@ -26,19 +34,32 @@ func (r *Router) RegisterRoutes(mux *http.ServeMux) {
 		)
 	}
 
-	mux.HandleFunc("POST /users/register", r.handleCreateUser)
-	mux.HandleFunc("GET /users/{id}", middlewareChain(r.handleGetUser))
-	mux.HandleFunc("GET /users/{id}/posts", middlewareChain(r.handleGetUserPosts))
-	mux.HandleFunc("POST /posts", middlewareChain(r.handleCreatePost))
-	mux.HandleFunc("GET /posts/{id}", middlewareChain(r.handleGetPostsById))
-	mux.HandleFunc("PUT /posts/{id}", middlewareChain(r.handleUpdatePostsById))
-	mux.HandleFunc("DELETE /posts/{id}", middlewareChain(r.handleDeletePostsById))
-	mux.HandleFunc("POST /posts/{id}/comments", middlewareChain(r.handleCreateComment))
-	mux.HandleFunc("GET /posts/{id}/comments", middlewareChain(r.handleGetComments))
-	mux.HandleFunc("PUT /comments/{id}", middlewareChain(r.handleUpdateComments))
-	mux.HandleFunc("DELETE /comments/{id}", middlewareChain(r.handleDeleteComments))
-	mux.HandleFunc("POST /posts/{id}/likes", middlewareChain(r.handleLikePost))
-	mux.HandleFunc("DELETE /posts/{id}/likes", middlewareChain(r.handleRemoveLikeFromPost))
-	mux.HandleFunc("POST /comments/{id}/likes", middlewareChain(r.handleLikeComment))
-	mux.HandleFunc("DELETE /comments/{id}/likes", middlewareChain(r.handleRemoveLikeFromComment))
+	noAuth := func(handler ApiHandler) http.HandlerFunc {
+		return MiddlewareChain(
+			handler,
+			LoggerMiddleware,
+			ErrorHandler,
+		)
+	}
+
+	userMux.HandleFunc("GET /{id}", authenticated(r.handleGetUser))
+	userMux.HandleFunc("POST /register", noAuth(r.handleCreateUser))
+	userMux.HandleFunc("GET /{id}/posts", noAuth(r.handleGetUserPosts))
+	mux.Handle("/users/", http.StripPrefix("/users", userMux))
+
+	postMux.HandleFunc("POST /", authenticated(r.handleCreatePost))
+	postMux.HandleFunc("POST /{id}/likes", authenticated(r.handleLikePost))
+	postMux.HandleFunc("POST /{id}/comments", authenticated(r.handleCreateComment))
+	postMux.HandleFunc("PUT /{id}", authenticated(r.handleUpdatePostsById))
+	postMux.HandleFunc("DELETE /{id}", authenticated(r.handleDeletePostsById))
+	postMux.HandleFunc("DELETE /{id}/likes", authenticated(r.handleRemoveLikeFromPost))
+	postMux.HandleFunc("GET /{id}", noAuth(r.handleGetPostsById))
+	postMux.HandleFunc("GET /{id}/comments", noAuth(r.handleGetComments))
+	mux.Handle("/posts/", http.StripPrefix("/posts", postMux))
+
+	commentMux.HandleFunc("PUT /{id}", authenticated(r.handleUpdateComments))
+	commentMux.HandleFunc("POST /{id}/likes", authenticated(r.handleLikeComment))
+	commentMux.HandleFunc("DELETE /{id}", authenticated(r.handleDeleteComments))
+	commentMux.HandleFunc("DELETE /{id}/likes", authenticated(r.handleRemoveLikeFromComment))
+	mux.Handle("/comments/", http.StripPrefix("/comments", commentMux))
 }

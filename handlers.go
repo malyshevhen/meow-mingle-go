@@ -9,68 +9,56 @@ import (
 	"strconv"
 
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/errors"
 )
 
-func (rr *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+func (rr *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
 	ctx := context.Background()
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("%-15s ==> 😞 Error reading request body: %v\n", "UserService", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
-		return
+		return err
 	}
 	defer r.Body.Close()
 
-	user, err := Unmarshal[User](body)
+	user, err := Unmarshal[db.CreateUserParams](body)
 	if err != nil {
 		log.Printf("%-15s ==> 😕 Error unmarshal JSON: %v\n", "UserService", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
-		return
+		return err
 	}
 
 	log.Printf("%-15s ==> 👀 Validating user payload: %v\n", "UserService", user)
 	if err := validateUserPayload(user); err != nil {
 		log.Printf("%-15s ==> ❌ Validation failed: %v\n", "UserService", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse(err.Error()))
-		return
+		return err
 	}
 
 	log.Printf("%-15s ==> 🔑 Hashing password...", "UserService")
 	hashedPwd, err := HashPwd(user.Password)
 	if err != nil {
 		log.Printf("%-15s ==> 🔒 Error hashing password: %v\n", "UserService", err)
-		WriteJson(w, http.StatusBadRequest, NewErrorResponse("Invalid payload"))
-		return
+		return err
 	}
 
 	user.Password = hashedPwd
 
-	params := &db.CreateUserParams{
-		Email:     user.Email,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Password:  user.Password,
-	}
-
 	log.Printf("%-15s ==> 📝 Creating user in database...\n", "UserService")
-	u, err := rr.store.CreateUser(ctx, *params)
+	u, err := rr.store.CreateUserTx(ctx, user)
 	if err != nil {
 		log.Printf("%-15s ==> 🛑 Error creating user: %v\n", "UserService", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error creating user"))
-		return
+		return err
 	}
 
 	log.Printf("%-15s ==> 🔐 Creating auth token...\n", "UserService")
 	token, err := createAndSetAuthCookie(u.ID, w)
 	if err != nil {
 		log.Printf("%-15s ==> ❌ Error creating auth token: %v\n", "UserService", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error creating auth token"))
-		return
+		return err
 	}
 
 	log.Printf("%-15s ==> ✅ User created successfully!\n", "UserService")
-	WriteJson(w, http.StatusCreated, token)
+	return WriteJson(w, http.StatusCreated, token)
 }
 
 func (rr *Router) handleGetUser(w http.ResponseWriter, r *http.Request) error {
@@ -79,28 +67,18 @@ func (rr *Router) handleGetUser(w http.ResponseWriter, r *http.Request) error {
 	strId := r.PathValue("id")
 	id, err := strconv.Atoi(strId)
 	if err != nil {
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid param",
-		}
+		return errors.NewValidationError("ID parameter is invalid")
 	}
 
 	userID, err := GetAuthUserId(r)
 	if err != nil {
 		log.Printf("%-15s ==> ❌ No authenticated user found", "UserService")
-		return &BasicError{
-			Code:    http.StatusUnauthorized,
-			Message: "access denied",
-		}
+		return err
 	}
 
 	if id != int(userID) {
 		log.Printf("%-15s ==> ❌ User with ID: %d have no permissions to access account with ID: %d\n", "UserService", userID, id)
-		return &BasicError{
-			Code:    http.StatusUnauthorized,
-			Message: "access denied",
-		}
-
+		return errors.NewForbiddenError()
 	}
 
 	log.Printf("%-15s ==> 🕵️ Searching for user with Id:%s\n", "UserService", strId)
@@ -135,29 +113,29 @@ func createAndSetAuthCookie(id int64, w http.ResponseWriter) (string, error) {
 	return token, nil
 }
 
-func validateUserPayload(user User) error {
+func validateUserPayload(user db.CreateUserParams) error {
 	log.Printf("%-15s ==> 📧 Checking if email is provided..", "UserService.")
 	if user.Email == "" {
 		log.Printf("%-15s ==> ❌ Email is required but not provided", "UserService")
-		return errEmailRequired
+		return errors.ErrEmailRequired
 	}
 
 	log.Printf("%-15s ==> 📛 Checking if first name is provided..", "UserService.")
 	if user.FirstName == "" {
 		log.Printf("%-15s ==> ❌ First name is required but not provided", "UserService")
-		return errFirstNameRequired
+		return errors.ErrFirstNameRequired
 	}
 
 	log.Printf("%-15s ==> 📛 Checking if last name is provided..", "UserService.")
 	if user.LastName == "" {
 		log.Printf("%-15s ==> ❌ Last name is required but not provided", "UserService")
-		return errLastNameRequired
+		return errors.ErrLastNameRequired
 	}
 
 	log.Printf("%-15s ==> 🔑 Checking if password is provided..", "UserService.")
 	if user.Password == "" {
 		log.Printf("%-15s ==> ❌ Password is required but not provided", "UserService")
-		return errPasswordRequired
+		return errors.ErrPasswordRequired
 	}
 
 	log.Printf("%-15s ==> ✅ User payload validation passed!", "UserService")
@@ -170,10 +148,7 @@ func (rr *Router) handleCreatePost(w http.ResponseWriter, r *http.Request) error
 	postRequest, err := readPostReqType(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😞 Error reading post request: %v\n", "PostController", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Error reading post request",
-		}
+		return err
 	}
 
 	userId, err := GetAuthUserId(r)
@@ -205,10 +180,7 @@ func (rr *Router) handleGetUserPosts(w http.ResponseWriter, r *http.Request) err
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id param %v\n", "PostController", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Error reading post request",
-		}
+		return err
 	}
 
 	posts, err := rr.store.ListUserPosts(ctx, id)
@@ -246,10 +218,7 @@ func (rr *Router) handleGetPostsById(w http.ResponseWriter, r *http.Request) err
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id para:%v\n", "PostController", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Error reading post request",
-		}
+		return err
 	}
 
 	post, err := rr.store.GetPost(ctx, id)
@@ -277,19 +246,13 @@ func (rr *Router) handleUpdatePostsById(w http.ResponseWriter, r *http.Request) 
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id para %v\n", "PostController", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid param",
-		}
+		return err
 	}
 
 	postRequest, err := readPostReqType(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😫 Error reading post request %v\n", "PostController", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid content",
-		}
+		return err
 	}
 
 	params := &db.UpdatePostParams{
@@ -314,10 +277,7 @@ func (rr *Router) handleDeletePostsById(w http.ResponseWriter, r *http.Request) 
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id param %v\n", "PostController", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Invalid param",
-		}
+		return err
 	}
 
 	if err := rr.store.DeletePost(ctx, id); err != nil {
@@ -333,7 +293,7 @@ func (rr *Router) handleDeletePostsById(w http.ResponseWriter, r *http.Request) 
 func readPostReqType(r *http.Request) (*PostRequest, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.NewValidationError("parameter ID is not valid")
 	}
 	defer r.Body.Close()
 
@@ -362,19 +322,13 @@ func (rr *Router) handleCreateComment(w http.ResponseWriter, r *http.Request) er
 	postId, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing post Id param %v\n", "PostService ", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Not valid ID param",
-		}
+		return err
 	}
 
 	cReq, err := readCommentReqType(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😫 Error reading comment request %v\n", "PostService ", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Error reading comment request",
-		}
+		return err
 	}
 
 	userId, err := GetAuthUserId(r)
@@ -406,10 +360,7 @@ func (rr *Router) handleGetComments(w http.ResponseWriter, r *http.Request) erro
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id para %v\n", "PostService ", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Error parsing Id param",
-		}
+		return err
 	}
 
 	c, err := rr.store.ListPostComments(ctx, id)
@@ -447,20 +398,14 @@ func (rr *Router) handleUpdateComments(w http.ResponseWriter, r *http.Request) e
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id para %v\n", "PostService ", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Not valid ID param",
-		}
+		return err
 
 	}
 
 	c, err := readCommentReqType(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😫 Error reading comment request %v\n", "PostService ", err)
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Not valid ID param",
-		}
+		return err
 
 	}
 
@@ -486,10 +431,7 @@ func (rr *Router) handleDeleteComments(w http.ResponseWriter, r *http.Request) e
 	id, err := parseIdParam(r)
 	if err != nil {
 		log.Printf("%-15s ==> 😿 Error parsing Id para\n ", "PostService")
-		return &BasicError{
-			Code:    http.StatusBadRequest,
-			Message: "Not valid ID param",
-		}
+		return err
 
 	}
 
@@ -559,7 +501,7 @@ func (rr *Router) handleRemoveLikeFromPost(w http.ResponseWriter, r *http.Reques
 	}
 
 	if post.AuthorID != userId {
-		return fmt.Errorf("user with ID: %d can not modify post of author with ID: %d\n", userId, post.AuthorID)
+		return fmt.Errorf("user with ID: %d can not modify post of author with ID: %d", userId, post.AuthorID)
 	}
 
 	params := db.DeletePostLikeParams{
@@ -614,7 +556,7 @@ func (rr *Router) handleRemoveLikeFromComment(w http.ResponseWriter, r *http.Req
 	}
 
 	if comment.AuthorID != userId {
-		return fmt.Errorf("user with ID: %d can not modify post of author with ID: %d\n", userId, comment.ID)
+		return fmt.Errorf("user with ID: %d can not modify post of author with ID: %d", userId, comment.ID)
 	}
 
 	params := db.DeleteCommentLikeParams{

@@ -72,6 +72,18 @@ func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
 	return i, err
 }
 
+const isUserExists = `-- name: IsUserExists :one
+SELECT COUNT(*) FROM users
+WHERE email = $1
+`
+
+func (q *Queries) IsUserExists(ctx context.Context, email string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, isUserExists, email)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT id, email, first_name, last_name, password, created_at FROM users
 ORDER BY id

@@ -3,8 +3,8 @@ package main
 import "time"
 
 type ErrorResponse struct {
-	Error     string    `json:"message"`
 	Timestamp time.Time `json:"timestamp"`
+	Error     string    `json:"message"`
 }
 
 func NewErrorResponse(message string) *ErrorResponse {
@@ -15,12 +15,12 @@ func NewErrorResponse(message string) *ErrorResponse {
 }
 
 type User struct {
-	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
 	Email     string    `json:"email"`
 	FirstName string    `json:"firstName"`
 	LastName  string    `json:"lastName"`
 	Password  string    `json:"password"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID        int64     `json:"id"`
 }
 
 type CommentRequest struct {
@@ -28,13 +28,13 @@ type CommentRequest struct {
 }
 
 type CommentResponse struct {
-	Id       int64     `json:"id"`
+	Created  time.Time `json:"created"`
+	Updated  time.Time `json:"updated"`
 	Content  string    `json:"content"`
+	Id       int64     `json:"id"`
 	AuthorId int64     `json:"authorId"`
 	PostId   int64     `json:"postId"`
 	Likes    int       `json:"likes"`
-	Created  time.Time `json:"created"`
-	Updated  time.Time `json:"updated"`
 }
 
 type PostRequest struct {
@@ -42,12 +42,12 @@ type PostRequest struct {
 }
 
 type PostResponse struct {
-	Id       int64             `json:"id"`
-	Content  string            `json:"content"`
-	AuthorId int64             `json:"authorId"`
-	Likes    int               `json:"likes"`
-	Created  time.Time         `json:"created"`
-	Updated  time.Time         `json:"updated"`
+	Created  time.Time `json:"created"`
+	Updated  time.Time `json:"updated"`
+	Content  string    `json:"content"`
+	Id       int64     `json:"id"`
+	AuthorId int64     `json:"authorId"`
+	Likes    int       `json:"likes"`
 }
 
 type Page[T any] struct {

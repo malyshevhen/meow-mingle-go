@@ -9,6 +9,9 @@ INSERT INTO users (
 SELECT * FROM users
 WHERE id = $1 LIMIT 1;
 
+-- name: IsUserExists :one
+SELECT COUNT(*) FROM users
+WHERE email = $1;
 
 -- name: ListUsers :many
 SELECT * FROM users

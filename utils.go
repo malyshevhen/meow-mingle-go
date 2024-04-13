@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/malyshEvhen/meow_mingle/errors"
 )
 
 func WriteJson(w http.ResponseWriter, status int, v any) error {
@@ -11,10 +13,7 @@ func WriteJson(w http.ResponseWriter, status int, v any) error {
 
 	if v != nil {
 		if err := json.NewEncoder(w).Encode(v); err != nil {
-			return &BasicError{
-				Code:    http.StatusInternalServerError,
-				Message: err.Error(),
-			}
+			return err
 		}
 	}
 
@@ -22,6 +21,8 @@ func WriteJson(w http.ResponseWriter, status int, v any) error {
 }
 
 func Unmarshal[T any](v []byte) (value T, err error) {
-	json.Unmarshal(v, &value)
+	if err := json.Unmarshal(v, &value); err != nil {
+		return value, errors.NewValidationError("error parse JSON payload")
+	}
 	return
 }

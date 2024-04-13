@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/malyshEvhen/meow_mingle/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -80,14 +80,19 @@ func CreateJwt(secret []byte, id int64) (string, error) {
 }
 
 func validateJWT(t string) (*jwt.Token, error) {
-	secret := Envs.JWTSecret
+	var (
+		token  *jwt.Token
+		secret = Envs.JWTSecret
+		err    error
+		fail   = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
+	)
 
 	log.Printf("%-15s ==> 🕵 Validating JWT token...", "AuthMW")
 
-	token, err := jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
+	token, err = jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			log.Printf("%-15s ==> ❌ Unexpected signing method!", "AuthMW")
-			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			log.Printf("%-15s ==> ❌ Unexpected signing method: %v", "AuthMW", t.Header["alg"])
+			return fail()
 		}
 
 		log.Printf("%-15s ==> 🔑 Comparing secret...", "AuthMW")
@@ -96,6 +101,7 @@ func validateJWT(t string) (*jwt.Token, error) {
 
 	if err != nil {
 		log.Printf("%-15s ==> 🚨 JWT validation failed!", "AuthMW")
+		return fail()
 	} else {
 		log.Printf("%-15s ==> ✅ JWT token validated successfully!", "AuthMW")
 	}

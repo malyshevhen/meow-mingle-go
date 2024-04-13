@@ -7,11 +7,9 @@ import (
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 )
 
-type apiHandler func(w http.ResponseWriter, r *http.Request) error
-
 type ApiServer struct {
-	addr  string
 	store *db.Store
+	addr  string
 }
 
 func NewApiServer(addr string, store *db.Store) *ApiServer {

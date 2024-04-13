@@ -141,12 +141,7 @@ func TestListUsers(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("test list users", func(t *testing.T) {
-		args3 := ListUsersParams{
-			Limit:  10,
-			Offset: 0,
-		}
-
-		users, err := testQueries.ListUsers(context.Background(), args3)
+		users, err := testQueries.ListUsers(context.Background())
 
 		require.NoError(t, err)
 		require.NotEmpty(t, users)

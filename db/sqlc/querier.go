@@ -22,6 +22,7 @@ type Querier interface {
 	GetComment(ctx context.Context, id int64) (Comment, error)
 	GetPost(ctx context.Context, id int64) (Post, error)
 	GetUser(ctx context.Context, id int64) (User, error)
+	IsUserExists(ctx context.Context, email string) (int64, error)
 	ListCommentLikes(ctx context.Context, commentID int64) ([]CommentLike, error)
 	ListPostComments(ctx context.Context, postID int64) ([]Comment, error)
 	ListPostLikes(ctx context.Context, postID int64) ([]PostLike, error)
