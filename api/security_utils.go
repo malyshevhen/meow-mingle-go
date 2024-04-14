@@ -12,71 +12,72 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func GetAuthUserId(r *http.Request) (int64, error) {
-	tokenString := GetTokenFromRequest(r)
+func getAuthUserId(r *http.Request) (int64, error) {
+	tokenString := getTokenFromRequest(r)
 
 	token, err := validateJWT(tokenString)
 	if err != nil {
-		log.Printf("%-15s ==> 😢 Authentication failed: Invalid JWT token", "AuthMW")
-		return 0, err
+		log.Printf("%-15s ==> 😢 Authentication failed: Invalid JWT token", "Authentication")
+		return 0, errors.NewUnauthorizedError()
 	}
 
 	claims := token.Claims.(jwt.MapClaims)
 	id := claims["userId"].(string)
 	numId, err := strconv.Atoi(id)
 	if err != nil {
-		log.Printf("%-15s ==> 😕 Failed to convert user Id to integer", "AuthMW")
-		return 0, nil
+		log.Printf("%-15s ==> 😕 Failed to convert user Id to integer", "Authentication")
+		return 0, errors.NewUnauthorizedError()
 	}
 
-	log.Printf("%-15s ==> 🎉 User Id converted to integer successfully! ID: %d\n", "AuthMW", numId)
+	log.Printf("%-15s ==> 🎉 User Id converted to integer successfully! ID: %d\n", "Authentication", numId)
 	return int64(numId), nil
 }
 
-func GetTokenFromRequest(r *http.Request) string {
-	log.Printf("%-15s ==> 🕵️ Validating for Authorization header...", "AuthMW")
+func getTokenFromRequest(r *http.Request) string {
+	log.Printf("%-15s ==> 🕵️ Validating for Authorization header...", "Authentication")
 
 	tokenAuth := r.Header.Get("Authorization")
 
 	if tokenAuth != "" {
-		log.Printf("%-15s ==> 🎉 Authorization header found!", "AuthMW")
+		log.Printf("%-15s ==> 🎉 Authorization header found!", "Authentication")
 		return tokenAuth
 	}
 
-	log.Printf("%-15s ==> 😢 No Authorization header found.", "AuthMW")
+	log.Printf("%-15s ==> 😢 No Authorization header found.", "Authentication")
 	return ""
 }
 
-func HashPwd(s string) (string, error) {
-	log.Printf("%-15s ==> 🌈 Starting password hashing...", "AuthMW")
+func hashPwd(s string) (string, error) {
+	log.Printf("%-15s ==> 🌈 Starting password hashing...", "Authentication")
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
 
 	if err != nil {
-		log.Printf("%-15s ==> 😱 Error generating password hash: %v", "AuthMW", err)
-		return "", err
+		log.Printf("%-15s ==> 😱 Error generating password hash: %v", "Authentication", err)
+		return "", errors.NewInternalServerError(err)
 	}
 
-	log.Printf("%-15s ==> ✨ Password hashed successfully!", "AuthMW")
+	log.Printf("%-15s ==> ✨ Password hashed successfully!", "Authentication")
 	return string(hash), nil
 }
 
-func CreateJwt(secret []byte, id int64) (string, error) {
-	log.Printf("%-15s ==> 🌟 Starting JWT token creation...", "AuthMW")
+func createJwt(secret []byte, id int64) (string, error) {
+	log.Printf("%-15s ==> 🌟 Starting JWT token creation...", "Authentication")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId":    strconv.Itoa(int(id)),
 		"expiresAt": time.Now().Add(time.Hour * 24 * 120).Unix(),
 	})
 
-	log.Printf("%-15s ==> 🔏 Signing JWT token...", "AuthMW")
+	log.Printf("%-15s ==> 🔏 Signing JWT token...", "Authentication")
+
 	signedToken, err := token.SignedString(secret)
 	if err != nil {
-		log.Printf("%-15s ==> ❌ Error signing JWT token: %v", "AuthMW", err)
-		return "", err
+		log.Printf("%-15s ==> ❌ Error signing JWT token: %v", "Authentication", err)
+		return "", errors.NewUnauthorizedError()
 	}
 
-	log.Printf("%-15s ==> ✅ JWT token created successfully!", "AuthMW")
+	log.Printf("%-15s ==> ✅ JWT token created successfully!", "Authentication")
 	return signedToken, nil
 }
 
@@ -86,23 +87,24 @@ func validateJWT(t string) (token *jwt.Token, err error) {
 		fail   = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
 	)
 
-	log.Printf("%-15s ==> 🕵 Validating JWT token...", "AuthMW")
+	log.Printf("%-15s ==> 🕵 Validating JWT token...", "Authentication")
 
 	token, err = jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-			log.Printf("%-15s ==> ❌ Unexpected signing method: %v", "AuthMW", t.Header["alg"])
+			log.Printf("%-15s ==> ❌ Unexpected signing method: %v", "Authentication", t.Header["alg"])
 			return fail()
 		}
 
-		log.Printf("%-15s ==> 🔑 Comparing secret...", "AuthMW")
+		log.Printf("%-15s ==> 🔑 Comparing secret...", "Authentication")
+
 		return []byte(secret), nil
 	})
 
 	if err != nil {
-		log.Printf("%-15s ==> 🚨 JWT validation failed!", "AuthMW")
+		log.Printf("%-15s ==> 🚨 JWT validation failed!", "Authentication")
 		return fail()
 	} else {
-		log.Printf("%-15s ==> ✅ JWT token validated successfully!", "AuthMW")
+		log.Printf("%-15s ==> ✅ JWT token validated successfully!", "Authentication")
 	}
 	return
 }

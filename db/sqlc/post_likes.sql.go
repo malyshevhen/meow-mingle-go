@@ -9,6 +9,18 @@ import (
 	"context"
 )
 
+const countPostLikes = `-- name: CountPostLikes :one
+SELECT COUNT(id) FROM post_likes
+WHERE post_id = $1
+`
+
+func (q *Queries) CountPostLikes(ctx context.Context, postID int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPostLikes, postID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createPostLike = `-- name: CreatePostLike :exec
 INSERT INTO post_likes (
     user_id, post_id

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/malyshEvhen/meow_mingle/errors"
@@ -34,4 +35,15 @@ func Validate(s interface{}) error {
 		return errors.NewValidationError(err.Error())
 	}
 	return nil
+}
+
+func parseIdParam(r *http.Request) (int64, error) {
+	id := r.PathValue("id")
+
+	numId, err := strconv.Atoi(id)
+	if err != nil {
+		return 0, nil
+	}
+
+	return int64(numId), nil
 }

@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const createComment = `-- name: CreateComment :one
@@ -18,9 +19,9 @@ INSERT INTO comments (
 `
 
 type CreateCommentParams struct {
-	Content  string `json:"content"`
-	AuthorID int64  `json:"author_id"`
-	PostID   int64  `json:"post_id"`
+	Content  string `json:"content" validate:"required"`
+	AuthorID int64  `json:"author_id" validate:"required"`
+	PostID   int64  `json:"post_id" validate:"required"`
 }
 
 func (q *Queries) CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error) {
@@ -48,45 +49,88 @@ func (q *Queries) DeleteComment(ctx context.Context, id int64) error {
 }
 
 const getComment = `-- name: GetComment :one
-SELECT id, content, author_id, post_id, created_at, updated_at FROM comments
-WHERE id = $1 LIMIT 1
+SELECT
+    c.id,
+    c.author_id,
+    c.content,
+    c.created_at,
+    c.updated_at,
+    lc.count_likes
+FROM comments c
+LEFT JOIN (
+    SELECT comment_id, COUNT(*) as count_likes
+    FROM comment_likes
+    GROUP BY comment_id
+) lc ON c.id = lc.comment_id
+WHERE c.id = $1 LIMIT 1
 `
 
-func (q *Queries) GetComment(ctx context.Context, id int64) (Comment, error) {
+type GetCommentRow struct {
+	ID         int64     `json:"id"`
+	AuthorID   int64     `json:"author_id" validate:"required"`
+	Content    string    `json:"content" validate:"required"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	CountLikes int64     `json:"count_likes"`
+}
+
+func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, error) {
 	row := q.db.QueryRowContext(ctx, getComment, id)
-	var i Comment
+	var i GetCommentRow
 	err := row.Scan(
 		&i.ID,
-		&i.Content,
 		&i.AuthorID,
-		&i.PostID,
+		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.CountLikes,
 	)
 	return i, err
 }
 
 const listPostComments = `-- name: ListPostComments :many
-SELECT id, content, author_id, post_id, created_at, updated_at FROM comments 
-WHERE post_id = $1
+SELECT
+    c.id,
+    c.author_id,
+    c.content,
+    c.created_at,
+    c.updated_at,
+    lc.count_likes
+FROM comments c
+LEFT JOIN (
+    SELECT comment_id, COUNT(*) as count_likes
+    FROM comment_likes
+    GROUP BY comment_id
+) lc ON c.id = lc.comment_id
+WHERE c.post_id = $1
+ORDER BY c.id
 `
 
-func (q *Queries) ListPostComments(ctx context.Context, postID int64) ([]Comment, error) {
+type ListPostCommentsRow struct {
+	ID         int64     `json:"id"`
+	AuthorID   int64     `json:"author_id" validate:"required"`
+	Content    string    `json:"content" validate:"required"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	CountLikes int64     `json:"count_likes"`
+}
+
+func (q *Queries) ListPostComments(ctx context.Context, postID int64) ([]ListPostCommentsRow, error) {
 	rows, err := q.db.QueryContext(ctx, listPostComments, postID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Comment{}
+	items := []ListPostCommentsRow{}
 	for rows.Next() {
-		var i Comment
+		var i ListPostCommentsRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.Content,
 			&i.AuthorID,
-			&i.PostID,
+			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.CountLikes,
 		); err != nil {
 			return nil, err
 		}
@@ -110,7 +154,7 @@ RETURNING id, content, author_id, post_id, created_at, updated_at
 
 type UpdateCommentParams struct {
 	ID      int64  `json:"id"`
-	Content string `json:"content"`
+	Content string `json:"content" validate:"required"`
 }
 
 func (q *Queries) UpdateComment(ctx context.Context, arg UpdateCommentParams) (Comment, error) {

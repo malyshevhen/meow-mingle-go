@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -18,10 +19,10 @@ INSERT INTO users (
 `
 
 type CreateUserParams struct {
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Password  string `json:"password"`
+	Email     string `json:"email" validate:"required,email"`
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name" validate:"required"`
+	Password  string `json:"password" validate:"required"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -54,19 +55,26 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, first_name, last_name, password, created_at FROM users
+SELECT id, email, first_name, last_name, created_at FROM users
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUser(ctx context.Context, id int64) (User, error) {
+type GetUserRow struct {
+	ID        int64     `json:"id"`
+	Email     string    `json:"email" validate:"required,email"`
+	FirstName string    `json:"first_name" validate:"required"`
+	LastName  string    `json:"last_name" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetUser(ctx context.Context, id int64) (GetUserRow, error) {
 	row := q.db.QueryRowContext(ctx, getUser, id)
-	var i User
+	var i GetUserRow
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
 		&i.FirstName,
 		&i.LastName,
-		&i.Password,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -85,25 +93,32 @@ func (q *Queries) IsUserExists(ctx context.Context, email string) (int64, error)
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, first_name, last_name, password, created_at FROM users
+SELECT id, email, first_name, last_name, created_at FROM users
 ORDER BY id
 `
 
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+type ListUsersRow struct {
+	ID        int64     `json:"id"`
+	Email     string    `json:"email" validate:"required,email"`
+	FirstName string    `json:"first_name" validate:"required"`
+	LastName  string    `json:"last_name" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	rows, err := q.db.QueryContext(ctx, listUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []User{}
+	items := []ListUsersRow{}
 	for rows.Next() {
-		var i User
+		var i ListUsersRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Email,
 			&i.FirstName,
 			&i.LastName,
-			&i.Password,
 			&i.CreatedAt,
 		); err != nil {
 			return nil, err
@@ -128,8 +143,8 @@ RETURNING id, email, first_name, last_name, password, created_at
 
 type UpdateUserParams struct {
 	ID        int64  `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name" validate:"required"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {

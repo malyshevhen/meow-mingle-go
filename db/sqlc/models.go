@@ -10,9 +10,9 @@ import (
 
 type Comment struct {
 	ID        int64     `json:"id"`
-	Content   string    `json:"content"`
-	AuthorID  int64     `json:"author_id"`
-	PostID    int64     `json:"post_id"`
+	Content   string    `json:"content" validate:"required"`
+	AuthorID  int64     `json:"author_id" validate:"required"`
+	PostID    int64     `json:"post_id" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -24,8 +24,8 @@ type CommentLike struct {
 
 type Post struct {
 	ID        int64     `json:"id"`
-	Content   string    `json:"content"`
-	AuthorID  int64     `json:"author_id"`
+	Content   string    `json:"content" validate:"required"`
+	AuthorID  int64     `json:"author_id" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -37,9 +37,9 @@ type PostLike struct {
 
 type User struct {
 	ID        int64     `json:"id"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Password  string    `json:"password"`
+	Email     string    `json:"email" validate:"required,email"`
+	FirstName string    `json:"first_name" validate:"required"`
+	LastName  string    `json:"last_name" validate:"required"`
+	Password  string    `json:"password" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 }

@@ -6,12 +6,37 @@ INSERT INTO comments (
 ) RETURNING *;
 
 -- name: GetComment :one
-SELECT * FROM comments
-WHERE id = $1 LIMIT 1;
+SELECT
+    c.id,
+    c.author_id,
+    c.content,
+    c.created_at,
+    c.updated_at,
+    lc.count_likes
+FROM comments c
+LEFT JOIN (
+    SELECT comment_id, COUNT(*) as count_likes
+    FROM comment_likes
+    GROUP BY comment_id
+) lc ON c.id = lc.comment_id
+WHERE c.id = $1 LIMIT 1;
 
 -- name: ListPostComments :many
-SELECT * FROM comments 
-WHERE post_id = $1;
+SELECT
+    c.id,
+    c.author_id,
+    c.content,
+    c.created_at,
+    c.updated_at,
+    lc.count_likes
+FROM comments c
+LEFT JOIN (
+    SELECT comment_id, COUNT(*) as count_likes
+    FROM comment_likes
+    GROUP BY comment_id
+) lc ON c.id = lc.comment_id
+WHERE c.post_id = $1
+ORDER BY c.id;
 
 -- name: UpdateComment :one
 UPDATE comments

@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	CountPostLikes(ctx context.Context, postID int64) (int64, error)
 	CreateComment(ctx context.Context, arg CreateCommentParams) (Comment, error)
 	CreateCommentLike(ctx context.Context, arg CreateCommentLikeParams) error
 	CreatePost(ctx context.Context, arg CreatePostParams) (Post, error)
@@ -19,15 +20,15 @@ type Querier interface {
 	DeletePost(ctx context.Context, id int64) error
 	DeletePostLike(ctx context.Context, arg DeletePostLikeParams) error
 	DeleteUser(ctx context.Context, id int64) error
-	GetComment(ctx context.Context, id int64) (Comment, error)
-	GetPost(ctx context.Context, id int64) (Post, error)
-	GetUser(ctx context.Context, id int64) (User, error)
+	GetComment(ctx context.Context, id int64) (GetCommentRow, error)
+	GetPost(ctx context.Context, id int64) (GetPostRow, error)
+	GetUser(ctx context.Context, id int64) (GetUserRow, error)
 	IsUserExists(ctx context.Context, email string) (int64, error)
 	ListCommentLikes(ctx context.Context, commentID int64) ([]CommentLike, error)
-	ListPostComments(ctx context.Context, postID int64) ([]Comment, error)
+	ListPostComments(ctx context.Context, postID int64) ([]ListPostCommentsRow, error)
 	ListPostLikes(ctx context.Context, postID int64) ([]PostLike, error)
-	ListUserPosts(ctx context.Context, authorID int64) ([]Post, error)
-	ListUsers(ctx context.Context) ([]User, error)
+	ListUserPosts(ctx context.Context, authorID int64) ([]ListUserPostsRow, error)
+	ListUsers(ctx context.Context) ([]ListUsersRow, error)
 	UpdateComment(ctx context.Context, arg UpdateCommentParams) (Comment, error)
 	UpdatePost(ctx context.Context, arg UpdatePostParams) (Post, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)

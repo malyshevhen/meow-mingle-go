@@ -8,6 +8,10 @@ INSERT INTO post_likes (
 SELECT * FROM post_likes
 WHERE post_id = $1;
 
+-- name: CountPostLikes :one
+SELECT COUNT(id) FROM post_likes
+WHERE post_id = $1;
+
 -- name: DeletePostLike :exec
 DELETE FROM post_likes
 WHERE post_id = $1 AND user_id = $2;

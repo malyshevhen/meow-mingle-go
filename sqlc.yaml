@@ -16,3 +16,21 @@ sql:
           go_type: "time.Time"
         - db_type: "uuid"
           go_type: "github.com/google/uuid.UUID"
+        - column: users.email
+          go_struct_tag: validate:"required,email"
+        - column: users.first_name
+          go_struct_tag: validate:"required"
+        - column: users.last_name
+          go_struct_tag: validate:"required"
+        - column: users.password
+          go_struct_tag: validate:"required"
+        - column: posts.author_id
+          go_struct_tag: validate:"required"
+        - column: posts.content
+          go_struct_tag: validate:"required"
+        - column: comments.content
+          go_struct_tag: validate:"required"
+        - column: comments.author_id
+          go_struct_tag: validate:"required"
+        - column: comments.post_id
+          go_struct_tag: validate:"required"

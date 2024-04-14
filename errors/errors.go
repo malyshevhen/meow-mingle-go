@@ -86,3 +86,16 @@ func NewDatabaseError(err error) *databaseError {
 		},
 	}
 }
+
+type internalServerError struct {
+	BasicError
+}
+
+func NewInternalServerError(err error) *internalServerError {
+	return &internalServerError{
+		BasicError: BasicError{
+			message: err.Error(),
+			code:    http.StatusInternalServerError,
+		},
+	}
+}

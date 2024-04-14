@@ -6,13 +6,38 @@ INSERT INTO posts (
 ) RETURNING *;
 
 -- name: GetPost :one
-SELECT * FROM posts 
-WHERE id = $1 LIMIT 1;
+SELECT
+    p.id,
+    p.author_id,
+    p.content,
+    p.created_at,
+    p.updated_at,
+    lc.count_likes
+FROM posts p
+LEFT JOIN (
+    SELECT post_id, COUNT(*) as count_likes
+    FROM post_likes
+    GROUP BY post_id
+) lc ON p.id = lc.post_id
+WHERE p.id = $1
+LIMIT 1;
 
 -- name: ListUserPosts :many
-SELECT * FROM posts
-WHERE author_id = $1
-ORDER BY id;
+SELECT
+    p.id,
+    p.author_id,
+    p.content,
+    p.created_at,
+    p.updated_at,
+    lc.count_likes
+FROM posts p
+LEFT JOIN (
+    SELECT post_id, COUNT(*) as count_likes
+    FROM post_likes
+    GROUP BY post_id
+) lc ON p.id = lc.post_id
+WHERE p.author_id = $1
+ORDER BY p.id;
 
 -- name: UpdatePost :one
 UPDATE posts

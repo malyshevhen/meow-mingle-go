@@ -8,7 +8,6 @@ import (
 
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 	"github.com/malyshEvhen/meow_mingle/errors"
-	"github.com/malyshEvhen/meow_mingle/types"
 )
 
 type Middleware func(h Handler) Handler
@@ -55,6 +54,18 @@ func LoggerMiddleware(h Handler) Handler {
 	}
 }
 
+type ErrorResponse struct {
+	Timestamp time.Time `json:"timestamp"`
+	Error     string    `json:"message"`
+}
+
+func NewErrorResponse(message string) *ErrorResponse {
+	return &ErrorResponse{
+		Error:     message,
+		Timestamp: time.Now(),
+	}
+}
+
 func ErrorHandler(h Handler) Handler {
 	log.Printf("%-15s Apply error handler 🕵️", "Error Handler")
 
@@ -63,13 +74,13 @@ func ErrorHandler(h Handler) Handler {
 			switch e := err.(type) {
 			case errors.Error:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				WriteJson(w, e.Code(), types.NewErrorResponse(e.Error()))
+				WriteJson(w, e.Code(), NewErrorResponse(e.Error()))
 			default:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
 				WriteJson(
 					w,
 					http.StatusInternalServerError,
-					types.NewErrorResponse("Internal error"),
+					NewErrorResponse("Internal error"),
 				)
 			}
 		}
@@ -83,7 +94,7 @@ func WithJWTAuth(store *db.Store, handlerFunc Handler) Middleware {
 
 	return func(h Handler) Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
-			id, err := GetAuthUserId(r)
+			id, err := getAuthUserId(r)
 			if err != nil {
 				return errors.NewUnauthorizedError()
 			}
