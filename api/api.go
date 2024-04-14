@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -7,19 +7,19 @@ import (
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 )
 
-type ApiServer struct {
+type Server struct {
 	store *db.Store
 	addr  string
 }
 
-func NewApiServer(addr string, store *db.Store) *ApiServer {
-	return &ApiServer{
+func NewServer(addr string, store *db.Store) *Server {
+	return &Server{
 		addr:  addr,
 		store: store,
 	}
 }
 
-func (s *ApiServer) Serve() {
+func (s *Server) Serve() error {
 	submuxer := http.NewServeMux()
 
 	router := NewRouter(s.store)
@@ -30,5 +30,5 @@ func (s *ApiServer) Serve() {
 
 	log.Printf("Server starting at port: %s\n", s.addr)
 
-	log.Fatal(http.ListenAndServe(s.addr, muxer))
+	return http.ListenAndServe(s.addr, muxer)
 }

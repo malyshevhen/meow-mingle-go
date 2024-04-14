@@ -1,6 +1,12 @@
-package main
+package types
 
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+)
 
 type ErrorResponse struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -16,11 +22,50 @@ func NewErrorResponse(message string) *ErrorResponse {
 
 type User struct {
 	CreatedAt time.Time `json:"createdAt"`
-	Email     string    `json:"email"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
-	Password  string    `json:"password"`
+	Email     string    `json:"email" validate:"required,email"`
+	FirstName string    `json:"firstName" validate:"required"`
+	LastName  string    `json:"lastName" validate:"required"`
+	Password  string    `json:"password" validate:"required"`
 	ID        int64     `json:"id"`
+}
+
+func UserFromParams(up db.CreateUserParams) User {
+	return User{
+		Email:     up.Email,
+		FirstName: up.FirstName,
+		LastName:  up.LastName,
+		Password:  up.Password,
+	}
+}
+
+func (u *User) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		CreatedAt time.Time `json:"createdAt"`
+		Email     string    `json:"email"`
+		FirstName string    `json:"firstName"`
+		LastName  string    `json:"lastName"`
+		Password  string    `json:"password"`
+		ID        int64     `json:"id"`
+	}{
+		CreatedAt: u.CreatedAt,
+		Email:     u.Email,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Password:  "******",
+		ID:        u.ID,
+	})
+}
+
+func (u *User) String() string {
+	return fmt.Sprintf(
+		"User { %d, %s, %s, %s, %s, %s }",
+		u.ID,
+		u.Email,
+		u.FirstName,
+		u.LastName,
+		"******",
+		u.CreatedAt,
+	)
 }
 
 type CommentRequest struct {
@@ -38,7 +83,7 @@ type CommentResponse struct {
 }
 
 type PostRequest struct {
-	Content string `json:"content"`
+	Content string `json:"content" validate:"required"`
 }
 
 type PostResponse struct {
@@ -64,10 +109,10 @@ type Page[T any] struct {
 
 type PostLike struct {
 	UserId int64 `json:"userId"`
-	PostId int64 `json:"postId"`
+	PostId int64 `json:"postId" validate:"required"`
 }
 
 type CommentLike struct {
 	UserId    int64 `json:"userId"`
-	CommentId int64 `json:"commentId"`
+	CommentId int64 `json:"commentId" validate:"required"`
 }

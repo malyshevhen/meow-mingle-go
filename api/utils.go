@@ -1,9 +1,10 @@
-package main
+package api
 
 import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/malyshEvhen/meow_mingle/errors"
 )
 
@@ -25,4 +26,12 @@ func Unmarshal[T any](v []byte) (value T, err error) {
 		return value, errors.NewValidationError("error parse JSON payload")
 	}
 	return
+}
+
+func Validate(s interface{}) error {
+	validate := validator.New(validator.WithRequiredStructEnabled())
+	if err := validate.Struct(s); err != nil {
+		return errors.NewValidationError(err.Error())
+	}
+	return nil
 }

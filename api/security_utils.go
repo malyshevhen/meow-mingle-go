@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"log"
@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/malyshEvhen/meow_mingle/config"
 	"github.com/malyshEvhen/meow_mingle/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -79,11 +80,9 @@ func CreateJwt(secret []byte, id int64) (string, error) {
 	return signedToken, nil
 }
 
-func validateJWT(t string) (*jwt.Token, error) {
+func validateJWT(t string) (token *jwt.Token, err error) {
 	var (
-		token  *jwt.Token
-		secret = Envs.JWTSecret
-		err    error
+		secret = config.Envs.JWTSecret
 		fail   = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
 	)
 
@@ -105,6 +104,5 @@ func validateJWT(t string) (*jwt.Token, error) {
 	} else {
 		log.Printf("%-15s ==> ✅ JWT token validated successfully!", "AuthMW")
 	}
-
-	return token, err
+	return
 }

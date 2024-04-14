@@ -22,46 +22,46 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
+	fail := func(err error) error { return errors.NewDatabaseError(err) }
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
+		return fail(err)
+	}
+
+	query := New(tx)
+
+	if err := fn(query); err != nil {
+		if rErr := tx.Rollback(); rErr != nil {
+			return fmt.Errorf("%v %v", err, rErr)
+		}
 		return err
 	}
 
-	q := New(tx)
-
-	err = fn(q)
-	if err != nil {
-		_ = tx.Rollback()
-		return err
+	if err := tx.Commit(); err != nil {
+		return fail(err)
 	}
 
-	return tx.Commit()
+	return nil
 }
 
-func (s *Store) CreateUserTx(ctx context.Context, userParams CreateUserParams) (User, error) {
-	var (
-		user User = User{}
-		err  error
-		fail = func(message string) error { return errors.NewValidationError(message) }
-	)
-
+func (s *Store) CreateUserTx(ctx context.Context, params CreateUserParams) (user User, err error) {
 	log.Printf("%-15s ==> 📝 Creating user in database...\n", "UserService")
 
 	err = s.execTx(ctx, func(q *Queries) error {
-		i, err := s.IsUserExists(ctx, userParams.Email)
+		count, err := s.IsUserExists(ctx, params.Email)
 		if err != nil {
-			return err
-		}
-		if i > 0 {
-			return fail(fmt.Sprintf("user with email: %s already exists", userParams.Email))
+			return errors.NewDatabaseError(err)
+		} else if count > 0 {
+			message := fmt.Sprintf("user with email: %s already exists", params.Email)
+			return errors.NewValidationError(message)
 		}
 
-		if user, err = s.CreateUser(ctx, userParams); err != nil {
-			return fail(fmt.Sprintf("error create user with email: %s", userParams.Email))
+		if user, err = s.CreateUser(ctx, params); err != nil {
+			return errors.NewDatabaseError(err)
 		}
 
 		return nil
 	})
-
-	return user, err
+	return
 }

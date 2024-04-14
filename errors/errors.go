@@ -4,13 +4,6 @@ import (
 	"net/http"
 )
 
-var (
-	ErrEmailRequired     = NewValidationError("email is required")
-	ErrFirstNameRequired = NewValidationError("first name is required")
-	ErrLastNameRequired  = NewValidationError("last name is required")
-	ErrPasswordRequired  = NewValidationError("password is required")
-)
-
 type Error interface {
 	Error() string
 	Code() int
@@ -77,6 +70,19 @@ func NewValidationError(message string) *validationError {
 		BasicError: BasicError{
 			message: message,
 			code:    http.StatusBadRequest,
+		},
+	}
+}
+
+type databaseError struct {
+	BasicError
+}
+
+func NewDatabaseError(err error) *databaseError {
+	return &databaseError{
+		BasicError: BasicError{
+			message: err.Error(),
+			code:    http.StatusInternalServerError,
 		},
 	}
 }

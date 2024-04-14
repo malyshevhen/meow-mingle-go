@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"context"
@@ -8,8 +8,10 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/malyshEvhen/meow_mingle/config"
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/types"
 )
 
 func (rr *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) error {
@@ -22,29 +24,30 @@ func (rr *Router) handleCreateUser(w http.ResponseWriter, r *http.Request) error
 	}
 	defer r.Body.Close()
 
-	user, err := Unmarshal[db.CreateUserParams](body)
+	createUserParams, err := Unmarshal[db.CreateUserParams](body)
 	if err != nil {
 		log.Printf("%-15s ==> 😕 Error unmarshal JSON: %v\n", "UserService", err)
 		return err
 	}
 
-	log.Printf("%-15s ==> 👀 Validating user payload: %v\n", "UserService", user)
-	if err := validateUserPayload(user); err != nil {
-		log.Printf("%-15s ==> ❌ Validation failed: %v\n", "UserService", err)
+	user := types.UserFromParams(createUserParams)
+
+	log.Printf("%-15s ==> 👀 Validating user payload: %s\n", "UserService", user.String())
+	if err := Validate(user); err != nil {
 		return err
 	}
 
 	log.Printf("%-15s ==> 🔑 Hashing password...", "UserService")
-	hashedPwd, err := HashPwd(user.Password)
+	hashedPwd, err := HashPwd(createUserParams.Password)
 	if err != nil {
 		log.Printf("%-15s ==> 🔒 Error hashing password: %v\n", "UserService", err)
 		return err
 	}
 
-	user.Password = hashedPwd
+	createUserParams.Password = hashedPwd
 
 	log.Printf("%-15s ==> 📝 Creating user in database...\n", "UserService")
-	u, err := rr.store.CreateUserTx(ctx, user)
+	u, err := rr.store.CreateUserTx(ctx, createUserParams)
 	if err != nil {
 		log.Printf("%-15s ==> 🛑 Error creating user: %v\n", "UserService", err)
 		return err
@@ -96,7 +99,7 @@ func (rr *Router) handleGetUser(w http.ResponseWriter, r *http.Request) error {
 
 func createAndSetAuthCookie(id int64, w http.ResponseWriter) (string, error) {
 	log.Printf("%-15s ==> 🔑 Generating JWT token..\n", "UserService.")
-	secret := Envs.JWTSecret
+	secret := config.Envs.JWTSecret
 	token, err := CreateJwt([]byte(secret), id)
 	if err != nil {
 		log.Printf("%-15s ==> ❌ Error generating JWT token: %s\n", "UserService", err)
@@ -111,35 +114,6 @@ func createAndSetAuthCookie(id int64, w http.ResponseWriter) (string, error) {
 
 	log.Printf("%-15s ==> ✅ Auth cookie set successfully!\n", "UserService")
 	return token, nil
-}
-
-func validateUserPayload(user db.CreateUserParams) error {
-	log.Printf("%-15s ==> 📧 Checking if email is provided..", "UserService.")
-	if user.Email == "" {
-		log.Printf("%-15s ==> ❌ Email is required but not provided", "UserService")
-		return errors.ErrEmailRequired
-	}
-
-	log.Printf("%-15s ==> 📛 Checking if first name is provided..", "UserService.")
-	if user.FirstName == "" {
-		log.Printf("%-15s ==> ❌ First name is required but not provided", "UserService")
-		return errors.ErrFirstNameRequired
-	}
-
-	log.Printf("%-15s ==> 📛 Checking if last name is provided..", "UserService.")
-	if user.LastName == "" {
-		log.Printf("%-15s ==> ❌ Last name is required but not provided", "UserService")
-		return errors.ErrLastNameRequired
-	}
-
-	log.Printf("%-15s ==> 🔑 Checking if password is provided..", "UserService.")
-	if user.Password == "" {
-		log.Printf("%-15s ==> ❌ Password is required but not provided", "UserService")
-		return errors.ErrPasswordRequired
-	}
-
-	log.Printf("%-15s ==> ✅ User payload validation passed!", "UserService")
-	return nil
 }
 
 func (rr *Router) handleCreatePost(w http.ResponseWriter, r *http.Request) error {
@@ -165,7 +139,7 @@ func (rr *Router) handleCreatePost(w http.ResponseWriter, r *http.Request) error
 	postResponse, err := rr.store.CreatePost(ctx, *createPostParams)
 	if err != nil {
 		log.Printf("%-15s ==> 🤯 Error creating post in store %v\n", "PostController", err)
-		WriteJson(w, http.StatusInternalServerError, NewErrorResponse("Error creating post"))
+		WriteJson(w, http.StatusInternalServerError, types.NewErrorResponse("Error creating post"))
 		return err
 	}
 
@@ -189,14 +163,14 @@ func (rr *Router) handleGetUserPosts(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	postResponses := []PostResponse{}
+	postResponses := []types.PostResponse{}
 	for _, p := range posts {
 		likes, err := rr.store.ListPostLikes(ctx, p.ID)
 		if err != nil {
 			return err
 		}
 
-		postResponses = append(postResponses, PostResponse{
+		postResponses = append(postResponses, types.PostResponse{
 			Id:       p.ID,
 			Content:  p.Content,
 			AuthorId: p.AuthorID,
@@ -227,7 +201,7 @@ func (rr *Router) handleGetPostsById(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	postResponse := &PostResponse{
+	postResponse := &types.PostResponse{
 		Id:       post.ID,
 		Content:  post.Content,
 		AuthorId: post.AuthorID,
@@ -290,14 +264,14 @@ func (rr *Router) handleDeletePostsById(w http.ResponseWriter, r *http.Request) 
 	return WriteJson(w, http.StatusNoContent, nil)
 }
 
-func readPostReqType(r *http.Request) (*PostRequest, error) {
+func readPostReqType(r *http.Request) (*types.PostRequest, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, errors.NewValidationError("parameter ID is not valid")
 	}
 	defer r.Body.Close()
 
-	p, err := Unmarshal[PostRequest](body)
+	p, err := Unmarshal[types.PostRequest](body)
 	if err != nil {
 		return nil, err
 	}
@@ -369,14 +343,14 @@ func (rr *Router) handleGetComments(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	commentResponses := []CommentResponse{}
+	commentResponses := []types.CommentResponse{}
 	for _, comment := range c {
 		likes, err := rr.store.ListCommentLikes(ctx, comment.ID)
 		if err != nil {
 			return err
 		}
 
-		commentResponses = append(commentResponses, CommentResponse{
+		commentResponses = append(commentResponses, types.CommentResponse{
 			Id:       comment.ID,
 			Content:  comment.Content,
 			AuthorId: comment.AuthorID,
@@ -446,14 +420,14 @@ func (rr *Router) handleDeleteComments(w http.ResponseWriter, r *http.Request) e
 	return WriteJson(w, http.StatusNoContent, nil)
 }
 
-func readCommentReqType(r *http.Request) (*CommentRequest, error) {
+func readCommentReqType(r *http.Request) (*types.CommentRequest, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}
 	defer r.Body.Close()
 
-	c, err := Unmarshal[CommentRequest](body)
+	c, err := Unmarshal[types.CommentRequest](body)
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"context"
@@ -8,11 +8,12 @@ import (
 
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/types"
 )
 
-type Middleware func(h ApiHandler) ApiHandler
+type Middleware func(h Handler) Handler
 
-func MiddlewareChain(h ApiHandler, m ...Middleware) http.HandlerFunc {
+func MiddlewareChain(h Handler, m ...Middleware) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(m) < 1 {
 			h(w, r)
@@ -38,7 +39,7 @@ func (ww *wrappedWriter) WriteHeader(code int) {
 	ww.ResponseWriter.WriteHeader(code)
 }
 
-func LoggerMiddleware(h ApiHandler) ApiHandler {
+func LoggerMiddleware(h Handler) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		start := time.Now()
 
@@ -48,13 +49,13 @@ func LoggerMiddleware(h ApiHandler) ApiHandler {
 		}
 
 		err := h(ww, r)
-		log.Println(ww.status, r.Method, r.URL.Path, time.Since(start))
+		log.Printf("%-15s ==> %d %s %s %s", "Request", ww.status, r.Method, r.RequestURI, time.Since(start))
 
 		return err
 	}
 }
 
-func ErrorHandler(h ApiHandler) ApiHandler {
+func ErrorHandler(h Handler) Handler {
 	log.Printf("%-15s Apply error handler 🕵️", "Error Handler")
 
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -62,13 +63,13 @@ func ErrorHandler(h ApiHandler) ApiHandler {
 			switch e := err.(type) {
 			case errors.Error:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				WriteJson(w, e.Code(), NewErrorResponse(e.Error()))
+				WriteJson(w, e.Code(), types.NewErrorResponse(e.Error()))
 			default:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
 				WriteJson(
 					w,
 					http.StatusInternalServerError,
-					NewErrorResponse("Internal error"),
+					types.NewErrorResponse("Internal error"),
 				)
 			}
 		}
@@ -77,10 +78,10 @@ func ErrorHandler(h ApiHandler) ApiHandler {
 	}
 }
 
-func WithJWTAuth(store *db.Store, handlerFunc ApiHandler) Middleware {
+func WithJWTAuth(store *db.Store, handlerFunc Handler) Middleware {
 	ctx := context.Background()
 
-	return func(h ApiHandler) ApiHandler {
+	return func(h Handler) Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
 			id, err := GetAuthUserId(r)
 			if err != nil {
