@@ -18,8 +18,8 @@ type Comment struct {
 }
 
 type CommentLike struct {
-	UserID    int64 `json:"user_id"`
-	CommentID int64 `json:"comment_id"`
+	UserID    int64 `json:"user_id" validate:"required"`
+	CommentID int64 `json:"comment_id" validate:"required"`
 }
 
 type Post struct {
@@ -31,8 +31,8 @@ type Post struct {
 }
 
 type PostLike struct {
-	UserID int64 `json:"user_id"`
-	PostID int64 `json:"post_id"`
+	UserID int64 `json:"user_id" validate:"required"`
+	PostID int64 `json:"post_id" validate:"required"`
 }
 
 type User struct {

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -37,12 +38,13 @@ func Validate(s interface{}) error {
 	return nil
 }
 
-func parseIdParam(r *http.Request) (int64, error) {
+func ParseIdParam(r *http.Request) (int64, error) {
 	id := r.PathValue("id")
 
 	numId, err := strconv.Atoi(id)
 	if err != nil {
-		return 0, nil
+		log.Printf("%-15s ==> Error parsing Id parameter %v\n", "Post Handler", err)
+		return 0, errors.NewValidationError("Error parsing Id parameter")
 	}
 
 	return int64(numId), nil

@@ -87,6 +87,19 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 	return i, err
 }
 
+const getPostsAuthorID = `-- name: GetPostsAuthorID :one
+SELECT p.author_id
+FROM posts p
+WHERE p.id = $1 LIMIT 1
+`
+
+func (q *Queries) GetPostsAuthorID(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getPostsAuthorID, id)
+	var author_id int64
+	err := row.Scan(&author_id)
+	return author_id, err
+}
+
 const listUserPosts = `-- name: ListUserPosts :many
 SELECT
     p.id,

@@ -3,6 +3,11 @@ INSERT INTO comment_likes (
     user_id, comment_id
 ) VALUES ($1, $2);
 
+-- name: GetCommentLike :one
+SELECT * FROM comment_likes
+WHERE comment_id = $1 AND user_id = $2
+LIMIT 1;
+
 -- name: ListCommentLikes :many
 SELECT * FROM comment_likes
 WHERE comment_id = $1;

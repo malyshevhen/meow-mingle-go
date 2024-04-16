@@ -16,8 +16,8 @@ INSERT INTO comment_likes (
 `
 
 type CreateCommentLikeParams struct {
-	UserID    int64 `json:"user_id"`
-	CommentID int64 `json:"comment_id"`
+	UserID    int64 `json:"user_id" validate:"required"`
+	CommentID int64 `json:"comment_id" validate:"required"`
 }
 
 func (q *Queries) CreateCommentLike(ctx context.Context, arg CreateCommentLikeParams) error {
@@ -31,13 +31,31 @@ WHERE comment_id = $1 AND user_id = $2
 `
 
 type DeleteCommentLikeParams struct {
-	CommentID int64 `json:"comment_id"`
-	UserID    int64 `json:"user_id"`
+	CommentID int64 `json:"comment_id" validate:"required"`
+	UserID    int64 `json:"user_id" validate:"required"`
 }
 
 func (q *Queries) DeleteCommentLike(ctx context.Context, arg DeleteCommentLikeParams) error {
 	_, err := q.db.ExecContext(ctx, deleteCommentLike, arg.CommentID, arg.UserID)
 	return err
+}
+
+const getCommentLike = `-- name: GetCommentLike :one
+SELECT user_id, comment_id FROM comment_likes
+WHERE comment_id = $1 AND user_id = $2
+LIMIT 1
+`
+
+type GetCommentLikeParams struct {
+	CommentID int64 `json:"comment_id" validate:"required"`
+	UserID    int64 `json:"user_id" validate:"required"`
+}
+
+func (q *Queries) GetCommentLike(ctx context.Context, arg GetCommentLikeParams) (CommentLike, error) {
+	row := q.db.QueryRowContext(ctx, getCommentLike, arg.CommentID, arg.UserID)
+	var i CommentLike
+	err := row.Scan(&i.UserID, &i.CommentID)
+	return i, err
 }
 
 const listCommentLikes = `-- name: ListCommentLikes :many

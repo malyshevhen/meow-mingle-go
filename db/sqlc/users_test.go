@@ -23,7 +23,7 @@ func TestCreateUser(t *testing.T) {
 		Email:     "jaja@mail.com",
 		FirstName: "Ja Ja",
 		LastName:  "Binks",
-		Password:  "jajastrong",
+		Password:  "password",
 	}
 
 	t.Run("test create user with valid params", func(t *testing.T) {
@@ -46,14 +46,14 @@ func TestGetUser(t *testing.T) {
 		Email:     "jaja@mail.com",
 		FirstName: "Ja Ja",
 		LastName:  "Binks",
-		Password:  "jajastrong",
+		Password:  "password",
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), args)
 	require.NoError(t, err)
 
 	t.Run("test get existing user", func(t *testing.T) {
-		user, err = testQueries.GetUser(context.Background(), user.ID)
+		user, err := testQueries.GetUser(context.Background(), user.ID)
 
 		require.NoError(t, err)
 		require.NotEmpty(t, user)
@@ -72,7 +72,7 @@ func TestUpdateUser(t *testing.T) {
 		Email:     "jaja@mail.com",
 		FirstName: "Ja Ja",
 		LastName:  "Binks",
-		Password:  "jajastrong",
+		Password:  "password",
 	}
 
 	user1, err := testQueries.CreateUser(context.Background(), args1)
@@ -100,7 +100,7 @@ func TestDeleteUser(t *testing.T) {
 		Email:     "jaja@mail.com",
 		FirstName: "Ja Ja",
 		LastName:  "Binks",
-		Password:  "jajastrong",
+		Password:  "password",
 	}
 
 	user, err := testQueries.CreateUser(context.Background(), args)
@@ -109,7 +109,7 @@ func TestDeleteUser(t *testing.T) {
 	t.Run("test delete existing user", func(t *testing.T) {
 		err = testQueries.DeleteUser(context.Background(), user.ID)
 		require.NoError(t, err)
-		user, err = testQueries.GetUser(context.Background(), user.ID)
+		user, err := testQueries.GetUser(context.Background(), user.ID)
 		require.Error(t, err)
 		require.Empty(t, user)
 		require.Equal(t, sql.ErrNoRows, err)
@@ -124,7 +124,7 @@ func TestListUsers(t *testing.T) {
 		Email:     "jaja@mail.com",
 		FirstName: "Ja Ja",
 		LastName:  "Binks",
-		Password:  "jajastrong",
+		Password:  "password",
 	}
 
 	user1, err := testQueries.CreateUser(context.Background(), args1)

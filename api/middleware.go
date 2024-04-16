@@ -67,7 +67,7 @@ func NewErrorResponse(message string) *ErrorResponse {
 }
 
 func ErrorHandler(h Handler) Handler {
-	log.Printf("%-15s Apply error handler 🕵️", "Error Handler")
+	log.Printf("%-15s Apply error handler", "Error Handler")
 
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if err := h(w, r); err != nil {
@@ -100,11 +100,11 @@ func WithJWTAuth(store *db.Store, handlerFunc Handler) Middleware {
 			}
 
 			if _, err = store.GetUser(ctx, int64(id)); err != nil {
-				log.Printf("%-15s ==> Authentication failed: User Id not found 🆘", "AuthMW")
+				log.Printf("%-15s ==> Authentication failed: User Id not found", "AuthMW")
 				return errors.NewUnauthorizedError()
 			}
 
-			log.Printf("%-15s ==> User %d authenticated successfully ✅", "AuthMW", id)
+			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", id)
 			return handlerFunc(w, r)
 		}
 	}

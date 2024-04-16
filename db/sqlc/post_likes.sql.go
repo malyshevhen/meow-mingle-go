@@ -28,8 +28,8 @@ INSERT INTO post_likes (
 `
 
 type CreatePostLikeParams struct {
-	UserID int64 `json:"user_id"`
-	PostID int64 `json:"post_id"`
+	UserID int64 `json:"user_id" validate:"required"`
+	PostID int64 `json:"post_id" validate:"required"`
 }
 
 func (q *Queries) CreatePostLike(ctx context.Context, arg CreatePostLikeParams) error {
@@ -43,13 +43,31 @@ WHERE post_id = $1 AND user_id = $2
 `
 
 type DeletePostLikeParams struct {
-	PostID int64 `json:"post_id"`
-	UserID int64 `json:"user_id"`
+	PostID int64 `json:"post_id" validate:"required"`
+	UserID int64 `json:"user_id" validate:"required"`
 }
 
 func (q *Queries) DeletePostLike(ctx context.Context, arg DeletePostLikeParams) error {
 	_, err := q.db.ExecContext(ctx, deletePostLike, arg.PostID, arg.UserID)
 	return err
+}
+
+const getPostLike = `-- name: GetPostLike :one
+SELECT user_id, post_id FROM post_likes
+WHERE post_id = $1 AND user_id = $2
+LIMIT 1
+`
+
+type GetPostLikeParams struct {
+	PostID int64 `json:"post_id" validate:"required"`
+	UserID int64 `json:"user_id" validate:"required"`
+}
+
+func (q *Queries) GetPostLike(ctx context.Context, arg GetPostLikeParams) (PostLike, error) {
+	row := q.db.QueryRowContext(ctx, getPostLike, arg.PostID, arg.UserID)
+	var i PostLike
+	err := row.Scan(&i.UserID, &i.PostID)
+	return i, err
 }
 
 const listPostLikes = `-- name: ListPostLikes :many

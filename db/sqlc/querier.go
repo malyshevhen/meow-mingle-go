@@ -21,7 +21,11 @@ type Querier interface {
 	DeletePostLike(ctx context.Context, arg DeletePostLikeParams) error
 	DeleteUser(ctx context.Context, id int64) error
 	GetComment(ctx context.Context, id int64) (GetCommentRow, error)
+	GetCommentLike(ctx context.Context, arg GetCommentLikeParams) (CommentLike, error)
+	GetCommentsAuthorID(ctx context.Context, id int64) (int64, error)
 	GetPost(ctx context.Context, id int64) (GetPostRow, error)
+	GetPostLike(ctx context.Context, arg GetPostLikeParams) (PostLike, error)
+	GetPostsAuthorID(ctx context.Context, id int64) (int64, error)
 	GetUser(ctx context.Context, id int64) (GetUserRow, error)
 	IsUserExists(ctx context.Context, email string) (int64, error)
 	ListCommentLikes(ctx context.Context, commentID int64) ([]CommentLike, error)

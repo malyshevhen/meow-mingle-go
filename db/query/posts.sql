@@ -22,6 +22,11 @@ LEFT JOIN (
 WHERE p.id = $1
 LIMIT 1;
 
+-- name: GetPostsAuthorID :one
+SELECT p.author_id
+FROM posts p
+WHERE p.id = $1 LIMIT 1;
+
 -- name: ListUserPosts :many
 SELECT
     p.id,

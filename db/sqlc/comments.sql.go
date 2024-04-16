@@ -88,6 +88,19 @@ func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, erro
 	return i, err
 }
 
+const getCommentsAuthorID = `-- name: GetCommentsAuthorID :one
+SELECT c.author_id
+FROM comments c
+WHERE c.id = $1 LIMIT 1
+`
+
+func (q *Queries) GetCommentsAuthorID(ctx context.Context, id int64) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getCommentsAuthorID, id)
+	var author_id int64
+	err := row.Scan(&author_id)
+	return author_id, err
+}
+
 const listPostComments = `-- name: ListPostComments :many
 SELECT
     c.id,

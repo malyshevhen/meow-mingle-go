@@ -38,6 +38,11 @@ LEFT JOIN (
 WHERE c.post_id = $1
 ORDER BY c.id;
 
+-- name: GetCommentsAuthorID :one
+SELECT c.author_id
+FROM comments c
+WHERE c.id = $1 LIMIT 1;
+
 -- name: UpdateComment :one
 UPDATE comments
 SET content = $2
