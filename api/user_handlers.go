@@ -103,3 +103,83 @@ func (rr *Router) handleGetUser(w http.ResponseWriter, r *http.Request) error {
 
 	return WriteJson(w, http.StatusOK, savedUser)
 }
+
+func (rr *Router) handleSubscribe(w http.ResponseWriter, r *http.Request) error {
+	ctx := context.Background()
+
+	id, err := ParseIdParam(r)
+	if err != nil {
+		return errors.NewValidationError("ID parameter is invalid")
+	}
+
+	authUserID, err := getAuthUserId(r)
+	if err != nil {
+		log.Printf("%-15s ==> No authenticated user found", "User Handler")
+		return err
+	}
+
+	if err := rr.store.SubscribeTx(ctx, db.CreateSubscriptionParams{
+		UserID:         authUserID,
+		SubscriptionID: id,
+	}); err != nil {
+		return err
+	}
+
+	return WriteJson(w, http.StatusNoContent, nil)
+}
+
+func (rr *Router) handleUnsubscribe(w http.ResponseWriter, r *http.Request) error {
+	ctx := context.Background()
+
+	id, err := ParseIdParam(r)
+	if err != nil {
+		return errors.NewValidationError("ID parameter is invalid")
+	}
+
+	authUserID, err := getAuthUserId(r)
+	if err != nil {
+		log.Printf("%-15s ==> No authenticated user found", "User Handler")
+		return err
+	}
+
+	if err := rr.store.UnsubscribeTx(ctx, db.DeleteSubscriptionParams{
+		UserID:         authUserID,
+		SubscriptionID: id,
+	}); err != nil {
+		return err
+	}
+
+	return WriteJson(w, http.StatusNoContent, nil)
+}
+
+func (rr *Router) handleOwnersFeed(w http.ResponseWriter, r *http.Request) error {
+	ctx := context.Background()
+
+	authUserID, err := getAuthUserId(r)
+	if err != nil {
+		log.Printf("%-15s ==> No authenticated user found", "User Handler")
+		return err
+	}
+
+	feed, err := rr.store.GetFeed(ctx, authUserID)
+	if err != nil {
+		return err
+	}
+
+	return WriteJson(w, http.StatusOK, feed)
+}
+
+func (rr *Router) handleUsersFeed(w http.ResponseWriter, r *http.Request) error {
+	ctx := context.Background()
+
+	id, err := ParseIdParam(r)
+	if err != nil {
+		return errors.NewValidationError("ID parameter is invalid")
+	}
+
+	feed, err := rr.store.GetFeed(ctx, id)
+	if err != nil {
+		return err
+	}
+	return WriteJson(w, http.StatusOK, feed)
+}

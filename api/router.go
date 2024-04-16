@@ -39,6 +39,10 @@ func (rr *Router) RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /users/{id}", authenticated(rr.handleGetUser))
 	mux.HandleFunc("POST /users/register", noAuth(rr.handleCreateUser))
 	mux.HandleFunc("GET /users/{id}/posts", noAuth(rr.handleGetUserPosts))
+	mux.HandleFunc("POST /users/{id}/subscriptions", authenticated(rr.handleSubscribe))
+	mux.HandleFunc("DELETE /users/{id}/subscriptions", authenticated(rr.handleUnsubscribe))
+	mux.HandleFunc("GET /users/feed", authenticated(rr.handleOwnersFeed))
+	mux.HandleFunc("GET /users/{id}/feed", noAuth(rr.handleUsersFeed))
 
 	mux.HandleFunc("POST /posts", authenticated(rr.handleCreatePost))
 	mux.HandleFunc("POST /posts/{id}/likes", authenticated(rr.handleLikePost))

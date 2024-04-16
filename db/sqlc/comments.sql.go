@@ -55,7 +55,7 @@ SELECT
     c.content,
     c.created_at,
     c.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM comments c
 LEFT JOIN (
     SELECT comment_id, COUNT(*) as count_likes
@@ -66,12 +66,12 @@ WHERE c.id = $1 LIMIT 1
 `
 
 type GetCommentRow struct {
-	ID         int64     `json:"id"`
-	AuthorID   int64     `json:"author_id" validate:"required"`
-	Content    string    `json:"content" validate:"required"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	CountLikes int64     `json:"count_likes"`
+	ID        int64     `json:"id"`
+	AuthorID  int64     `json:"author_id" validate:"required"`
+	Content   string    `json:"content" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Likes     int64     `json:"likes"`
 }
 
 func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, error) {
@@ -83,7 +83,7 @@ func (q *Queries) GetComment(ctx context.Context, id int64) (GetCommentRow, erro
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.CountLikes,
+		&i.Likes,
 	)
 	return i, err
 }
@@ -108,7 +108,7 @@ SELECT
     c.content,
     c.created_at,
     c.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM comments c
 LEFT JOIN (
     SELECT comment_id, COUNT(*) as count_likes
@@ -120,12 +120,12 @@ ORDER BY c.id
 `
 
 type ListPostCommentsRow struct {
-	ID         int64     `json:"id"`
-	AuthorID   int64     `json:"author_id" validate:"required"`
-	Content    string    `json:"content" validate:"required"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	CountLikes int64     `json:"count_likes"`
+	ID        int64     `json:"id"`
+	AuthorID  int64     `json:"author_id" validate:"required"`
+	Content   string    `json:"content" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Likes     int64     `json:"likes"`
 }
 
 func (q *Queries) ListPostComments(ctx context.Context, postID int64) ([]ListPostCommentsRow, error) {
@@ -143,7 +143,7 @@ func (q *Queries) ListPostComments(ctx context.Context, postID int64) ([]ListPos
 			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.CountLikes,
+			&i.Likes,
 		); err != nil {
 			return nil, err
 		}

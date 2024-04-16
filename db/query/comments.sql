@@ -12,7 +12,7 @@ SELECT
     c.content,
     c.created_at,
     c.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM comments c
 LEFT JOIN (
     SELECT comment_id, COUNT(*) as count_likes
@@ -28,7 +28,7 @@ SELECT
     c.content,
     c.created_at,
     c.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM comments c
 LEFT JOIN (
     SELECT comment_id, COUNT(*) as count_likes

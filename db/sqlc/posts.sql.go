@@ -53,7 +53,7 @@ SELECT
     p.content,
     p.created_at,
     p.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM posts p
 LEFT JOIN (
     SELECT post_id, COUNT(*) as count_likes
@@ -65,12 +65,12 @@ LIMIT 1
 `
 
 type GetPostRow struct {
-	ID         int64     `json:"id"`
-	AuthorID   int64     `json:"author_id" validate:"required"`
-	Content    string    `json:"content" validate:"required"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	CountLikes int64     `json:"count_likes"`
+	ID        int64     `json:"id"`
+	AuthorID  int64     `json:"author_id" validate:"required"`
+	Content   string    `json:"content" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Likes     int64     `json:"likes"`
 }
 
 func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
@@ -82,7 +82,7 @@ func (q *Queries) GetPost(ctx context.Context, id int64) (GetPostRow, error) {
 		&i.Content,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.CountLikes,
+		&i.Likes,
 	)
 	return i, err
 }
@@ -107,7 +107,7 @@ SELECT
     p.content,
     p.created_at,
     p.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM posts p
 LEFT JOIN (
     SELECT post_id, COUNT(*) as count_likes
@@ -119,12 +119,12 @@ ORDER BY p.id
 `
 
 type ListUserPostsRow struct {
-	ID         int64     `json:"id"`
-	AuthorID   int64     `json:"author_id" validate:"required"`
-	Content    string    `json:"content" validate:"required"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
-	CountLikes int64     `json:"count_likes"`
+	ID        int64     `json:"id"`
+	AuthorID  int64     `json:"author_id" validate:"required"`
+	Content   string    `json:"content" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Likes     int64     `json:"likes"`
 }
 
 func (q *Queries) ListUserPosts(ctx context.Context, authorID int64) ([]ListUserPostsRow, error) {
@@ -142,7 +142,7 @@ func (q *Queries) ListUserPosts(ctx context.Context, authorID int64) ([]ListUser
 			&i.Content,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.CountLikes,
+			&i.Likes,
 		); err != nil {
 			return nil, err
 		}

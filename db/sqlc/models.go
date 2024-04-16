@@ -43,3 +43,8 @@ type User struct {
 	Password  string    `json:"password" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type UsersSubscription struct {
+	UserID         int64 `json:"user_id"`
+	SubscriptionID int64 `json:"subscription_id"`
+}

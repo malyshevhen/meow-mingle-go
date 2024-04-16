@@ -34,8 +34,8 @@ CREATE TABLE IF NOT EXISTS comments (
 );
 
 CREATE TABLE IF NOT EXISTS post_likes (
-	user_id BIGINT		NOT NULL,
-	post_id BIGINT 		NOT NULL,
+	user_id BIGINT	NOT NULL,
+	post_id BIGINT 	NOT NULL,
 
 	PRIMARY KEY (user_id, post_id),
 	FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
@@ -43,10 +43,19 @@ CREATE TABLE IF NOT EXISTS post_likes (
 );
 
 CREATE TABLE IF NOT EXISTS comment_likes (
-	user_id 		BIGINT 		NOT NULL,
-	comment_id 	BIGINT 		NOT NULL,
+	user_id 		BIGINT	NOT NULL,
+	comment_id 	BIGINT	NOT NULL,
 
 	PRIMARY KEY (user_id, comment_id),
 	FOREIGN KEY (user_id) 		REFERENCES users (id) ON DELETE CASCADE,
 	FOREIGN KEY (comment_id) 	REFERENCES comments (id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS users_subscriptions (
+	user_id 				BIGINT NOT NULL,
+	subscription_id BIGINT NOT NULL,
+
+	PRIMARY KEY (user_id, subscription_id),
+	FOREIGN KEY (user_id) 				REFERENCES users (id) ON DELETE CASCADE,
+	FOREIGN KEY (subscription_id) REFERENCES users (id) ON DELETE CASCADE
+)

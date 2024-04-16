@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sort"
 
 	"github.com/malyshEvhen/meow_mingle/errors"
 )
@@ -76,6 +77,78 @@ func (s *Store) GetUserTx(ctx context.Context, id int64) (user GetUserRow, err e
 		}
 		return nil
 	})
+	return
+}
+
+func (s *Store) SubscribeTx(ctx context.Context, params CreateSubscriptionParams) error {
+	log.Printf("%-15s ==> Subscribe User with ID: %d to User with ID: %d from database...\n",
+		"Store",
+		params.UserID,
+		params.SubscriptionID,
+	)
+
+	err := s.execTx(ctx, func(q *Queries) error {
+		if err := s.CreateSubscription(ctx, params); err != nil {
+			return errors.NewDatabaseError(err)
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Store) UnsubscribeTx(ctx context.Context, params DeleteSubscriptionParams) error {
+	log.Printf("%-15s ==> Unsubscribe User with ID: %d from User with ID: %d from database...\n",
+		"Store",
+		params.UserID,
+		params.SubscriptionID,
+	)
+
+	err := s.execTx(ctx, func(q *Queries) error {
+		if _, err := s.GetSubscription(ctx, GetSubscriptionParams(params)); err != nil {
+			msg := fmt.Sprintf("Subscription of User %d to User %d was not found",
+				params.UserID,
+				params.SubscriptionID,
+			)
+			return errors.NewNotFoundError(msg)
+		}
+
+		if err := s.DeleteSubscription(ctx, params); err != nil {
+			return errors.NewDatabaseError(err)
+		}
+		return nil
+	})
+	return err
+}
+
+func (s *Store) GetFeed(ctx context.Context, userId int64) (feed []ListUserPostsRow, err error) {
+	log.Printf("%-15s ==> Retrieve feed of User with ID: %d from database...\n", "Store", userId)
+
+	err = s.execTx(ctx, func(q *Queries) error {
+		if _, err := s.GetUser(ctx, userId); err != nil {
+			msg := fmt.Sprintf("User with ID: %d not found", userId)
+			return errors.NewNotFoundError(msg)
+		}
+
+		subs, err := s.ListSubscriptions(ctx, userId)
+		if err != nil {
+			return errors.NewDatabaseError(err)
+		}
+
+		for _, sub := range subs {
+			posts, err := s.ListUserPosts(ctx, sub)
+			if err != nil {
+				return errors.NewDatabaseError(err)
+			}
+
+			feed = append(feed, posts...)
+		}
+		return nil
+	})
+
+	sort.Slice(feed, func(i, j int) bool {
+		return feed[i].CreatedAt.Before(feed[j].CreatedAt)
+	})
+
 	return
 }
 

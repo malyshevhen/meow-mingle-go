@@ -12,7 +12,7 @@ SELECT
     p.content,
     p.created_at,
     p.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM posts p
 LEFT JOIN (
     SELECT post_id, COUNT(*) as count_likes
@@ -34,7 +34,7 @@ SELECT
     p.content,
     p.created_at,
     p.updated_at,
-    lc.count_likes
+    COALESCE(lc.count_likes, 0) as likes
 FROM posts p
 LEFT JOIN (
     SELECT post_id, COUNT(*) as count_likes
