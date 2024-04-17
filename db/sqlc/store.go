@@ -12,7 +12,7 @@ import (
 
 type IStore interface {
 	CreateUserTx(ctx context.Context, params CreateUserParams) (user User, err error)
-	CreatePostTx(ctx context.Context, authorId int64, content string) (post Post, err error)
+	CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error)
 	CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, err error)
 	CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error
 	CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error)
@@ -173,14 +173,11 @@ func (s *SQLStore) GetFeed(ctx context.Context, userId int64) (feed []ListUserPo
 	return
 }
 
-func (s *SQLStore) CreatePostTx(ctx context.Context, authorId int64, content string) (post Post, err error) {
+func (s *SQLStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error) {
 	log.Printf("%-15s ==> Creating post in database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
-		if post, err = s.CreatePost(ctx, CreatePostParams{
-			Content:  content,
-			AuthorID: authorId,
-		}); err != nil {
+		if post, err = s.CreatePost(ctx, params); err != nil {
 			return errors.NewDatabaseError(err)
 		}
 		return nil
