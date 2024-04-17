@@ -9,10 +9,10 @@ import (
 type Handler func(w http.ResponseWriter, r *http.Request) error
 
 type Router struct {
-	store *db.SQLStore
+	store db.IStore
 }
 
-func NewRouter(store *db.SQLStore) *Router {
+func NewRouter(store db.IStore) *Router {
 	return &Router{
 		store: store,
 	}

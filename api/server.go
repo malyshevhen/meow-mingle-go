@@ -8,11 +8,11 @@ import (
 )
 
 type Server struct {
-	store *db.SQLStore
+	store db.IStore
 	addr  string
 }
 
-func NewServer(addr string, store *db.SQLStore) *Server {
+func NewServer(addr string, store db.IStore) *Server {
 	return &Server{
 		addr:  addr,
 		store: store,

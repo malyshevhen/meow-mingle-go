@@ -2,19 +2,17 @@ package api
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
-	"github.com/malyshEvhen/meow_mingle/errors"
 )
 
 func handleCreatePost(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		postRequest, err := readCreatePostParams(r)
+		params, err := readCreatePostParams(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading post request: %v\n", "Post Handler", err)
 			return err
@@ -26,7 +24,13 @@ func handleCreatePost(store db.IStore) Handler {
 			return err
 		}
 
-		savedPost, err := store.CreatePostTx(ctx, userId, postRequest.Content)
+		params.AuthorID = userId
+
+		if err := Validate(params); err != nil {
+			return err
+		}
+
+		savedPost, err := store.CreatePostTx(ctx, *params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating post in store %v\n", "Post Handler", err)
 			return err
@@ -96,6 +100,10 @@ func handleUpdatePostsById(store db.IStore) Handler {
 		}
 		params.ID = id
 
+		if err := Validate(params); err != nil {
+			return err
+		}
+
 		userId, err := getAuthUserId(r)
 		if err != nil {
 			return err
@@ -156,6 +164,10 @@ func handleLikePost(store db.IStore) Handler {
 			PostID: id,
 		}
 
+		if err := Validate(params); err != nil {
+			return err
+		}
+
 		if err := store.CreatePostLikeTx(context.Background(), params); err != nil {
 			return err
 		}
@@ -183,42 +195,14 @@ func handleRemoveLikeFromPost(store db.IStore) Handler {
 			UserID: userId,
 		}
 
+		if err := Validate(params); err != nil {
+			return err
+		}
+
 		if err := store.DeletePostLikeTx(ctx, params); err != nil {
 			return err
 		}
 
 		return WriteJson(w, http.StatusNoContent, nil)
 	}
-}
-
-func readCreatePostParams(r *http.Request) (*db.CreatePostParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.NewValidationError("parameter ID is not valid")
-	}
-	defer r.Body.Close()
-
-	p, err := Unmarshal[db.CreatePostParams](body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &p, nil
-}
-
-func readUpdatePostParams(r *http.Request) (*db.UpdatePostParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("%-15s ==> Error reading post request %v\n", "Post Handler", err)
-		return nil, errors.NewValidationError("parameter ID is not valid")
-	}
-	defer r.Body.Close()
-
-	p, err := Unmarshal[db.UpdatePostParams](body)
-	if err != nil {
-		log.Printf("%-15s ==> Error reading post request %v\n", "Post Handler", err)
-		return nil, err
-	}
-
-	return &p, nil
 }

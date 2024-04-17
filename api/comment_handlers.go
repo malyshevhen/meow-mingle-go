@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 
@@ -33,6 +32,10 @@ func handleCreateComment(store db.IStore) Handler {
 
 		params.AuthorID = userId
 		params.PostID = postId
+
+		if err := Validate(params); err != nil {
+			return err
+		}
 
 		comment, err := store.CreateCommentTx(ctx, *params)
 		if err != nil {
@@ -87,6 +90,10 @@ func handleUpdateComments(store db.IStore) Handler {
 		}
 
 		params.ID = id
+
+		if err := Validate(params); err != nil {
+			return err
+		}
 
 		userId, err := getAuthUserId(r)
 		if err != nil {
@@ -147,10 +154,16 @@ func handleLikeComment(store db.IStore) Handler {
 			return err
 		}
 
-		if err := store.CreateCommentLikeTx(ctx, db.CreateCommentLikeParams{
+		params := db.CreateCommentLikeParams{
 			UserID:    userId,
 			CommentID: id,
-		}); err != nil {
+		}
+
+		if err := Validate(params); err != nil {
+			return err
+		}
+
+		if err := store.CreateCommentLikeTx(ctx, params); err != nil {
 			return err
 		}
 
@@ -172,43 +185,19 @@ func handleRemoveLikeFromComment(store db.IStore) Handler {
 			return err
 		}
 
-		if err := store.DeleteCommentLikeTx(ctx, db.DeleteCommentLikeParams{
+		params := db.DeleteCommentLikeParams{
 			CommentID: commentId,
 			UserID:    userId,
-		}); err != nil {
+		}
+
+		if err := Validate(params); err != nil {
+			return err
+		}
+
+		if err := store.DeleteCommentLikeTx(ctx, params); err != nil {
 			return err
 		}
 
 		return WriteJson(w, http.StatusNoContent, nil)
 	}
-}
-
-func readCreateCommentParams(r *http.Request) (*db.CreateCommentParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-
-	c, err := Unmarshal[db.CreateCommentParams](body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &c, nil
-}
-
-func readUpdateCommentParams(r *http.Request) (*db.UpdateCommentParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-
-	c, err := Unmarshal[db.UpdateCommentParams](body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &c, nil
 }
