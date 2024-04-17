@@ -147,12 +147,10 @@ func handleLikeComment(store db.IStore) Handler {
 			return err
 		}
 
-		params := db.CreateCommentLikeParams{
+		if err := store.CreateCommentLikeTx(ctx, db.CreateCommentLikeParams{
 			UserID:    userId,
 			CommentID: id,
-		}
-
-		if err := store.CreateCommentLikeTx(ctx, params); err != nil {
+		}); err != nil {
 			return err
 		}
 

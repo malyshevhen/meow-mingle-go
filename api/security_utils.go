@@ -16,9 +16,10 @@ func getAuthUserId(r *http.Request) (int64, error) {
 	numId, ok := r.Context().Value(UserIdKey).(int64)
 	if !ok {
 		log.Printf("%-15s ==> Failed to convert user Id to integer", "Authentication")
+		return 0, errors.NewUnauthorizedError()
 	}
 
-	log.Printf("%-15s ==> User Id founded in the request context! ID: %d\n", "Authentication", numId)
+	log.Printf("%-15s ==> User Id founded in the request context. ID: %d\n", "Authentication", numId)
 	return int64(numId), nil
 }
 
