@@ -104,7 +104,7 @@ func WithJWTAuth(store db.IStore, handlerFunc Handler) Middleware {
 
 			token, err := validateJWT(tokenString)
 			if err != nil {
-				log.Printf("%-15s ==> Authentication failed: Invalid JWT token", "AuthMW")
+				log.Printf("%-15s ==> Authentication failed. Error: %v", "AuthMW", err)
 				return errors.NewUnauthorizedError()
 			}
 
@@ -112,18 +112,18 @@ func WithJWTAuth(store db.IStore, handlerFunc Handler) Middleware {
 			id := claims["userId"].(string)
 			numId, err := strconv.Atoi(id)
 			if err != nil {
-				log.Printf("%-15s ==> Failed to convert user Id to integer", "AuthMW")
+				log.Printf("%-15s ==> Failed to convert user Id to integer. Error: %v", "AuthMW", err)
 				return errors.NewUnauthorizedError()
 			}
 
 			user, err := store.GetUserTx(ctx, int64(numId))
 			if err != nil {
-				log.Printf("%-15s ==> Authentication failed: User Id not found", "AuthMW")
+				log.Printf("%-15s ==> Authentication failed: User Id not found. Error: %v", "AuthMW", err)
 				return errors.NewUnauthorizedError()
 			}
 
-			ctx = context.WithValue(r.Context(), UserIdKey, user.ID)
-			r = r.WithContext(ctx)
+			rCtx := context.WithValue(r.Context(), UserIdKey, user.ID)
+			r = r.WithContext(rCtx)
 
 			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", numId)
 			return handlerFunc(w, r)
