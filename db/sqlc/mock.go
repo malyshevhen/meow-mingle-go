@@ -26,7 +26,7 @@ func (m *MockStore) CreatePostLikeTx(ctx context.Context, params CreatePostLikeP
 }
 
 // CreatePostTx implements IStore.
-func (m *MockStore) CreatePostTx(ctx context.Context, authorId int64, content string) (post Post, err error) {
+func (m *MockStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error) {
 	return Post{}, m.err
 }
 
