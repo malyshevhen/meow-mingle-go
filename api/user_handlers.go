@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -18,7 +19,7 @@ func handleCreateUser(store db.IStore) Handler {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading request body: %v\n", "User Handler", err)
-			return err
+			return errors.NewValidationError("Invalid request body")
 		}
 		defer r.Body.Close()
 
@@ -80,8 +81,11 @@ func handleGetUser(store db.IStore) Handler {
 
 		id, err := ParseIdParam(r)
 		if err != nil {
-			return errors.NewValidationError("ID parameter is invalid")
+			msg := fmt.Sprintf("Invalid ID parameter: '%d' Error: %v", id, err)
+			return errors.NewValidationError(msg)
 		}
+
+		log.Printf("User ID is %d\n", id)
 
 		authUserID, err := getAuthUserId(r)
 		if err != nil {
