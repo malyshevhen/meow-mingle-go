@@ -4,11 +4,17 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
 	"github.com/malyshEvhen/meow_mingle/errors"
 )
+
+type ContextKey string
+
+const UserIdKey ContextKey = "userId"
 
 type Middleware func(h Handler) Handler
 
@@ -89,22 +95,37 @@ func ErrorHandler(h Handler) Handler {
 	}
 }
 
-func WithJWTAuth(store *db.Store, handlerFunc Handler) Middleware {
+func WithJWTAuth(store db.IStore, handlerFunc Handler) Middleware {
 	ctx := context.Background()
 
 	return func(h Handler) Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
-			id, err := getAuthUserId(r)
+			tokenString := getTokenFromRequest(r)
+
+			token, err := validateJWT(tokenString)
 			if err != nil {
+				log.Printf("%-15s ==> Authentication failed: Invalid JWT token", "AuthMW")
 				return errors.NewUnauthorizedError()
 			}
 
-			if _, err = store.GetUser(ctx, int64(id)); err != nil {
+			claims := token.Claims.(jwt.MapClaims)
+			id := claims["userId"].(string)
+			numId, err := strconv.Atoi(id)
+			if err != nil {
+				log.Printf("%-15s ==> Failed to convert user Id to integer", "AuthMW")
+				return errors.NewUnauthorizedError()
+			}
+
+			user, err := store.GetUserTx(ctx, int64(numId))
+			if err != nil {
 				log.Printf("%-15s ==> Authentication failed: User Id not found", "AuthMW")
 				return errors.NewUnauthorizedError()
 			}
 
-			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", id)
+			ctx = context.WithValue(r.Context(), UserIdKey, user.ID)
+			r = r.WithContext(ctx)
+
+			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", numId)
 			return handlerFunc(w, r)
 		}
 	}

@@ -7,12 +7,12 @@ import (
 
 type Application struct {
 	db     *db.ConnectionPool
-	store  *db.Store
+	store  db.IStore
 	server *api.Server
 }
 
 func New(database *db.ConnectionPool) (*Application, error) {
-	store := db.NewStore(database.DB)
+	store := db.NewSQLStore(database.DB)
 
 	server := api.NewServer(":8080", store)
 

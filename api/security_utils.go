@@ -13,23 +13,12 @@ import (
 )
 
 func getAuthUserId(r *http.Request) (int64, error) {
-	tokenString := getTokenFromRequest(r)
-
-	token, err := validateJWT(tokenString)
-	if err != nil {
-		log.Printf("%-15s ==> Authentication failed: Invalid JWT token", "Authentication")
-		return 0, errors.NewUnauthorizedError()
-	}
-
-	claims := token.Claims.(jwt.MapClaims)
-	id := claims["userId"].(string)
-	numId, err := strconv.Atoi(id)
-	if err != nil {
+	numId, ok := r.Context().Value(UserIdKey).(int64)
+	if !ok {
 		log.Printf("%-15s ==> Failed to convert user Id to integer", "Authentication")
-		return 0, errors.NewUnauthorizedError()
 	}
 
-	log.Printf("%-15s ==> User Id converted to integer successfully! ID: %d\n", "Authentication", numId)
+	log.Printf("%-15s ==> User Id founded in the request context! ID: %d\n", "Authentication", numId)
 	return int64(numId), nil
 }
 
