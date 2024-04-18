@@ -289,6 +289,7 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 			handleSubscribe(store),
 			LoggerMW,
 			ErrorHandler,
+			WithJWTAuth(store),
 		),
 	)
 
