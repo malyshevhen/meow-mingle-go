@@ -15,6 +15,13 @@ type MockStore struct {
 	listPostRows        []ListUserPostsRow
 	createSubCalled     bool
 	deleteSubCalled     bool
+	likeCommentCalled   bool
+	unlikeCommentCalled bool
+	deleteCommentCalled bool
+	createPostCalled    bool
+	deletePostCalled    bool
+	likePostCalled      bool
+	unlikePostCalled    bool
 }
 
 func (m *MockStore) SetUser(user User) {
@@ -45,20 +52,71 @@ func (m *MockStore) AddListUserPostsRows(row ListUserPostsRow) {
 	m.listPostRows = append(m.listPostRows, row)
 }
 
+func (m *MockStore) AddComments(comment ListPostCommentsRow) {
+	m.listPostCommentRows = append(m.listPostCommentRows, comment)
+}
+
 func (m *MockStore) SetError(err error) {
 	m.err = err
 }
 
 func (m *MockStore) CreateSubscriptionCalled() bool {
-	return m.createSubCalled
+	result := m.createSubCalled
+	m.createSubCalled = false
+	return result
 }
 
 func (m *MockStore) DeleteSubscriptionCalled() bool {
-	return m.deleteSubCalled
+	result := m.deleteSubCalled
+	m.deleteSubCalled = false
+	return result
+}
+
+func (m *MockStore) LikeCommentCalled() bool {
+	result := m.likeCommentCalled
+	m.likeCommentCalled = false
+	return result
+}
+
+func (m *MockStore) UnlikeCommentCalled() bool {
+	result := m.unlikeCommentCalled
+	m.unlikeCommentCalled = false
+	return result
+}
+
+func (m *MockStore) CreatePostCalled() bool {
+	result := m.createPostCalled
+	m.createPostCalled = false
+	return result
+}
+
+func (m *MockStore) DeletePostCalled() bool {
+	result := m.deletePostCalled
+	m.deletePostCalled = false
+	return result
+}
+
+func (m *MockStore) LikePostCalled() bool {
+	result := m.likePostCalled
+	m.likePostCalled = false
+	return result
+}
+
+func (m *MockStore) UnlikePostCalled() bool {
+	result := m.unlikePostCalled
+	m.unlikePostCalled = false
+	return result
+}
+
+func (m *MockStore) DeleteCommentCalled() bool {
+	result := m.deleteCommentCalled
+	m.deleteCommentCalled = false
+	return result
 }
 
 // CreateCommentLikeTx implements IStore.
 func (m *MockStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error) {
+	m.likeCommentCalled = true
 	return m.err
 }
 
@@ -69,6 +127,7 @@ func (m *MockStore) CreateCommentTx(ctx context.Context, params CreateCommentPar
 
 // CreatePostLikeTx implements IStore.
 func (m *MockStore) CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error {
+	m.likePostCalled = true
 	return m.err
 }
 
@@ -90,21 +149,25 @@ func (m *MockStore) CreateUserTx(ctx context.Context, params CreateUserParams) (
 
 // DeleteCommentLikeTx implements IStore.
 func (m *MockStore) DeleteCommentLikeTx(ctx context.Context, params DeleteCommentLikeParams) error {
+	m.unlikeCommentCalled = true
 	return m.err
 }
 
 // DeleteCommentTx implements IStore.
 func (m *MockStore) DeleteCommentTx(ctx context.Context, userId int64, commentId int64) (err error) {
+	m.deleteCommentCalled = true
 	return m.err
 }
 
 // DeletePostLikeTx implements IStore.
 func (m *MockStore) DeletePostLikeTx(ctx context.Context, params DeletePostLikeParams) error {
+	m.unlikePostCalled = true
 	return m.err
 }
 
 // DeletePostTx implements IStore.
 func (m *MockStore) DeletePostTx(ctx context.Context, userId int64, postId int64) error {
+	m.deletePostCalled = true
 	return m.err
 }
 
