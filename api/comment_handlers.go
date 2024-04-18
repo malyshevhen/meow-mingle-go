@@ -14,19 +14,19 @@ func handleCreateComment(store db.IStore) Handler {
 
 		postId, err := ParseIdParam(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error parsing post Id param %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error parsing post Id param %v\n", "Comment Handler", err)
 			return err
 		}
 
 		params, err := readCreateCommentParams(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error reading comment request %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
 		}
 
 		userId, err := getAuthUserId(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
 			return err
 		}
 
@@ -39,11 +39,11 @@ func handleCreateComment(store db.IStore) Handler {
 
 		comment, err := store.CreateCommentTx(ctx, *params)
 		if err != nil {
-			log.Printf("%-15s ==> Error creating comment in store %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully created comment\n", "PostService")
+		log.Printf("%-15s ==> Successfully created comment\n", "Comment Handler")
 
 		return WriteJson(w, http.StatusCreated, comment)
 	}
@@ -55,17 +55,17 @@ func handleGetComments(store db.IStore) Handler {
 
 		id, err := ParseIdParam(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error parsing Id para %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
 			return err
 		}
 
 		comments, err := store.ListPostCommentsTx(ctx, id)
 		if err != nil {
-			log.Printf("%-15s ==> Error getting comment by Id from stor %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error getting comment by Id from stor %v\n", "Comment Handler", err)
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully got comment by Id\n", "PostService!")
+		log.Printf("%-15s ==> Successfully got comment by Id\n", "Comment Handler")
 
 		return WriteJson(w, http.StatusOK, comments)
 	}
@@ -77,14 +77,14 @@ func handleUpdateComments(store db.IStore) Handler {
 
 		id, err := ParseIdParam(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error parsing Id para %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
 			return err
 
 		}
 
 		params, err := readUpdateCommentParams(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error reading comment request %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
 
 		}
@@ -102,11 +102,11 @@ func handleUpdateComments(store db.IStore) Handler {
 
 		comment, err := store.UpdateCommentTx(ctx, userId, *params)
 		if err != nil {
-			log.Printf("%-15s ==> Error updating comment by Id in stor %v\n", "PostService ", err)
+			log.Printf("%-15s ==> Error updating comment by Id in stor %v\n", "Comment Handler", err)
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully updated comment by Id\n", "PostService")
+		log.Printf("%-15s ==> Successfully updated comment by Id\n", "Comment Handler")
 
 		return WriteJson(w, http.StatusOK, comment)
 	}
@@ -118,7 +118,7 @@ func handleDeleteComments(store db.IStore) Handler {
 
 		id, err := ParseIdParam(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error parsing Id para\n ", "PostService")
+			log.Printf("%-15s ==> Error parsing Id para\n ", "Comment Handler")
 			return err
 
 		}
@@ -130,11 +130,11 @@ func handleDeleteComments(store db.IStore) Handler {
 
 		err = store.DeleteCommentTx(ctx, userId, id)
 		if err != nil {
-			log.Printf("%-15s ==> Error deleting comment by Id from stor\n ", "PostService")
+			log.Printf("%-15s ==> Error deleting comment by Id from stor\n ", "Comment Handler")
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully deleted comment by Id\n", "PostService")
+		log.Printf("%-15s ==> Successfully deleted comment by Id\n", "Comment Handler")
 
 		return WriteJson(w, http.StatusNoContent, nil)
 	}
