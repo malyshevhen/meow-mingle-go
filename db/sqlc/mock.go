@@ -9,11 +9,12 @@ type MockStore struct {
 	user                User
 	post                Post
 	comment             Comment
-	listPostsRows       []ListUserPostsRow
 	getPostRow          GetPostRow
 	getUserRow          GetUserRow
 	listPostCommentRows []ListPostCommentsRow
-	listPostUserRows    []ListUserPostsRow
+	listPostRows        []ListUserPostsRow
+	createSubCalled     bool
+	deleteSubCalled     bool
 }
 
 func (m *MockStore) SetUser(user User) {
@@ -28,10 +29,6 @@ func (m *MockStore) SetComment(comment Comment) {
 	m.comment = comment
 }
 
-func (m *MockStore) SetListPostsRows(rows []ListUserPostsRow) {
-	m.listPostsRows = rows
-}
-
 func (m *MockStore) SetGetPostRow(row GetPostRow) {
 	m.getPostRow = row
 }
@@ -44,12 +41,20 @@ func (m *MockStore) SetListPostCommentRows(rows []ListPostCommentsRow) {
 	m.listPostCommentRows = rows
 }
 
-func (m *MockStore) SetListUserPostsRows(rows []ListUserPostsRow) {
-	m.listPostUserRows = rows
+func (m *MockStore) AddListUserPostsRows(row ListUserPostsRow) {
+	m.listPostRows = append(m.listPostRows, row)
 }
 
 func (m *MockStore) SetError(err error) {
 	m.err = err
+}
+
+func (m *MockStore) CreateSubscriptionCalled() bool {
+	return m.createSubCalled
+}
+
+func (m *MockStore) DeleteSubscriptionCalled() bool {
+	return m.deleteSubCalled
 }
 
 // CreateCommentLikeTx implements IStore.
@@ -74,6 +79,7 @@ func (m *MockStore) CreatePostTx(ctx context.Context, params CreatePostParams) (
 
 // CreateSubscriptionTx implements IStore.
 func (m *MockStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error {
+	m.createSubCalled = true
 	return m.err
 }
 
@@ -104,12 +110,13 @@ func (m *MockStore) DeletePostTx(ctx context.Context, userId int64, postId int64
 
 // DeleteSubscriptionTx implements IStore.
 func (m *MockStore) DeleteSubscriptionTx(ctx context.Context, params DeleteSubscriptionParams) error {
+	m.deleteSubCalled = true
 	return m.err
 }
 
 // GetFeed implements IStore.
 func (m *MockStore) GetFeed(ctx context.Context, userId int64) (feed []ListUserPostsRow, err error) {
-	return m.listPostsRows, m.err
+	return m.listPostRows, m.err
 }
 
 // GetPostTx implements IStore.
@@ -129,7 +136,7 @@ func (m *MockStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []L
 
 // ListUserPostsTx implements IStore.
 func (m *MockStore) ListUserPostsTx(ctx context.Context, userId int64) (posts []ListUserPostsRow, err error) {
-	return m.listPostUserRows, m.err
+	return m.listPostRows, m.err
 }
 
 // UpdateCommentTx implements IStore.

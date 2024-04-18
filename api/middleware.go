@@ -44,7 +44,7 @@ func (ww *wrappedWriter) WriteHeader(code int) {
 	ww.ResponseWriter.WriteHeader(code)
 }
 
-func LoggerMiddleware(h Handler) Handler {
+func LoggerMW(h Handler) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		start := time.Now()
 

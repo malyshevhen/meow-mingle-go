@@ -22,7 +22,7 @@ func (rr *Router) RegisterRoutes(mux *http.ServeMux) {
 	authenticated := func(handler Handler) http.HandlerFunc {
 		return MiddlewareChain(
 			handler,
-			LoggerMiddleware,
+			LoggerMW,
 			ErrorHandler,
 			WithJWTAuth(rr.store, handler),
 		)
@@ -31,7 +31,7 @@ func (rr *Router) RegisterRoutes(mux *http.ServeMux) {
 	noAuth := func(handler Handler) http.HandlerFunc {
 		return MiddlewareChain(
 			handler,
-			LoggerMiddleware,
+			LoggerMW,
 			ErrorHandler,
 		)
 	}
