@@ -24,7 +24,7 @@ func (rr *Router) RegisterRoutes(mux *http.ServeMux) {
 			handler,
 			LoggerMW,
 			ErrorHandler,
-			WithJWTAuth(rr.store, handler),
+			WithJWTAuth(rr.store),
 		)
 	}
 
