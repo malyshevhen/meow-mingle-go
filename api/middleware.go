@@ -95,7 +95,7 @@ func ErrorHandler(h Handler) Handler {
 	}
 }
 
-func WithJWTAuth(store db.IStore, handlerFunc Handler) Middleware {
+func WithJWTAuth(store db.IStore) Middleware {
 	ctx := context.Background()
 
 	return func(h Handler) Handler {
@@ -126,7 +126,7 @@ func WithJWTAuth(store db.IStore, handlerFunc Handler) Middleware {
 			r = r.WithContext(rCtx)
 
 			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", numId)
-			return handlerFunc(w, r)
+			return h(w, r)
 		}
 	}
 }
