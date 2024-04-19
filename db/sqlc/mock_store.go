@@ -52,6 +52,10 @@ func (m *MockStore) AddListUserPostsRows(row ListUserPostsRow) {
 	m.listPostRows = append(m.listPostRows, row)
 }
 
+func (m *MockStore) SetListUserPostRows(rows []ListUserPostsRow) {
+	m.listPostRows = rows
+}
+
 func (m *MockStore) AddComments(comment ListPostCommentsRow) {
 	m.listPostCommentRows = append(m.listPostCommentRows, comment)
 }

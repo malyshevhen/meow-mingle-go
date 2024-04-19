@@ -435,23 +435,6 @@ func TestHandleLikeComment(t *testing.T) {
 		assert.True(t, store.LikeCommentCalled())
 	})
 
-	// TODO: Check for the correct like parameters
-	// Test fails
-	//
-	// t.Run("returns 400 if invalid params", func(t *testing.T) {
-	//  invalidParams := db.CreateCommentLikeParams{}
-	// 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/comments/1/likes", server.URL), reqBodyOf(invalidParams))
-	// 	assert.NoError(t, err)
-
-	// 	resp, err := http.DefaultClient.Do(req)
-	// 	assert.NoError(t, err, "perform request")
-	// 	defer resp.Body.Close()
-
-	// 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	// 	assert.False(t, store.LikeCommentCalled())
-
-	// })
-
 	t.Run("returns 500 on error", func(t *testing.T) {
 		store.SetError(errors.NewInternalServerError(fmt.Errorf("error liking comment")))
 
@@ -463,5 +446,88 @@ func TestHandleLikeComment(t *testing.T) {
 		defer resp.Body.Close()
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	})
+}
+
+func TestHandleRemoveLikeFromComment(t *testing.T) {
+	store := &db.MockStore{}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/comments/{id}/likes",
+		MiddlewareChain(
+			handleRemoveLikeFromComment(store),
+			LoggerMW,
+			ErrorHandler,
+			fakeAuth(1),
+		),
+	)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Run("returns 204 if valid", func(t *testing.T) {
+		req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/comments/1/likes", server.URL), nil)
+		assert.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err, "perform request")
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+		assert.True(t, store.UnlikeCommentCalled())
+	})
+
+	t.Run("returns 404 if comment not found", func(t *testing.T) {
+		store.SetError(errors.NewNotFoundError("comment not found"))
+
+		req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/comments/1/likes", server.URL), nil)
+		assert.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err, "perform request")
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+	t.Run("returns 500 on unexpected error", func(t *testing.T) {
+		store.SetError(errors.NewInternalServerError(fmt.Errorf("unexpected error")))
+
+		req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/comments/1/likes", server.URL), nil)
+		assert.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err, "perform request")
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+	})
+}
+
+func TestHandleRemoveLikeFromCommentUnauthorized(t *testing.T) {
+	store := &db.MockStore{}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/comments/{id}/likes",
+		MiddlewareChain(
+			handleRemoveLikeFromComment(store),
+			LoggerMW,
+			ErrorHandler,
+			WithJWTAuth(store),
+		),
+	)
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Run("returns 401 if unauthorized", func(t *testing.T) {
+		req, err := http.NewRequest("DELETE", fmt.Sprintf("%s/comments/1/likes", server.URL), nil)
+		assert.NoError(t, err)
+
+		resp, err := http.DefaultClient.Do(req)
+		assert.NoError(t, err, "perform request")
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusUnauthorized, resp.StatusCode)
+		assert.False(t, store.UnlikeCommentCalled())
 	})
 }
