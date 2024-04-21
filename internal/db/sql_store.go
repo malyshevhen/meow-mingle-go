@@ -129,7 +129,7 @@ func (s *SQLStore) DeleteSubscriptionTx(
 	return err
 }
 
-func (s *SQLStore) GetFeed(ctx context.Context, userId int64) (feed []ListUserPostsRow, err error) {
+func (s *SQLStore) GetFeed(ctx context.Context, userId int64) (feed []PostInfo, err error) {
 	log.Printf("%-15s ==> Retrieve feed of User with ID: %d from database...\n", "Store", userId)
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -179,7 +179,7 @@ func (s *SQLStore) CreatePostTx(
 func (s *SQLStore) ListUserPostsTx(
 	ctx context.Context,
 	userId int64,
-) (posts []ListUserPostsRow, err error) {
+) (posts []PostInfo, err error) {
 	log.Printf("%-15s ==> Retrieving users post from database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -193,7 +193,7 @@ func (s *SQLStore) ListUserPostsTx(
 	return
 }
 
-func (s *SQLStore) GetPostTx(ctx context.Context, id int64) (post GetPostRow, err error) {
+func (s *SQLStore) GetPostTx(ctx context.Context, id int64) (post PostInfo, err error) {
 	log.Printf("%-15s ==> Retrieving post from database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -302,11 +302,11 @@ func (s *SQLStore) CreateCommentTx(
 func (s *SQLStore) ListPostCommentsTx(
 	ctx context.Context,
 	id int64,
-) (posts []ListPostCommentsRow, err error) {
+) (comments []CommentInfo, err error) {
 	log.Printf("%-15s ==> Retrieving post comments from database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
-		if posts, err = s.ListPostComments(ctx, id); err != nil {
+		if comments, err = s.ListPostComments(ctx, id); err != nil {
 			return errors.NewDatabaseError(err)
 		}
 		return nil

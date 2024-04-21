@@ -5,14 +5,14 @@ import (
 )
 
 type Config struct {
-	DBSource  string
-	JWTSecret string
+	ServerPort string
+	DBSource   string
+	JWTSecret  string
 }
 
-var Envs = initConfig()
-
-func initConfig() Config {
+func InitConfig() Config {
 	return Config{
+		ServerPort: getEnv("SERVER_PORT", ":8080"),
 		DBSource: getEnv(
 			"DB_SOURCE",
 			"postgresql://postgres:example@localhost:5432/mingle_db?sslmode=disable",

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -75,10 +74,9 @@ func CreateJwt(secret []byte, id int64) (string, error) {
 	return signedToken, nil
 }
 
-func ValidateJWT(t string) (token *jwt.Token, err error) {
+func ValidateJWT(t, secret string) (token *jwt.Token, err error) {
 	var (
-		secret = config.Envs.JWTSecret
-		fail   = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
+		fail = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
 	)
 
 	log.Printf("%-15s ==> Validating JWT token...", "Authentication")

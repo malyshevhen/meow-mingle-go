@@ -8,10 +8,11 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-func handleCreatePost(store db.IStore) Handler {
+func HandleCreatePost(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -45,7 +46,7 @@ func handleCreatePost(store db.IStore) Handler {
 	}
 }
 
-func handleGetUserPosts(store db.IStore) Handler {
+func HandleGetUserPosts(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -66,7 +67,7 @@ func handleGetUserPosts(store db.IStore) Handler {
 	}
 }
 
-func handleGetPostsById(store db.IStore) Handler {
+func HandleGetPostsById(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -88,7 +89,7 @@ func handleGetPostsById(store db.IStore) Handler {
 	}
 }
 
-func handleUpdatePostsById(store db.IStore) Handler {
+func HandleUpdatePostsById(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -124,7 +125,7 @@ func handleUpdatePostsById(store db.IStore) Handler {
 	}
 }
 
-func handleDeletePostsById(store db.IStore) Handler {
+func HandleDeletePostsById(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -150,7 +151,7 @@ func handleDeletePostsById(store db.IStore) Handler {
 	}
 }
 
-func handleLikePost(store db.IStore) Handler {
+func HandleLikePost(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		id, err := utils.ParseIdParam(r)
 		if err != nil {
@@ -179,7 +180,7 @@ func handleLikePost(store db.IStore) Handler {
 	}
 }
 
-func handleRemoveLikeFromPost(store db.IStore) Handler {
+func HandleRemoveLikeFromPost(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 

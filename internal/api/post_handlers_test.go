@@ -11,6 +11,7 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 	"github.com/malyshEvhen/meow_mingle/internal/mock"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
@@ -22,10 +23,10 @@ func TestHandleCreatePost(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts",
-		MiddlewareChain(
-			handleCreatePost(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleCreatePost(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -113,10 +114,11 @@ func TestHandleCreatePostUnauthorized(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts",
-		MiddlewareChain(handleCreatePost(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleCreatePost(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
@@ -149,10 +151,10 @@ func TestHandleGetUserPosts(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}/posts",
-		MiddlewareChain(
-			handleGetUserPosts(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleGetUserPosts(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -161,7 +163,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 	defer server.Close()
 
 	t.Run("returning 200 on successful get posts", func(t *testing.T) {
-		post := db.ListUserPostsRow{
+		post := db.PostInfo{
 			ID:       1,
 			AuthorID: 1,
 			Content:  "Test post",
@@ -181,7 +183,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		assert.NoError(t, err)
 
-		postsResp, err := utils.Unmarshal[[]db.ListUserPostsRow](body)
+		postsResp, err := utils.Unmarshal[[]db.PostInfo](body)
 		assert.NoError(t, err)
 		assert.Equal(t, post, postsResp[0])
 
@@ -219,11 +221,11 @@ func TestHandleGetUserPostsUnauthorized(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}/posts",
-		MiddlewareChain(
-			handleGetUserPosts(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleGetUserPosts(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
@@ -231,7 +233,7 @@ func TestHandleGetUserPostsUnauthorized(t *testing.T) {
 	defer server.Close()
 
 	t.Run("returning 401 if unauthorized", func(t *testing.T) {
-		post := db.ListUserPostsRow{
+		post := db.PostInfo{
 			ID:       1,
 			AuthorID: 1,
 			Content:  "Test post",
@@ -254,10 +256,10 @@ func TestHandleGetPostsById(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /posts/{id}",
-		MiddlewareChain(
-			handleGetPostsById(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleGetPostsById(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 		),
 	)
 
@@ -277,7 +279,7 @@ func TestHandleGetPostsById(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		gotPost, err := utils.Unmarshal[db.GetPostRow](body)
+		gotPost, err := utils.Unmarshal[db.PostInfo](body)
 		require.NoError(t, err)
 
 		require.Equal(t, post, gotPost)
@@ -309,10 +311,10 @@ func TestHandleUpdatePostsById(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /posts/{id}",
-		MiddlewareChain(
-			handleUpdatePostsById(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleUpdatePostsById(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -366,10 +368,10 @@ func TestHandleDeletePostsById(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("DELETE /posts/{id}",
-		MiddlewareChain(
-			handleDeletePostsById(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleDeletePostsById(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -422,10 +424,10 @@ func TestHandleLikePost(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts/{id}/like",
-		MiddlewareChain(
-			handleLikePost(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleLikePost(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -462,11 +464,11 @@ func TestHandleLikePost(t *testing.T) {
 	t.Run("returns 401 if unauthorized", func(t *testing.T) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("POST /posts/{id}/like",
-			MiddlewareChain(
-				handleLikePost(store),
-				LoggerMW,
-				ErrorHandler,
-				WithJWTAuth(store),
+			middleware.MiddlewareChain(
+				HandleLikePost(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
+				middleware.WithJWTAuth(store, testCfg),
 			),
 		)
 
@@ -500,10 +502,10 @@ func TestHandleRemoveLikeFromPost(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("DELETE /posts/{id}/like",
-		MiddlewareChain(
-			handleRemoveLikeFromPost(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleRemoveLikeFromPost(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -540,11 +542,11 @@ func TestHandleRemoveLikeFromPost(t *testing.T) {
 	t.Run("returns 401 if unauthorized", func(t *testing.T) {
 		mux := http.NewServeMux()
 		mux.HandleFunc("DELETE /posts/{id}/like",
-			MiddlewareChain(
-				handleRemoveLikeFromPost(store),
-				LoggerMW,
-				ErrorHandler,
-				WithJWTAuth(store),
+			middleware.MiddlewareChain(
+				HandleRemoveLikeFromPost(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
+				middleware.WithJWTAuth(store, testCfg),
 			),
 		)
 
@@ -581,8 +583,8 @@ func samplePost() db.Post {
 	}
 }
 
-func samplePostRow() db.GetPostRow {
-	return db.GetPostRow{
+func samplePostRow() db.PostInfo {
+	return db.PostInfo{
 		ID:       1,
 		AuthorID: 1,
 		Content:  "Hello world",

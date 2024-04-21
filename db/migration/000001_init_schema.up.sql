@@ -58,4 +58,37 @@ CREATE TABLE IF NOT EXISTS users_subscriptions (
   PRIMARY KEY (user_id, subscription_id),
   FOREIGN KEY (user_id)         REFERENCES users (id) ON DELETE CASCADE,
   FOREIGN KEY (subscription_id) REFERENCES users (id) ON DELETE CASCADE
-)
+);
+
+CREATE VIEW post_info
+AS
+SELECT
+    p.id,
+    p.author_id,
+    p.content,
+    p.created_at,
+    p.updated_at,
+    COALESCE(lc.count_likes, 0) as likes
+FROM posts p
+LEFT JOIN (
+    SELECT post_id, COUNT(*) as count_likes
+    FROM post_likes
+    GROUP BY post_id
+) as lc ON p.id = lc.post_id;
+
+CREATE VIEW comment_info
+AS
+SELECT
+    c.id,
+    c.author_id,
+    c.post_id,
+    c.content,
+    c.created_at,
+    c.updated_at,
+    COALESCE(lc.count_likes, 0) as likes
+FROM comments c
+LEFT JOIN (
+    SELECT comment_id, COUNT(*) as count_likes
+    FROM comment_likes
+    GROUP BY comment_id
+) lc ON c.id = lc.comment_id;

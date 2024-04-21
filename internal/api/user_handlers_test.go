@@ -15,7 +15,9 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 	"github.com/malyshEvhen/meow_mingle/internal/mock"
+	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,10 +59,10 @@ func TestHandleCreateUser(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(
-			MiddlewareChain(
-				handleCreateUser(store),
-				LoggerMW,
-				ErrorHandler,
+			middleware.MiddlewareChain(
+				HandleCreateUser(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
 			),
 		)
 		handler.ServeHTTP(rr, req)
@@ -81,10 +83,10 @@ func TestHandleCreateUser(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(
-			MiddlewareChain(
-				handleCreateUser(store),
-				LoggerMW,
-				ErrorHandler,
+			middleware.MiddlewareChain(
+				HandleCreateUser(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
 			),
 		)
 		handler.ServeHTTP(rr, req)
@@ -103,10 +105,10 @@ func TestHandleCreateUser(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(
-			MiddlewareChain(
-				handleCreateUser(store),
-				LoggerMW,
-				ErrorHandler,
+			middleware.MiddlewareChain(
+				HandleCreateUser(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
 			),
 		)
 		handler.ServeHTTP(rr, req)
@@ -115,7 +117,7 @@ func TestHandleCreateUser(t *testing.T) {
 			"handler returned wrong status code: got %v want %v",
 			rr.Code, http.StatusBadRequest)
 
-		resp, err := utils.Unmarshal[ErrorResponse](rr.Body.Bytes())
+		resp, err := utils.Unmarshal[middleware.ErrorResponse](rr.Body.Bytes())
 
 		assert.NoError(t, err, "unmarshal error response")
 		assert.True(t, strings.Contains(resp.Error, "Email"),
@@ -132,7 +134,12 @@ func TestHandleCreateUser(t *testing.T) {
 
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(
-			MiddlewareChain(handleCreateUser(store), LoggerMW, ErrorHandler),
+			middleware.MiddlewareChain(
+				HandleCreateUser(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
+				fakeAuth(1),
+			),
 		)
 		handler.ServeHTTP(rr, req)
 
@@ -157,10 +164,10 @@ func TestHandleGetUser(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}",
-		MiddlewareChain(
-			handleGetUser(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleGetUser(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(userRow.ID),
 		),
 	)
@@ -234,10 +241,10 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /users/{id}/subscriptions",
-		MiddlewareChain(
-			handleSubscribe(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleSubscribe(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(int64(1)),
 		),
 	)
@@ -273,7 +280,7 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 		assert.NoError(t, err, "create request")
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(testMW(1, handleSubscribe(store)))
+		handler := http.HandlerFunc(testMW(1, HandleSubscribe(store)))
 
 		handler.ServeHTTP(rr, req)
 
@@ -307,11 +314,11 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /users/{id}/subscriptions",
-		MiddlewareChain(
-			handleSubscribe(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleSubscribe(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store),
 		),
 	)
 
@@ -343,10 +350,10 @@ func TestHandleUnsubscribe(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("DELETE /users/{id}/subscriptions",
-		MiddlewareChain(
-			handleUnsubscribe(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleUnsubscribe(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(int64(1)),
 		),
 	)
@@ -397,10 +404,10 @@ func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/feed",
-		MiddlewareChain(
-			handleOwnersFeed(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleOwnersFeed(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(int64(1)),
 		),
 	)
@@ -456,10 +463,10 @@ func TestHandleOwnersFeedUnauthenticated(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/feed",
-		MiddlewareChain(
-			handleOwnersFeed(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleOwnersFeed(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 		),
 	)
 
@@ -483,10 +490,10 @@ func TestHandleUsersFeed(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}/feed",
-		MiddlewareChain(
-			handleUsersFeed(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleUsersFeed(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -546,8 +553,8 @@ func TestHandleUsersFeed(t *testing.T) {
 	})
 }
 
-func fakeAuth(id int64) Middleware {
-	return func(h Handler) Handler {
+func fakeAuth(id int64) types.Middleware {
+	return func(h types.Handler) types.Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
 			rCtx := context.WithValue(r.Context(), utils.UserIdKey, id)
 			r = r.WithContext(rCtx)

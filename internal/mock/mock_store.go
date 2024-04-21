@@ -11,10 +11,10 @@ type MockStore struct {
 	user                db.User
 	post                db.Post
 	comment             db.Comment
-	getPostRow          db.GetPostRow
+	getPostRow          db.PostInfo
 	getUserRow          db.GetUserRow
-	listPostCommentRows []db.ListPostCommentsRow
-	listPostRows        []db.ListUserPostsRow
+	listPostCommentRows []db.CommentInfo
+	listPostRows        []db.PostInfo
 	createSubCalled     bool
 	deleteSubCalled     bool
 	likeCommentCalled   bool
@@ -38,7 +38,7 @@ func (m *MockStore) SetComment(comment db.Comment) {
 	m.comment = comment
 }
 
-func (m *MockStore) SetGetPostRow(row db.GetPostRow) {
+func (m *MockStore) SetGetPostRow(row db.PostInfo) {
 	m.getPostRow = row
 }
 
@@ -46,19 +46,19 @@ func (m *MockStore) SetGetUserRow(row db.GetUserRow) {
 	m.getUserRow = row
 }
 
-func (m *MockStore) SetListPostCommentRows(rows []db.ListPostCommentsRow) {
+func (m *MockStore) SetListPostCommentRows(rows []db.CommentInfo) {
 	m.listPostCommentRows = rows
 }
 
-func (m *MockStore) AddListUserPostsRows(row db.ListUserPostsRow) {
+func (m *MockStore) AddListUserPostsRows(row db.PostInfo) {
 	m.listPostRows = append(m.listPostRows, row)
 }
 
-func (m *MockStore) SetListUserPostRows(rows []db.ListUserPostsRow) {
+func (m *MockStore) SetListUserPostRows(rows []db.PostInfo) {
 	m.listPostRows = rows
 }
 
-func (m *MockStore) AddComments(comment db.ListPostCommentsRow) {
+func (m *MockStore) AddComments(comment db.CommentInfo) {
 	m.listPostCommentRows = append(m.listPostCommentRows, comment)
 }
 
@@ -212,12 +212,12 @@ func (m *MockStore) DeleteSubscriptionTx(
 func (m *MockStore) GetFeed(
 	ctx context.Context,
 	userId int64,
-) (feed []db.ListUserPostsRow, err error) {
+) (feed []db.PostInfo, err error) {
 	return m.listPostRows, m.err
 }
 
 // GetPostTx implements IStore.
-func (m *MockStore) GetPostTx(ctx context.Context, id int64) (post db.GetPostRow, err error) {
+func (m *MockStore) GetPostTx(ctx context.Context, id int64) (post db.PostInfo, err error) {
 	return m.getPostRow, m.err
 }
 
@@ -230,7 +230,7 @@ func (m *MockStore) GetUserTx(ctx context.Context, id int64) (user db.GetUserRow
 func (m *MockStore) ListPostCommentsTx(
 	ctx context.Context,
 	id int64,
-) (posts []db.ListPostCommentsRow, err error) {
+) (posts []db.CommentInfo, err error) {
 	return m.listPostCommentRows, m.err
 }
 
@@ -238,7 +238,7 @@ func (m *MockStore) ListPostCommentsTx(
 func (m *MockStore) ListUserPostsTx(
 	ctx context.Context,
 	userId int64,
-) (posts []db.ListUserPostsRow, err error) {
+) (posts []db.PostInfo, err error) {
 	return m.listPostRows, m.err
 }
 

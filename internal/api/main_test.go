@@ -1,16 +1,22 @@
 package api
 
 import (
+	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"net/http"
 	"os"
 	"testing"
+
+	"github.com/malyshEvhen/meow_mingle/internal/middleware"
+	"github.com/malyshEvhen/meow_mingle/internal/types"
 )
 
-func testMW(userID int64, h Handler) http.HandlerFunc {
-	return MiddlewareChain(
+var testCfg = config.InitConfig()
+
+func testMW(userID int64, h types.Handler) http.HandlerFunc {
+	return middleware.MiddlewareChain(
 		h,
-		LoggerMW,
-		ErrorHandler,
+		middleware.LoggerMW,
+		middleware.ErrorHandler,
 		fakeAuth(userID),
 	)
 }

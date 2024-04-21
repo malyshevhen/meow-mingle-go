@@ -8,31 +8,17 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 )
 
-type ConnectionPool struct {
-	*sql.DB
-	Err error
-}
-
-func NewDB() *ConnectionPool {
-	dbURL := config.Envs.DBSource
+func NewDB(cfg config.Config) (*sql.DB, error) {
+	dbURL := cfg.DBSource
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		return &ConnectionPool{
-			DB:  db,
-			Err: err,
-		}
+		return db, err
 	}
 
 	if err := db.Ping(); err != nil {
-		return &ConnectionPool{
-			DB:  db,
-			Err: err,
-		}
+		return db, err
 	} else {
 		log.Println("Successfully Connected")
 	}
-	return &ConnectionPool{
-		DB:  db,
-		Err: nil,
-	}
+	return db, err
 }

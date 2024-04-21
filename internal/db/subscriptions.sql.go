@@ -11,7 +11,7 @@ import (
 
 const createSubscription = `-- name: CreateSubscription :exec
 INSERT INTO users_subscriptions (
-	user_id, subscription_id
+    user_id, subscription_id
 ) VALUES ($1, $2)
 `
 

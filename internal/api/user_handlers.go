@@ -10,10 +10,11 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-func handleCreateUser(store db.IStore) Handler {
+func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -56,7 +57,7 @@ func handleCreateUser(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Creating auth token...\n", "User Handler")
 
-		secret := []byte(config.Envs.JWTSecret)
+		secret := []byte(cfg.JWTSecret)
 		token, err := utils.CreateJwt(secret, savedUser.ID)
 		if err != nil {
 			log.Printf("%-15s ==> Error generating JWT token: %s\n", "User Handler", err)
@@ -76,7 +77,7 @@ func handleCreateUser(store db.IStore) Handler {
 	}
 }
 
-func handleGetUser(store db.IStore) Handler {
+func HandleGetUser(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -106,7 +107,7 @@ func handleGetUser(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Searching for user with Id:%d\n", "User Handler", id)
 
-		savedUser, err := store.GetUserTx(ctx, int64(id))
+		savedUser, err := store.GetUserTx(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> User not found for Id:%d\n", "User Handler", id)
 			return err
@@ -118,7 +119,7 @@ func handleGetUser(store db.IStore) Handler {
 	}
 }
 
-func handleSubscribe(store db.IStore) Handler {
+func HandleSubscribe(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -144,7 +145,7 @@ func handleSubscribe(store db.IStore) Handler {
 	}
 }
 
-func handleUnsubscribe(store db.IStore) Handler {
+func HandleUnsubscribe(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -170,7 +171,7 @@ func handleUnsubscribe(store db.IStore) Handler {
 	}
 }
 
-func handleOwnersFeed(store db.IStore) Handler {
+func HandleOwnersFeed(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -189,7 +190,7 @@ func handleOwnersFeed(store db.IStore) Handler {
 	}
 }
 
-func handleUsersFeed(store db.IStore) Handler {
+func HandleUsersFeed(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 

@@ -12,9 +12,9 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-	email, first_name, last_name, password
+    email, first_name, last_name, password
 ) VALUES (
-	$1, $2, $3, $4
+    $1, $2, $3, $4
 ) RETURNING id, email, first_name, last_name, password, created_at
 `
 
@@ -55,7 +55,8 @@ func (q *Queries) DeleteUser(ctx context.Context, id int64) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, first_name, last_name, created_at FROM users
+SELECT id, email, first_name, last_name, created_at
+FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -93,7 +94,8 @@ func (q *Queries) IsUserExists(ctx context.Context, email string) (int64, error)
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, email, first_name, last_name, created_at FROM users
+SELECT id, email, first_name, last_name, created_at
+FROM users
 ORDER BY id
 `
 

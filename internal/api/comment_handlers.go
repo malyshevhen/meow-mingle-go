@@ -7,10 +7,11 @@ import (
 	"net/http"
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-func handleCreateComment(store db.IStore) Handler {
+func HandleCreateComment(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -51,7 +52,7 @@ func handleCreateComment(store db.IStore) Handler {
 	}
 }
 
-func handleGetComments(store db.IStore) Handler {
+func HandleGetComments(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -77,7 +78,7 @@ func handleGetComments(store db.IStore) Handler {
 	}
 }
 
-func handleUpdateComments(store db.IStore) Handler {
+func HandleUpdateComments(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -122,7 +123,7 @@ func handleUpdateComments(store db.IStore) Handler {
 	}
 }
 
-func handleDeleteComments(store db.IStore) Handler {
+func HandleDeleteComments(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -150,7 +151,7 @@ func handleDeleteComments(store db.IStore) Handler {
 	}
 }
 
-func handleLikeComment(store db.IStore) Handler {
+func HandleLikeComment(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -181,7 +182,7 @@ func handleLikeComment(store db.IStore) Handler {
 	}
 }
 
-func handleRemoveLikeFromComment(store db.IStore) Handler {
+func HandleRemoveLikeFromComment(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 

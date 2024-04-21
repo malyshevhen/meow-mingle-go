@@ -1,4 +1,4 @@
-package api
+package middleware
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	db "github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/config"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-type Middleware func(h Handler) Handler
-
-func MiddlewareChain(h Handler, m ...Middleware) http.HandlerFunc {
+func MiddlewareChain(h types.Handler, m ...types.Middleware) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(m) < 1 {
 			h(w, r)
@@ -41,7 +41,7 @@ func (ww *wrappedWriter) WriteHeader(code int) {
 	ww.ResponseWriter.WriteHeader(code)
 }
 
-func LoggerMW(h Handler) Handler {
+func LoggerMW(h types.Handler) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		start := time.Now()
 
@@ -76,7 +76,7 @@ func NewErrorResponse(message string) *ErrorResponse {
 	}
 }
 
-func ErrorHandler(h Handler) Handler {
+func ErrorHandler(h types.Handler) types.Handler {
 	log.Printf("%-15s Apply error handler", "Error Handler")
 
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -99,14 +99,14 @@ func ErrorHandler(h Handler) Handler {
 	}
 }
 
-func WithJWTAuth(store db.IStore) Middleware {
+func WithJWTAuth(store db.IStore, cfg config.Config) types.Middleware {
 	ctx := context.Background()
 
-	return func(h Handler) Handler {
+	return func(h types.Handler) types.Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
 			tokenString := utils.GetTokenFromRequest(r)
 
-			token, err := utils.ValidateJWT(tokenString)
+			token, err := utils.ValidateJWT(tokenString, cfg.JWTSecret)
 			if err != nil {
 				log.Printf("%-15s ==> Authentication failed. Error: %v", "AuthMW", err)
 				return errors.NewUnauthorizedError()

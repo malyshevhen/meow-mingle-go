@@ -17,6 +17,16 @@ type Comment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type CommentInfo struct {
+	ID        int64     `json:"id"`
+	AuthorID  int64     `json:"author_id"`
+	PostID    int64     `json:"post_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Likes     int64     `json:"likes"`
+}
+
 type CommentLike struct {
 	UserID    int64 `json:"user_id" validate:"required"`
 	CommentID int64 `json:"comment_id" validate:"required"`
@@ -28,6 +38,15 @@ type Post struct {
 	AuthorID  int64     `json:"author_id" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type PostInfo struct {
+	ID        int64     `json:"id"`
+	AuthorID  int64     `json:"author_id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Likes     int64     `json:"likes"`
 }
 
 type PostLike struct {

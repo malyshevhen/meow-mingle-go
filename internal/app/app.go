@@ -1,30 +1,31 @@
 package app
 
 import (
-	"github.com/malyshEvhen/meow_mingle/internal/api"
-	db "github.com/malyshEvhen/meow_mingle/internal/db"
+	"context"
+	"fmt"
+	"log"
+
+	"github.com/malyshEvhen/meow_mingle/internal/config"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/router"
+	"github.com/malyshEvhen/meow_mingle/internal/server"
 )
 
-type Application struct {
-	db     *db.ConnectionPool
-	store  db.IStore
-	server *api.Server
-}
+func Start(ctx context.Context) (func() error, error) {
+	cfg := config.InitConfig()
 
-func New(database *db.ConnectionPool) (*Application, error) {
-	store := db.NewSQLStore(database.DB)
+	DB, err := db.NewDB(cfg)
+	if err != nil {
+		log.Fatalf("DB connection refused: %s", err.Error())
+	}
 
-	server := api.NewServer(":8080")
+	store := db.NewSQLStore(DB)
+	mux := router.RegisterRoutes(store, cfg)
+	if err := server.Serve(mux, cfg); err != nil {
+		return nil, fmt.Errorf("an error occured while server starts: %s", err.Error())
+	}
 
-	return &Application{
-		db:     database,
-		store:  store,
-		server: server,
+	return func() error {
+		return DB.Close()
 	}, nil
-}
-
-func (app *Application) Start() error {
-	defer app.db.Close()
-
-	return app.server.Serve(app.store)
 }

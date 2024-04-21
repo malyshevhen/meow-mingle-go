@@ -10,12 +10,13 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 	"github.com/malyshEvhen/meow_mingle/internal/mock"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
-type Comments []db.GetCommentRow
+type Comments []db.CommentInfo
 
 func TestHandleCreateComment(t *testing.T) {
 	store := &mock.MockStore{}
@@ -39,10 +40,10 @@ func TestHandleCreateComment(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts/{id}/comments",
-		MiddlewareChain(
-			handleCreateComment(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleCreateComment(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -139,11 +140,11 @@ func TestHandleCreateCommentUnauthenticated(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts/{id}/comments",
-		MiddlewareChain(
-			handleCreateComment(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleCreateComment(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
@@ -167,15 +168,15 @@ func TestHandleGetComments(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /posts/{id}/comments",
-		MiddlewareChain(
-			handleGetComments(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleGetComments(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
 
-	commentRow := db.ListPostCommentsRow{
+	commentRow := db.CommentInfo{
 		ID:       1,
 		AuthorID: 1,
 		Content:  "Test Comment",
@@ -204,7 +205,7 @@ func TestHandleGetComments(t *testing.T) {
 		respComments, err := utils.Unmarshal[Comments](body)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, respComments)
-		assert.Equalf(t, db.GetCommentRow(commentRow), respComments[0],
+		assert.Equalf(t, commentRow, respComments[0],
 			"handler returned unexpected body: got %v want %v",
 			respComments[0], commentRow)
 	})
@@ -262,10 +263,10 @@ func TestHandleUpdateComment(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /comments/{id}",
-		MiddlewareChain(
-			handleUpdateComments(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleUpdateComments(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -338,11 +339,11 @@ func TestHandleUpdateCommentUnauthorized(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /comments/{id}",
-		MiddlewareChain(
-			handleUpdateComments(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleUpdateComments(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
@@ -371,10 +372,10 @@ func TestHandleDeleteComment(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}",
-		MiddlewareChain(
-			handleDeleteComments(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleDeleteComments(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -425,11 +426,11 @@ func TestHandleDeleteCommentUnauthorized(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}",
-		MiddlewareChain(
-			handleDeleteComments(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleDeleteComments(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
@@ -458,10 +459,10 @@ func TestHandleLikeComment(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}/likes",
-		MiddlewareChain(
-			handleLikeComment(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleLikeComment(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -508,10 +509,10 @@ func TestHandleRemoveLikeFromComment(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}/likes",
-		MiddlewareChain(
-			handleRemoveLikeFromComment(store),
-			LoggerMW,
-			ErrorHandler,
+		middleware.MiddlewareChain(
+			HandleRemoveLikeFromComment(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
 	)
@@ -562,11 +563,11 @@ func TestHandleRemoveLikeFromCommentUnauthorized(t *testing.T) {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}/likes",
-		MiddlewareChain(
-			handleRemoveLikeFromComment(store),
-			LoggerMW,
-			ErrorHandler,
-			WithJWTAuth(store),
+		middleware.MiddlewareChain(
+			HandleRemoveLikeFromComment(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
