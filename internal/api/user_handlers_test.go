@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Feed []db.ListUserPostsRow
+type Feed []db.PostInfo
 
 func TestHandleCreateUser(t *testing.T) {
 
@@ -58,12 +58,10 @@ func TestHandleCreateUser(t *testing.T) {
 		defer req.Body.Close()
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(
-			middleware.MiddlewareChain(
-				HandleCreateUser(store),
-				middleware.LoggerMW,
-				middleware.ErrorHandler,
-			),
+		handler := middleware.MiddlewareChain(
+			HandleCreateUser(store, testCfg),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 		)
 		handler.ServeHTTP(rr, req)
 
@@ -82,12 +80,10 @@ func TestHandleCreateUser(t *testing.T) {
 		defer req.Body.Close()
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(
-			middleware.MiddlewareChain(
-				HandleCreateUser(store),
-				middleware.LoggerMW,
-				middleware.ErrorHandler,
-			),
+		handler := middleware.MiddlewareChain(
+			HandleCreateUser(store, testCfg),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 		)
 		handler.ServeHTTP(rr, req)
 
@@ -104,12 +100,10 @@ func TestHandleCreateUser(t *testing.T) {
 		defer req.Body.Close()
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(
-			middleware.MiddlewareChain(
-				HandleCreateUser(store),
-				middleware.LoggerMW,
-				middleware.ErrorHandler,
-			),
+		handler := middleware.MiddlewareChain(
+			HandleCreateUser(store, testCfg),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
 		)
 		handler.ServeHTTP(rr, req)
 
@@ -133,13 +127,11 @@ func TestHandleCreateUser(t *testing.T) {
 		defer req.Body.Close()
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(
-			middleware.MiddlewareChain(
-				HandleCreateUser(store),
-				middleware.LoggerMW,
-				middleware.ErrorHandler,
-				fakeAuth(1),
-			),
+		handler := middleware.MiddlewareChain(
+			HandleCreateUser(store, testCfg),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			fakeAuth(1),
 		)
 		handler.ServeHTTP(rr, req)
 
@@ -280,7 +272,7 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 		assert.NoError(t, err, "create request")
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(testMW(1, HandleSubscribe(store)))
+		handler := testMW(1, HandleSubscribe(store))
 
 		handler.ServeHTTP(rr, req)
 
@@ -318,7 +310,7 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 			HandleSubscribe(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
-			middleware.WithJWTAuth(store),
+			middleware.WithJWTAuth(store, testCfg),
 		),
 	)
 
@@ -416,7 +408,7 @@ func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 	defer server.Close()
 
 	t.Run("should return 200 and feed if authenticated user", func(t *testing.T) {
-		row := db.ListUserPostsRow{
+		row := db.PostInfo{
 			ID:        1,
 			AuthorID:  1,
 			Content:   "Test Post",
@@ -445,7 +437,7 @@ func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 	})
 
 	t.Run("should return 500 if error getting feed", func(t *testing.T) {
-		store.SetError(errors.NewDatabaseError(fmt.Errorf("error retrieve feed!")))
+		store.SetError(errors.NewDatabaseError(fmt.Errorf("error retrieve feed")))
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/users/feed", server.URL), nil)
 		assert.NoError(t, err, "create request")
@@ -502,7 +494,7 @@ func TestHandleUsersFeed(t *testing.T) {
 	defer server.Close()
 
 	t.Run("returns 200 and feed if valid user ID", func(t *testing.T) {
-		row := db.ListUserPostsRow{
+		row := db.PostInfo{
 			ID:        1,
 			AuthorID:  1,
 			Content:   "Test post 1",
@@ -541,7 +533,7 @@ func TestHandleUsersFeed(t *testing.T) {
 	})
 
 	t.Run("returns 500 if error getting feed", func(t *testing.T) {
-		store.SetError(errors.NewDatabaseError(fmt.Errorf("error retrieve feed!")))
+		store.SetError(errors.NewDatabaseError(fmt.Errorf("error retrieve feed")))
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/users/1/feed", server.URL), nil)
 		assert.NoError(t, err, "create request")
