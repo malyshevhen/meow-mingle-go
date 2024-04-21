@@ -1,8 +1,8 @@
-package application
+package app
 
 import (
-	"github.com/malyshEvhen/meow_mingle/api"
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/internal/api"
+	db "github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
 type Application struct {

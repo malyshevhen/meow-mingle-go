@@ -1,18 +1,20 @@
-package db
+package mock
 
 import (
 	"context"
+
+	"github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
 type MockStore struct {
 	err                 error
-	user                User
-	post                Post
-	comment             Comment
-	getPostRow          GetPostRow
-	getUserRow          GetUserRow
-	listPostCommentRows []ListPostCommentsRow
-	listPostRows        []ListUserPostsRow
+	user                db.User
+	post                db.Post
+	comment             db.Comment
+	getPostRow          db.GetPostRow
+	getUserRow          db.GetUserRow
+	listPostCommentRows []db.ListPostCommentsRow
+	listPostRows        []db.ListUserPostsRow
 	createSubCalled     bool
 	deleteSubCalled     bool
 	likeCommentCalled   bool
@@ -24,39 +26,39 @@ type MockStore struct {
 	unlikePostCalled    bool
 }
 
-func (m *MockStore) SetUser(user User) {
+func (m *MockStore) SetUser(user db.User) {
 	m.user = user
 }
 
-func (m *MockStore) SetPost(post Post) {
+func (m *MockStore) SetPost(post db.Post) {
 	m.post = post
 }
 
-func (m *MockStore) SetComment(comment Comment) {
+func (m *MockStore) SetComment(comment db.Comment) {
 	m.comment = comment
 }
 
-func (m *MockStore) SetGetPostRow(row GetPostRow) {
+func (m *MockStore) SetGetPostRow(row db.GetPostRow) {
 	m.getPostRow = row
 }
 
-func (m *MockStore) SetGetUserRow(row GetUserRow) {
+func (m *MockStore) SetGetUserRow(row db.GetUserRow) {
 	m.getUserRow = row
 }
 
-func (m *MockStore) SetListPostCommentRows(rows []ListPostCommentsRow) {
+func (m *MockStore) SetListPostCommentRows(rows []db.ListPostCommentsRow) {
 	m.listPostCommentRows = rows
 }
 
-func (m *MockStore) AddListUserPostsRows(row ListUserPostsRow) {
+func (m *MockStore) AddListUserPostsRows(row db.ListUserPostsRow) {
 	m.listPostRows = append(m.listPostRows, row)
 }
 
-func (m *MockStore) SetListUserPostRows(rows []ListUserPostsRow) {
+func (m *MockStore) SetListUserPostRows(rows []db.ListUserPostsRow) {
 	m.listPostRows = rows
 }
 
-func (m *MockStore) AddComments(comment ListPostCommentsRow) {
+func (m *MockStore) AddComments(comment db.ListPostCommentsRow) {
 	m.listPostCommentRows = append(m.listPostCommentRows, comment)
 }
 
@@ -119,52 +121,74 @@ func (m *MockStore) DeleteCommentCalled() bool {
 }
 
 // CreateCommentLikeTx implements IStore.
-func (m *MockStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error) {
+func (m *MockStore) CreateCommentLikeTx(
+	ctx context.Context,
+	params db.CreateCommentLikeParams,
+) (err error) {
 	m.likeCommentCalled = true
 	return m.err
 }
 
 // CreateCommentTx implements IStore.
-func (m *MockStore) CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
+func (m *MockStore) CreateCommentTx(
+	ctx context.Context,
+	params db.CreateCommentParams,
+) (comment db.Comment, err error) {
 	return m.comment, m.err
 }
 
 // CreatePostLikeTx implements IStore.
-func (m *MockStore) CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error {
+func (m *MockStore) CreatePostLikeTx(ctx context.Context, params db.CreatePostLikeParams) error {
 	m.likePostCalled = true
 	return m.err
 }
 
 // CreatePostTx implements IStore.
-func (m *MockStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error) {
+func (m *MockStore) CreatePostTx(
+	ctx context.Context,
+	params db.CreatePostParams,
+) (post db.Post, err error) {
 	return m.post, m.err
 }
 
 // CreateSubscriptionTx implements IStore.
-func (m *MockStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error {
+func (m *MockStore) CreateSubscriptionTx(
+	ctx context.Context,
+	params db.CreateSubscriptionParams,
+) error {
 	m.createSubCalled = true
 	return m.err
 }
 
 // CreateUserTx implements IStore.
-func (m *MockStore) CreateUserTx(ctx context.Context, params CreateUserParams) (user User, err error) {
+func (m *MockStore) CreateUserTx(
+	ctx context.Context,
+	params db.CreateUserParams,
+) (user db.User, err error) {
 	return m.user, m.err
 }
 
 // DeleteCommentLikeTx implements IStore.
-func (m *MockStore) DeleteCommentLikeTx(ctx context.Context, params DeleteCommentLikeParams) error {
+func (m *MockStore) DeleteCommentLikeTx(
+	ctx context.Context,
+	params db.DeleteCommentLikeParams,
+) error {
 	m.unlikeCommentCalled = true
 	return m.err
 }
 
 // DeleteCommentTx implements IStore.
-func (m *MockStore) DeleteCommentTx(ctx context.Context, userId int64, commentId int64) (err error) {
+func (m *MockStore) DeleteCommentTx(
+	ctx context.Context,
+	userId int64,
+	commentId int64,
+) (err error) {
 	m.deleteCommentCalled = true
 	return m.err
 }
 
 // DeletePostLikeTx implements IStore.
-func (m *MockStore) DeletePostLikeTx(ctx context.Context, params DeletePostLikeParams) error {
+func (m *MockStore) DeletePostLikeTx(ctx context.Context, params db.DeletePostLikeParams) error {
 	m.unlikePostCalled = true
 	return m.err
 }
@@ -176,42 +200,62 @@ func (m *MockStore) DeletePostTx(ctx context.Context, userId int64, postId int64
 }
 
 // DeleteSubscriptionTx implements IStore.
-func (m *MockStore) DeleteSubscriptionTx(ctx context.Context, params DeleteSubscriptionParams) error {
+func (m *MockStore) DeleteSubscriptionTx(
+	ctx context.Context,
+	params db.DeleteSubscriptionParams,
+) error {
 	m.deleteSubCalled = true
 	return m.err
 }
 
 // GetFeed implements IStore.
-func (m *MockStore) GetFeed(ctx context.Context, userId int64) (feed []ListUserPostsRow, err error) {
+func (m *MockStore) GetFeed(
+	ctx context.Context,
+	userId int64,
+) (feed []db.ListUserPostsRow, err error) {
 	return m.listPostRows, m.err
 }
 
 // GetPostTx implements IStore.
-func (m *MockStore) GetPostTx(ctx context.Context, id int64) (post GetPostRow, err error) {
+func (m *MockStore) GetPostTx(ctx context.Context, id int64) (post db.GetPostRow, err error) {
 	return m.getPostRow, m.err
 }
 
 // GetUserTx implements IStore.
-func (m *MockStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, err error) {
+func (m *MockStore) GetUserTx(ctx context.Context, id int64) (user db.GetUserRow, err error) {
 	return m.getUserRow, m.err
 }
 
 // ListPostCommentsTx implements IStore.
-func (m *MockStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []ListPostCommentsRow, err error) {
+func (m *MockStore) ListPostCommentsTx(
+	ctx context.Context,
+	id int64,
+) (posts []db.ListPostCommentsRow, err error) {
 	return m.listPostCommentRows, m.err
 }
 
 // ListUserPostsTx implements IStore.
-func (m *MockStore) ListUserPostsTx(ctx context.Context, userId int64) (posts []ListUserPostsRow, err error) {
+func (m *MockStore) ListUserPostsTx(
+	ctx context.Context,
+	userId int64,
+) (posts []db.ListUserPostsRow, err error) {
 	return m.listPostRows, m.err
 }
 
 // UpdateCommentTx implements IStore.
-func (m *MockStore) UpdateCommentTx(ctx context.Context, userId int64, params UpdateCommentParams) (comment Comment, err error) {
+func (m *MockStore) UpdateCommentTx(
+	ctx context.Context,
+	userId int64,
+	params db.UpdateCommentParams,
+) (comment db.Comment, err error) {
 	return m.comment, m.err
 }
 
 // UpdatePostTx implements IStore.
-func (m *MockStore) UpdatePostTx(ctx context.Context, userId int64, params UpdatePostParams) (post Post, err error) {
+func (m *MockStore) UpdatePostTx(
+	ctx context.Context,
+	userId int64,
+	params db.UpdatePostParams,
+) (post db.Post, err error) {
 	return m.post, m.err
 }

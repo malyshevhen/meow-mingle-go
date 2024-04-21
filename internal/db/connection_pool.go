@@ -5,7 +5,7 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
-	"github.com/malyshEvhen/meow_mingle/config"
+	"github.com/malyshEvhen/meow_mingle/internal/config"
 )
 
 type ConnectionPool struct {

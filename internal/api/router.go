@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
 type Handler func(w http.ResponseWriter, r *http.Request) error

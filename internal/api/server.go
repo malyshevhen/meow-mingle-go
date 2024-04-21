@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
 type Server struct {

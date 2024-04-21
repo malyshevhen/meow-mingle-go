@@ -8,13 +8,10 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
-	"github.com/malyshEvhen/meow_mingle/errors"
+	db "github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
-
-type ContextKey string
-
-const UserIdKey ContextKey = "userId"
 
 type Middleware func(h Handler) Handler
 
@@ -54,7 +51,14 @@ func LoggerMW(h Handler) Handler {
 		}
 
 		err := h(ww, r)
-		log.Printf("%-15s ==> %d %s %s %s", "Request", ww.status, r.Method, r.RequestURI, time.Since(start))
+		log.Printf(
+			"%-15s ==> %d %s %s %s",
+			"Request",
+			ww.status,
+			r.Method,
+			r.RequestURI,
+			time.Since(start),
+		)
 
 		return err
 	}
@@ -80,10 +84,10 @@ func ErrorHandler(h Handler) Handler {
 			switch e := err.(type) {
 			case errors.Error:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				WriteJson(w, e.Code(), NewErrorResponse(e.Error()))
+				utils.WriteJson(w, e.Code(), NewErrorResponse(e.Error()))
 			default:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				WriteJson(
+				utils.WriteJson(
 					w,
 					http.StatusInternalServerError,
 					NewErrorResponse("Internal error"),
@@ -100,9 +104,9 @@ func WithJWTAuth(store db.IStore) Middleware {
 
 	return func(h Handler) Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
-			tokenString := getTokenFromRequest(r)
+			tokenString := utils.GetTokenFromRequest(r)
 
-			token, err := validateJWT(tokenString)
+			token, err := utils.ValidateJWT(tokenString)
 			if err != nil {
 				log.Printf("%-15s ==> Authentication failed. Error: %v", "AuthMW", err)
 				return errors.NewUnauthorizedError()
@@ -112,17 +116,25 @@ func WithJWTAuth(store db.IStore) Middleware {
 			id := claims["userId"].(string)
 			numId, err := strconv.Atoi(id)
 			if err != nil {
-				log.Printf("%-15s ==> Failed to convert user Id to integer. Error: %v", "AuthMW", err)
+				log.Printf(
+					"%-15s ==> Failed to convert user Id to integer. Error: %v",
+					"AuthMW",
+					err,
+				)
 				return errors.NewUnauthorizedError()
 			}
 
 			user, err := store.GetUserTx(ctx, int64(numId))
 			if err != nil {
-				log.Printf("%-15s ==> Authentication failed: User Id not found. Error: %v", "AuthMW", err)
+				log.Printf(
+					"%-15s ==> Authentication failed: User Id not found. Error: %v",
+					"AuthMW",
+					err,
+				)
 				return errors.NewUnauthorizedError()
 			}
 
-			rCtx := context.WithValue(r.Context(), UserIdKey, user.ID)
+			rCtx := context.WithValue(r.Context(), utils.UserIdKey, user.ID)
 			r = r.WithContext(rCtx)
 
 			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", numId)

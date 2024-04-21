@@ -1,4 +1,4 @@
-package api
+package utils
 
 import (
 	"log"
@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/malyshEvhen/meow_mingle/config"
-	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/config"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func getAuthUserId(r *http.Request) (int64, error) {
+func GetAuthUserId(r *http.Request) (int64, error) {
 	numId, ok := r.Context().Value(UserIdKey).(int64)
 	if !ok {
 		log.Printf("%-15s ==> Failed to convert user Id to integer", "Authentication")
@@ -27,7 +27,7 @@ func getAuthUserId(r *http.Request) (int64, error) {
 	return int64(numId), nil
 }
 
-func getTokenFromRequest(r *http.Request) string {
+func GetTokenFromRequest(r *http.Request) string {
 	log.Printf("%-15s ==>️ Validating for Authorization header...", "Authentication")
 
 	tokenAuth := r.Header.Get("Authorization")
@@ -41,7 +41,7 @@ func getTokenFromRequest(r *http.Request) string {
 	return ""
 }
 
-func hashPwd(s string) (string, error) {
+func HashPwd(s string) (string, error) {
 	log.Printf("%-15s ==> Starting password hashing...", "Authentication")
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
@@ -55,7 +55,7 @@ func hashPwd(s string) (string, error) {
 	return string(hash), nil
 }
 
-func createJwt(secret []byte, id int64) (string, error) {
+func CreateJwt(secret []byte, id int64) (string, error) {
 	log.Printf("%-15s ==> Starting JWT token creation...", "Authentication")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -75,7 +75,7 @@ func createJwt(secret []byte, id int64) (string, error) {
 	return signedToken, nil
 }
 
-func validateJWT(t string) (token *jwt.Token, err error) {
+func ValidateJWT(t string) (token *jwt.Token, err error) {
 	var (
 		secret = config.Envs.JWTSecret
 		fail   = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }

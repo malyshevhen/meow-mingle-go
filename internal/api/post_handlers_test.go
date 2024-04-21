@@ -9,14 +9,16 @@ import (
 	"strings"
 	"testing"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
-	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/mock"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestHandleCreatePost(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts",
@@ -61,7 +63,7 @@ func TestHandleCreatePost(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		assert.NoError(t, err)
 
-		postResp, err := Unmarshal[db.Post](body)
+		postResp, err := utils.Unmarshal[db.Post](body)
 		assert.NoError(t, err)
 
 		assert.Equal(t, post, postResp)
@@ -107,7 +109,7 @@ func TestHandleCreatePost(t *testing.T) {
 }
 
 func TestHandleCreatePostUnauthorized(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts",
@@ -143,7 +145,7 @@ func TestHandleCreatePostUnauthorized(t *testing.T) {
 }
 
 func TestHandleGetUserPosts(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}/posts",
@@ -179,7 +181,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		assert.NoError(t, err)
 
-		postsResp, err := Unmarshal[[]db.ListUserPostsRow](body)
+		postsResp, err := utils.Unmarshal[[]db.ListUserPostsRow](body)
 		assert.NoError(t, err)
 		assert.Equal(t, post, postsResp[0])
 
@@ -213,7 +215,7 @@ func TestHandleGetUserPosts(t *testing.T) {
 }
 
 func TestHandleGetUserPostsUnauthorized(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}/posts",
@@ -248,7 +250,7 @@ func TestHandleGetUserPostsUnauthorized(t *testing.T) {
 }
 
 func TestHandleGetPostsById(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /posts/{id}",
@@ -275,7 +277,7 @@ func TestHandleGetPostsById(t *testing.T) {
 		body, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		gotPost, err := Unmarshal[db.GetPostRow](body)
+		gotPost, err := utils.Unmarshal[db.GetPostRow](body)
 		require.NoError(t, err)
 
 		require.Equal(t, post, gotPost)
@@ -303,7 +305,7 @@ func TestHandleGetPostsById(t *testing.T) {
 }
 
 func TestHandleUpdatePostsById(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /posts/{id}",
@@ -337,7 +339,7 @@ func TestHandleUpdatePostsById(t *testing.T) {
 		responseBody, err := io.ReadAll(res.Body)
 		require.NoError(t, err)
 
-		gotPost, err := Unmarshal[db.Post](responseBody)
+		gotPost, err := utils.Unmarshal[db.Post](responseBody)
 		require.NoError(t, err)
 
 		require.Equal(t, post, gotPost)
@@ -360,7 +362,7 @@ func TestHandleUpdatePostsById(t *testing.T) {
 }
 
 func TestHandleDeletePostsById(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("DELETE /posts/{id}",
@@ -416,7 +418,7 @@ func TestHandleDeletePostsById(t *testing.T) {
 }
 
 func TestHandleLikePost(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts/{id}/like",
@@ -494,7 +496,7 @@ func TestHandleLikePost(t *testing.T) {
 }
 
 func TestHandleRemoveLikeFromPost(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("DELETE /posts/{id}/like",

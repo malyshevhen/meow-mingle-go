@@ -13,8 +13,10 @@ import (
 	"testing"
 	"time"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
-	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/mock"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,7 +48,7 @@ func TestHandleCreateUser(t *testing.T) {
 	}
 
 	t.Run("should create a new user", func(t *testing.T) {
-		store := &db.MockStore{}
+		store := &mock.MockStore{}
 		store.SetUser(user)
 
 		req, err := http.NewRequest("POST", "/users", reqBodyOf(validParams))
@@ -69,7 +71,7 @@ func TestHandleCreateUser(t *testing.T) {
 	})
 
 	t.Run("should return 400 if user already exists", func(t *testing.T) {
-		store := &db.MockStore{}
+		store := &mock.MockStore{}
 		store.SetUser(user)
 		store.SetError(errors.NewValidationError("User already exists"))
 
@@ -93,7 +95,7 @@ func TestHandleCreateUser(t *testing.T) {
 	})
 
 	t.Run("should return 400 if params are invalid", func(t *testing.T) {
-		store := &db.MockStore{}
+		store := &mock.MockStore{}
 
 		req, err := http.NewRequest("POST", "/users", reqBodyOf(invalidParams))
 		assert.NoError(t, err, "create request")
@@ -113,7 +115,7 @@ func TestHandleCreateUser(t *testing.T) {
 			"handler returned wrong status code: got %v want %v",
 			rr.Code, http.StatusBadRequest)
 
-		resp, err := Unmarshal[ErrorResponse](rr.Body.Bytes())
+		resp, err := utils.Unmarshal[ErrorResponse](rr.Body.Bytes())
 
 		assert.NoError(t, err, "unmarshal error response")
 		assert.True(t, strings.Contains(resp.Error, "Email"),
@@ -122,7 +124,7 @@ func TestHandleCreateUser(t *testing.T) {
 	})
 
 	t.Run("should return 400 if body is empty", func(t *testing.T) {
-		store := &db.MockStore{}
+		store := &mock.MockStore{}
 
 		req, err := http.NewRequest("POST", "/users", reqBodyOf(db.CreateUserParams{}))
 		assert.NoError(t, err, "create request")
@@ -150,7 +152,7 @@ func TestHandleGetUser(t *testing.T) {
 		CreatedAt: time.Time{},
 	}
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 	store.SetGetUserRow(userRow)
 
 	mux := http.NewServeMux()
@@ -184,7 +186,7 @@ func TestHandleGetUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 		}
 
-		user, err := Unmarshal[db.GetUserRow](body)
+		user, err := utils.Unmarshal[db.GetUserRow](body)
 
 		assert.NoErrorf(t, err, "unmarshal response body")
 		assert.Truef(
@@ -228,7 +230,7 @@ func TestHandleGetUser(t *testing.T) {
 
 func TestHandleAuthenticatedSubscribe(t *testing.T) {
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /users/{id}/subscriptions",
@@ -261,7 +263,7 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 	})
 
 	t.Run("should return 400 if subscription ID is invalid", func(t *testing.T) {
-		store := &db.MockStore{}
+		store := &mock.MockStore{}
 
 		req, err := http.NewRequest(
 			"POST",
@@ -301,7 +303,7 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 
 func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /users/{id}/subscriptions",
@@ -337,7 +339,7 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 
 func TestHandleUnsubscribe(t *testing.T) {
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("DELETE /users/{id}/subscriptions",
@@ -391,7 +393,7 @@ func TestHandleUnsubscribe(t *testing.T) {
 
 func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/feed",
@@ -430,7 +432,7 @@ func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 
 		assert.True(t, len(bodyBytes) > 0)
 
-		respFeed, err := Unmarshal[Feed](bodyBytes)
+		respFeed, err := utils.Unmarshal[Feed](bodyBytes)
 		assert.NoError(t, err)
 		assert.Equal(t, row, respFeed[0])
 	})
@@ -450,7 +452,7 @@ func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 
 func TestHandleOwnersFeedUnauthenticated(t *testing.T) {
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/feed",
@@ -477,7 +479,7 @@ func TestHandleOwnersFeedUnauthenticated(t *testing.T) {
 
 func TestHandleUsersFeed(t *testing.T) {
 
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /users/{id}/feed",
@@ -516,7 +518,7 @@ func TestHandleUsersFeed(t *testing.T) {
 
 		assert.True(t, len(bodyBytes) > 0)
 
-		respFeed, err := Unmarshal[Feed](bodyBytes)
+		respFeed, err := utils.Unmarshal[Feed](bodyBytes)
 		assert.NoError(t, err)
 		assert.Equal(t, row, respFeed[0])
 	})
@@ -547,7 +549,7 @@ func TestHandleUsersFeed(t *testing.T) {
 func fakeAuth(id int64) Middleware {
 	return func(h Handler) Handler {
 		return func(w http.ResponseWriter, r *http.Request) error {
-			rCtx := context.WithValue(r.Context(), UserIdKey, id)
+			rCtx := context.WithValue(r.Context(), utils.UserIdKey, id)
 			r = r.WithContext(rCtx)
 
 			return h(w, r)

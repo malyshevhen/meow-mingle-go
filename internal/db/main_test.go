@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 	TestStore = NewSQLStore(conn)
 
 	Migration, err = migrate.New(
-		"file://./../migration",
+		"file://./../../db/migration",
 		connURL)
 	if err != nil {
 		log.Fatal(err)
@@ -47,7 +47,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func runPostgresContainer(ctx context.Context) (pgContainer *postgres.PostgresContainer, connStr string, err error) {
+func runPostgresContainer(
+	ctx context.Context,
+) (pgContainer *postgres.PostgresContainer, connStr string, err error) {
 	pgContainer, err = postgres.RunContainer(ctx,
 		testcontainers.WithImage("postgres:16-alpine"),
 		postgres.WithDatabase("mingle-db"),

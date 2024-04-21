@@ -2,10 +2,13 @@ package api
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
 func handleCreatePost(store db.IStore) Handler {
@@ -18,7 +21,7 @@ func handleCreatePost(store db.IStore) Handler {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting user Id from token %v\n", "Post Handler ", err)
 			return err
@@ -26,7 +29,7 @@ func handleCreatePost(store db.IStore) Handler {
 
 		params.AuthorID = userId
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
@@ -38,7 +41,7 @@ func handleCreatePost(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully created new post\n", "Post Handler")
 
-		return WriteJson(w, http.StatusCreated, savedPost)
+		return utils.WriteJson(w, http.StatusCreated, savedPost)
 	}
 }
 
@@ -46,7 +49,7 @@ func handleGetUserPosts(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id param %v\n", "Post Handler", err)
 			return err
@@ -59,7 +62,7 @@ func handleGetUserPosts(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully retrieved user posts\n", "Post Handler")
 
-		return WriteJson(w, http.StatusOK, postResponses)
+		return utils.WriteJson(w, http.StatusOK, postResponses)
 	}
 }
 
@@ -67,7 +70,7 @@ func handleGetPostsById(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para:%v\n", "Post Handler", err)
 			return err
@@ -81,7 +84,7 @@ func handleGetPostsById(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully retrieved post by Id\n", "Post Handler")
 
-		return WriteJson(w, http.StatusOK, post)
+		return utils.WriteJson(w, http.StatusOK, post)
 	}
 }
 
@@ -89,7 +92,7 @@ func handleUpdatePostsById(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return err
 		}
@@ -100,11 +103,11 @@ func handleUpdatePostsById(store db.IStore) Handler {
 		}
 		params.ID = id
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -117,7 +120,7 @@ func handleUpdatePostsById(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully updated post by Id\n", "Post Handler")
 
-		return WriteJson(w, http.StatusOK, postResponse)
+		return utils.WriteJson(w, http.StatusOK, postResponse)
 	}
 }
 
@@ -125,13 +128,13 @@ func handleDeletePostsById(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id param %v\n", "Post Handler", err)
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -143,18 +146,18 @@ func handleDeletePostsById(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully deleted post by Id\n", "Post Handler")
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
 func handleLikePost(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -164,7 +167,7 @@ func handleLikePost(store db.IStore) Handler {
 			PostID: id,
 		}
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
@@ -172,7 +175,7 @@ func handleLikePost(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -180,12 +183,12 @@ func handleRemoveLikeFromPost(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -195,7 +198,7 @@ func handleRemoveLikeFromPost(store db.IStore) Handler {
 			UserID: userId,
 		}
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
@@ -203,6 +206,38 @@ func handleRemoveLikeFromPost(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
+}
+
+func readCreatePostParams(r *http.Request) (*db.CreatePostParams, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, errors.NewValidationError("parameter ID is not valid")
+	}
+	defer r.Body.Close()
+
+	p, err := utils.Unmarshal[db.CreatePostParams](body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
+}
+
+func readUpdatePostParams(r *http.Request) (*db.UpdatePostParams, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("%-15s ==> Error reading post request %v\n", "Post Handler", err)
+		return nil, errors.NewValidationError("parameter ID is not valid")
+	}
+	defer r.Body.Close()
+
+	p, err := utils.Unmarshal[db.UpdatePostParams](body)
+	if err != nil {
+		log.Printf("%-15s ==> Error reading post request %v\n", "Post Handler", err)
+		return nil, err
+	}
+
+	return &p, nil
 }

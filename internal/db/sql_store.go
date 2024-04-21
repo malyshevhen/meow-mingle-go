@@ -7,29 +7,8 @@ import (
 	"log"
 	"sort"
 
-	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
 )
-
-type IStore interface {
-	CreateUserTx(ctx context.Context, params CreateUserParams) (user User, err error)
-	CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error)
-	CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, err error)
-	CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error
-	CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error)
-	CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error
-	GetUserTx(ctx context.Context, id int64) (user GetUserRow, err error)
-	GetPostTx(ctx context.Context, id int64) (post GetPostRow, err error)
-	GetFeed(ctx context.Context, userId int64) (feed []ListUserPostsRow, err error)
-	ListUserPostsTx(ctx context.Context, userId int64) (posts []ListUserPostsRow, err error)
-	ListPostCommentsTx(ctx context.Context, id int64) (posts []ListPostCommentsRow, err error)
-	UpdatePostTx(ctx context.Context, userId int64, params UpdatePostParams) (post Post, err error)
-	UpdateCommentTx(ctx context.Context, userId int64, params UpdateCommentParams) (comment Comment, err error)
-	DeletePostTx(ctx context.Context, userId, postId int64) error
-	DeletePostLikeTx(ctx context.Context, params DeletePostLikeParams) error
-	DeleteCommentTx(ctx context.Context, userId, commentId int64) (err error)
-	DeleteCommentLikeTx(ctx context.Context, params DeleteCommentLikeParams) error
-	DeleteSubscriptionTx(ctx context.Context, params DeleteSubscriptionParams) error
-}
 
 type SQLStore struct {
 	*Queries
@@ -67,7 +46,10 @@ func (s *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) error {
 	return nil
 }
 
-func (s *SQLStore) CreateUserTx(ctx context.Context, params CreateUserParams) (user User, err error) {
+func (s *SQLStore) CreateUserTx(
+	ctx context.Context,
+	params CreateUserParams,
+) (user User, err error) {
 	log.Printf("%-15s ==> Creating user in database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -101,7 +83,10 @@ func (s *SQLStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, er
 	return
 }
 
-func (s *SQLStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error {
+func (s *SQLStore) CreateSubscriptionTx(
+	ctx context.Context,
+	params CreateSubscriptionParams,
+) error {
 	log.Printf("%-15s ==> Subscribe User with ID: %d to User with ID: %d from database...\n",
 		"Store",
 		params.UserID,
@@ -117,7 +102,10 @@ func (s *SQLStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscr
 	return err
 }
 
-func (s *SQLStore) DeleteSubscriptionTx(ctx context.Context, params DeleteSubscriptionParams) error {
+func (s *SQLStore) DeleteSubscriptionTx(
+	ctx context.Context,
+	params DeleteSubscriptionParams,
+) error {
 	log.Printf("%-15s ==> Unsubscribe User with ID: %d from User with ID: %d from database...\n",
 		"Store",
 		params.UserID,
@@ -173,7 +161,10 @@ func (s *SQLStore) GetFeed(ctx context.Context, userId int64) (feed []ListUserPo
 	return
 }
 
-func (s *SQLStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error) {
+func (s *SQLStore) CreatePostTx(
+	ctx context.Context,
+	params CreatePostParams,
+) (post Post, err error) {
 	log.Printf("%-15s ==> Creating post in database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -185,7 +176,10 @@ func (s *SQLStore) CreatePostTx(ctx context.Context, params CreatePostParams) (p
 	return
 }
 
-func (s *SQLStore) ListUserPostsTx(ctx context.Context, userId int64) (posts []ListUserPostsRow, err error) {
+func (s *SQLStore) ListUserPostsTx(
+	ctx context.Context,
+	userId int64,
+) (posts []ListUserPostsRow, err error) {
 	log.Printf("%-15s ==> Retrieving users post from database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -211,7 +205,11 @@ func (s *SQLStore) GetPostTx(ctx context.Context, id int64) (post GetPostRow, er
 	return
 }
 
-func (s *SQLStore) UpdatePostTx(ctx context.Context, userId int64, params UpdatePostParams) (post Post, err error) {
+func (s *SQLStore) UpdatePostTx(
+	ctx context.Context,
+	userId int64,
+	params UpdatePostParams,
+) (post Post, err error) {
 	log.Printf("%-15s ==> Updating post in database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -286,7 +284,10 @@ func (s *SQLStore) DeletePostLikeTx(ctx context.Context, params DeletePostLikePa
 	return err
 }
 
-func (s *SQLStore) CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
+func (s *SQLStore) CreateCommentTx(
+	ctx context.Context,
+	params CreateCommentParams,
+) (comment Comment, err error) {
 	log.Printf("%-15s ==> Create comment in database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -298,7 +299,10 @@ func (s *SQLStore) CreateCommentTx(ctx context.Context, params CreateCommentPara
 	return
 }
 
-func (s *SQLStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []ListPostCommentsRow, err error) {
+func (s *SQLStore) ListPostCommentsTx(
+	ctx context.Context,
+	id int64,
+) (posts []ListPostCommentsRow, err error) {
 	log.Printf("%-15s ==> Retrieving post comments from database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -310,7 +314,11 @@ func (s *SQLStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []Li
 	return
 }
 
-func (s *SQLStore) UpdateCommentTx(ctx context.Context, userId int64, params UpdateCommentParams) (comment Comment, err error) {
+func (s *SQLStore) UpdateCommentTx(
+	ctx context.Context,
+	userId int64,
+	params UpdateCommentParams,
+) (comment Comment, err error) {
 	log.Printf("%-15s ==> Updating comment in database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -330,7 +338,10 @@ func (s *SQLStore) UpdateCommentTx(ctx context.Context, userId int64, params Upd
 	return
 }
 
-func (s *SQLStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error) {
+func (s *SQLStore) CreateCommentLikeTx(
+	ctx context.Context,
+	params CreateCommentLikeParams,
+) (err error) {
 	log.Printf("%-15s ==> Add comment like to database...\n", "Store")
 
 	err = s.execTx(ctx, func(q *Queries) error {
@@ -387,7 +398,11 @@ func (s *SQLStore) DeleteCommentLikeTx(ctx context.Context, params DeleteComment
 	return err
 }
 
-func (s *SQLStore) isCommentsAuthor(ctx context.Context, commentId int64, userId int64) (error, bool) {
+func (s *SQLStore) isCommentsAuthor(
+	ctx context.Context,
+	commentId int64,
+	userId int64,
+) (error, bool) {
 	authorId, err := s.GetCommentsAuthorID(ctx, commentId)
 	if err != nil {
 		return errors.NewDatabaseError(err), false

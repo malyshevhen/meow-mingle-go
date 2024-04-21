@@ -7,9 +7,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/malyshEvhen/meow_mingle/config"
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
-	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/config"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
 func handleCreateUser(store db.IStore) Handler {
@@ -23,7 +24,7 @@ func handleCreateUser(store db.IStore) Handler {
 		}
 		defer r.Body.Close()
 
-		user, err := Unmarshal[db.CreateUserParams](body)
+		user, err := utils.Unmarshal[db.CreateUserParams](body)
 		if err != nil {
 			log.Printf("%-15s ==> Error unmarshal JSON: %v\n", "User Handler", err)
 			return err
@@ -31,13 +32,13 @@ func handleCreateUser(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Validating user payload: %s\n", "User Handler", user)
 
-		if err := Validate(user); err != nil {
+		if err := utils.Validate(user); err != nil {
 			return err
 		}
 
 		log.Printf("%-15s ==> Hashing password...", "User Handler")
 
-		hashedPwd, err := hashPwd(user.Password)
+		hashedPwd, err := utils.HashPwd(user.Password)
 		if err != nil {
 			log.Printf("%-15s ==> Error hashing password: %v\n", "User Handler", err)
 			return err
@@ -56,7 +57,7 @@ func handleCreateUser(store db.IStore) Handler {
 		log.Printf("%-15s ==> Creating auth token...\n", "User Handler")
 
 		secret := []byte(config.Envs.JWTSecret)
-		token, err := createJwt(secret, savedUser.ID)
+		token, err := utils.CreateJwt(secret, savedUser.ID)
 		if err != nil {
 			log.Printf("%-15s ==> Error generating JWT token: %s\n", "User Handler", err)
 			return errors.NewValidationError("error create token")
@@ -71,7 +72,7 @@ func handleCreateUser(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> User created successfully!\n", "User Handler")
 
-		return WriteJson(w, http.StatusCreated, savedUser)
+		return utils.WriteJson(w, http.StatusCreated, savedUser)
 	}
 }
 
@@ -79,7 +80,7 @@ func handleGetUser(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			msg := fmt.Sprintf("Invalid ID parameter: '%d' Error: %v", id, err)
 			return errors.NewValidationError(msg)
@@ -87,7 +88,7 @@ func handleGetUser(store db.IStore) Handler {
 
 		log.Printf("User ID is %d\n", id)
 
-		authUserID, err := getAuthUserId(r)
+		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
@@ -113,7 +114,7 @@ func handleGetUser(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Found user: %d\n", "User Handler", savedUser.ID)
 
-		return WriteJson(w, http.StatusOK, savedUser)
+		return utils.WriteJson(w, http.StatusOK, savedUser)
 	}
 }
 
@@ -121,12 +122,12 @@ func handleSubscribe(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return errors.NewValidationError("ID parameter is invalid")
 		}
 
-		authUserID, err := getAuthUserId(r)
+		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
@@ -139,7 +140,7 @@ func handleSubscribe(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -147,12 +148,12 @@ func handleUnsubscribe(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return errors.NewValidationError("ID parameter is invalid")
 		}
 
-		authUserID, err := getAuthUserId(r)
+		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
@@ -165,7 +166,7 @@ func handleUnsubscribe(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -173,7 +174,7 @@ func handleOwnersFeed(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		authUserID, err := getAuthUserId(r)
+		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
@@ -184,7 +185,7 @@ func handleOwnersFeed(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusOK, feed)
+		return utils.WriteJson(w, http.StatusOK, feed)
 	}
 }
 
@@ -192,7 +193,7 @@ func handleUsersFeed(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return errors.NewValidationError("ID parameter is invalid")
 		}
@@ -201,6 +202,6 @@ func handleUsersFeed(store db.IStore) Handler {
 		if err != nil {
 			return err
 		}
-		return WriteJson(w, http.StatusOK, feed)
+		return utils.WriteJson(w, http.StatusOK, feed)
 	}
 }

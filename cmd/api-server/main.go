@@ -4,8 +4,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/malyshEvhen/meow_mingle/application"
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/internal/app"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
 func main() {
@@ -14,13 +14,13 @@ func main() {
 		log.Fatalf("Failed to initialized DB, due to: %s", err.Error())
 	}
 
-	app, err := application.New(DB)
+	application, err := app.New(DB)
 	if err != nil {
 		// TODO: errorf
 		log.Fatal(err)
 	}
 
-	if err := app.Start(); err != nil {
+	if err := application.Start(); err != nil {
 		// TODO: errorf
 		log.Fatal(err)
 	}

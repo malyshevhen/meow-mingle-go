@@ -2,17 +2,19 @@ package api
 
 import (
 	"context"
+	"io"
 	"log"
 	"net/http"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
 func handleCreateComment(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		postId, err := ParseIdParam(r)
+		postId, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing post Id param %v\n", "Comment Handler", err)
 			return err
@@ -24,7 +26,7 @@ func handleCreateComment(store db.IStore) Handler {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
 			return err
@@ -33,7 +35,7 @@ func handleCreateComment(store db.IStore) Handler {
 		params.AuthorID = userId
 		params.PostID = postId
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
@@ -45,7 +47,7 @@ func handleCreateComment(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully created comment\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusCreated, comment)
+		return utils.WriteJson(w, http.StatusCreated, comment)
 	}
 }
 
@@ -53,7 +55,7 @@ func handleGetComments(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
 			return err
@@ -71,7 +73,7 @@ func handleGetComments(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully got comment by Id\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusOK, comments)
+		return utils.WriteJson(w, http.StatusOK, comments)
 	}
 }
 
@@ -79,7 +81,7 @@ func handleUpdateComments(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
 			return err
@@ -95,11 +97,11 @@ func handleUpdateComments(store db.IStore) Handler {
 
 		params.ID = id
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -116,7 +118,7 @@ func handleUpdateComments(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully updated comment by Id\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusOK, comment)
+		return utils.WriteJson(w, http.StatusOK, comment)
 	}
 }
 
@@ -124,14 +126,14 @@ func handleDeleteComments(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para\n ", "Comment Handler")
 			return err
 
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -144,7 +146,7 @@ func handleDeleteComments(store db.IStore) Handler {
 
 		log.Printf("%-15s ==> Successfully deleted comment by Id\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -152,12 +154,12 @@ func handleLikeComment(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := ParseIdParam(r)
+		id, err := utils.ParseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -167,7 +169,7 @@ func handleLikeComment(store db.IStore) Handler {
 			CommentID: id,
 		}
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
@@ -175,7 +177,7 @@ func handleLikeComment(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -183,12 +185,12 @@ func handleRemoveLikeFromComment(store db.IStore) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		commentId, err := ParseIdParam(r)
+		commentId, err := utils.ParseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		userId, err := getAuthUserId(r)
+		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -198,7 +200,7 @@ func handleRemoveLikeFromComment(store db.IStore) Handler {
 			UserID:    userId,
 		}
 
-		if err := Validate(params); err != nil {
+		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
@@ -206,6 +208,36 @@ func handleRemoveLikeFromComment(store db.IStore) Handler {
 			return err
 		}
 
-		return WriteJson(w, http.StatusNoContent, nil)
+		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
+}
+
+func readCreateCommentParams(r *http.Request) (*db.CreateCommentParams, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	c, err := utils.Unmarshal[db.CreateCommentParams](body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
+}
+
+func readUpdateCommentParams(r *http.Request) (*db.UpdateCommentParams, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	c, err := utils.Unmarshal[db.UpdateCommentParams](body)
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
 }

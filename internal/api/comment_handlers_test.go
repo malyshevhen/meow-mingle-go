@@ -8,15 +8,17 @@ import (
 	"reflect"
 	"testing"
 
-	db "github.com/malyshEvhen/meow_mingle/db/sqlc"
-	"github.com/malyshEvhen/meow_mingle/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/mock"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 type Comments []db.GetCommentRow
 
 func TestHandleCreateComment(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	validParams := db.CreateCommentParams{
 		PostID:  1,
@@ -71,7 +73,7 @@ func TestHandleCreateComment(t *testing.T) {
 			)
 		}
 
-		user, err := Unmarshal[db.Comment](body)
+		user, err := utils.Unmarshal[db.Comment](body)
 
 		assert.NoErrorf(t, err, "unmarshal response body")
 		assert.Truef(
@@ -133,7 +135,7 @@ func TestHandleCreateComment(t *testing.T) {
 }
 
 func TestHandleCreateCommentUnauthenticated(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /posts/{id}/comments",
@@ -161,7 +163,7 @@ func TestHandleCreateCommentUnauthenticated(t *testing.T) {
 }
 
 func TestHandleGetComments(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /posts/{id}/comments",
@@ -199,7 +201,7 @@ func TestHandleGetComments(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err)
 
-		respComments, err := Unmarshal[Comments](body)
+		respComments, err := utils.Unmarshal[Comments](body)
 		assert.NoError(t, err)
 		assert.NotEmpty(t, respComments)
 		assert.Equalf(t, db.GetCommentRow(commentRow), respComments[0],
@@ -239,7 +241,7 @@ func TestHandleGetComments(t *testing.T) {
 }
 
 func TestHandleUpdateComment(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	validParams := db.UpdateCommentParams{
 		ID:      1,
@@ -286,7 +288,7 @@ func TestHandleUpdateComment(t *testing.T) {
 		body, err := io.ReadAll(resp.Body)
 		assert.NoError(t, err, "read response body")
 
-		comment, err := Unmarshal[db.Comment](body)
+		comment, err := utils.Unmarshal[db.Comment](body)
 		assert.NoErrorf(t, err, "unmarshal response body")
 		assert.Truef(
 			t,
@@ -332,7 +334,7 @@ func TestHandleUpdateComment(t *testing.T) {
 }
 
 func TestHandleUpdateCommentUnauthorized(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("PUT /comments/{id}",
@@ -360,7 +362,7 @@ func TestHandleUpdateCommentUnauthorized(t *testing.T) {
 }
 
 func TestHandleDeleteComment(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	comment := db.Comment{
 		ID: 1,
@@ -419,7 +421,7 @@ func TestHandleDeleteComment(t *testing.T) {
 }
 
 func TestHandleDeleteCommentUnauthorized(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}",
@@ -447,7 +449,7 @@ func TestHandleDeleteCommentUnauthorized(t *testing.T) {
 }
 
 func TestHandleLikeComment(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	validParams := db.CreateCommentLikeParams{
 		UserID:    1,
@@ -502,7 +504,7 @@ func TestHandleLikeComment(t *testing.T) {
 }
 
 func TestHandleRemoveLikeFromComment(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}/likes",
@@ -556,7 +558,7 @@ func TestHandleRemoveLikeFromComment(t *testing.T) {
 }
 
 func TestHandleRemoveLikeFromCommentUnauthorized(t *testing.T) {
-	store := &db.MockStore{}
+	store := &mock.MockStore{}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/comments/{id}/likes",
