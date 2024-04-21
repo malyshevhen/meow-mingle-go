@@ -61,7 +61,11 @@ func handleGetComments(store db.IStore) Handler {
 
 		comments, err := store.ListPostCommentsTx(ctx, id)
 		if err != nil {
-			log.Printf("%-15s ==> Error getting comment by Id from stor %v\n", "Comment Handler", err)
+			log.Printf(
+				"%-15s ==> Error getting comment by Id from stor %v\n",
+				"Comment Handler",
+				err,
+			)
 			return err
 		}
 
@@ -102,7 +106,11 @@ func handleUpdateComments(store db.IStore) Handler {
 
 		comment, err := store.UpdateCommentTx(ctx, userId, *params)
 		if err != nil {
-			log.Printf("%-15s ==> Error updating comment by Id in stor %v\n", "Comment Handler", err)
+			log.Printf(
+				"%-15s ==> Error updating comment by Id in stor %v\n",
+				"Comment Handler",
+				err,
+			)
 			return err
 		}
 

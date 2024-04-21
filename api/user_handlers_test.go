@@ -129,7 +129,9 @@ func TestHandleCreateUser(t *testing.T) {
 		defer req.Body.Close()
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(MiddlewareChain(handleCreateUser(store), LoggerMW, ErrorHandler))
+		handler := http.HandlerFunc(
+			MiddlewareChain(handleCreateUser(store), LoggerMW, ErrorHandler),
+		)
 		handler.ServeHTTP(rr, req)
 
 		assert.Equalf(t, http.StatusBadRequest, rr.Code,
@@ -185,7 +187,13 @@ func TestHandleGetUser(t *testing.T) {
 		user, err := Unmarshal[db.GetUserRow](body)
 
 		assert.NoErrorf(t, err, "unmarshal response body")
-		assert.Truef(t, reflect.DeepEqual(user, userRow), "handler returned wrong body: got %v want %v", user, userRow)
+		assert.Truef(
+			t,
+			reflect.DeepEqual(user, userRow),
+			"handler returned wrong body: got %v want %v",
+			user,
+			userRow,
+		)
 	})
 
 	t.Run("should return 403 if user ID does not match auth user ID", func(t *testing.T) {
@@ -236,7 +244,11 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 	defer server.Close()
 
 	t.Run("should subscribe user to cat", func(t *testing.T) {
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/users/2/subscriptions", server.URL), nil)
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/users/2/subscriptions", server.URL),
+			nil,
+		)
 		assert.NoError(t, err, "create request")
 
 		resp, err := http.DefaultClient.Do(req)
@@ -251,7 +263,11 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 	t.Run("should return 400 if subscription ID is invalid", func(t *testing.T) {
 		store := &db.MockStore{}
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/users/2#/subscriptions", server.URL), nil)
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/users/2#/subscriptions", server.URL),
+			nil,
+		)
 		assert.NoError(t, err, "create request")
 
 		rr := httptest.NewRecorder()
@@ -267,7 +283,11 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 	t.Run("should return 500 if database error", func(t *testing.T) {
 		store.SetError(errors.NewInternalServerError(fmt.Errorf("database error")))
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/users/1/subscriptions", server.URL), nil)
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/users/1/subscriptions", server.URL),
+			nil,
+		)
 		assert.NoError(t, err, "create request")
 
 		resp, err := http.DefaultClient.Do(req)
@@ -298,7 +318,11 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 
 	t.Run("should return 401 if user is not authenticated", func(t *testing.T) {
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/users/1/subscriptions", server.URL), nil)
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/users/1/subscriptions", server.URL),
+			nil,
+		)
 		assert.NoError(t, err, "create request")
 
 		resp, err := http.DefaultClient.Do(req)
@@ -309,23 +333,6 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 			resp.StatusCode, http.StatusUnauthorized)
 		assert.False(t, store.CreateSubscriptionCalled(), "CreateSubscription was called")
 	})
-}
-
-func fakeAuth(id int64) Middleware {
-	return func(h Handler) Handler {
-		return func(w http.ResponseWriter, r *http.Request) error {
-			rCtx := context.WithValue(r.Context(), UserIdKey, id)
-			r = r.WithContext(rCtx)
-
-			return h(w, r)
-		}
-	}
-}
-
-func reqBodyOf(content interface{}) io.Reader {
-	jsonBytes, _ := json.Marshal(content)
-
-	return bytes.NewBuffer(jsonBytes)
 }
 
 func TestHandleUnsubscribe(t *testing.T) {
@@ -535,4 +542,21 @@ func TestHandleUsersFeed(t *testing.T) {
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
+}
+
+func fakeAuth(id int64) Middleware {
+	return func(h Handler) Handler {
+		return func(w http.ResponseWriter, r *http.Request) error {
+			rCtx := context.WithValue(r.Context(), UserIdKey, id)
+			r = r.WithContext(rCtx)
+
+			return h(w, r)
+		}
+	}
+}
+
+func reqBodyOf(content interface{}) io.Reader {
+	jsonBytes, _ := json.Marshal(content)
+
+	return bytes.NewBuffer(jsonBytes)
 }

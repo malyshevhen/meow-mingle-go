@@ -8,21 +8,19 @@ import (
 )
 
 type Server struct {
-	store db.IStore
-	addr  string
+	addr string
 }
 
-func NewServer(addr string, store db.IStore) *Server {
+func NewServer(addr string) *Server {
 	return &Server{
-		addr:  addr,
-		store: store,
+		addr: addr,
 	}
 }
 
-func (s *Server) Serve() error {
+func (s *Server) Serve(store db.IStore) error {
 	submuxer := http.NewServeMux()
 
-	router := NewRouter(s.store)
+	router := NewRouter(store)
 	router.RegisterRoutes(submuxer)
 
 	muxer := http.NewServeMux()

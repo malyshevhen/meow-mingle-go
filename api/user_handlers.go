@@ -94,7 +94,12 @@ func handleGetUser(store db.IStore) Handler {
 		}
 
 		if id != authUserID {
-			log.Printf("%-15s ==> User with ID: %d have no permissions to access account with ID: %d\n", "User Handler", authUserID, id)
+			log.Printf(
+				"%-15s ==> User with ID: %d have no permissions to access account with ID: %d\n",
+				"User Handler",
+				authUserID,
+				id,
+			)
 			return errors.NewForbiddenError()
 		}
 

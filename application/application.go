@@ -14,7 +14,7 @@ type Application struct {
 func New(database *db.ConnectionPool) (*Application, error) {
 	store := db.NewSQLStore(database.DB)
 
-	server := api.NewServer(":8080", store)
+	server := api.NewServer(":8080")
 
 	return &Application{
 		db:     database,
@@ -26,5 +26,5 @@ func New(database *db.ConnectionPool) (*Application, error) {
 func (app *Application) Start() error {
 	defer app.db.Close()
 
-	return app.server.Serve()
+	return app.server.Serve(app.store)
 }

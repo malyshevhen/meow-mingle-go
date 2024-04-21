@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/malyshEvhen/meow_mingle/application"
@@ -10,16 +11,18 @@ import (
 func main() {
 	DB := db.NewDB()
 	if err := DB.Err; err != nil {
-		os.Exit(1)
+		log.Fatalf("Failed to initialized DB, due to: %s", err.Error())
 	}
 
 	app, err := application.New(DB)
 	if err != nil {
-		os.Exit(1)
+		// TODO: errorf
+		log.Fatal(err)
 	}
 
 	if err := app.Start(); err != nil {
-		os.Exit(1)
+		// TODO: errorf
+		log.Fatal(err)
 	}
 	os.Exit(0)
 }

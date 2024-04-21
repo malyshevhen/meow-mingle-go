@@ -45,7 +45,11 @@ func TestHandleCreatePost(t *testing.T) {
 		store.SetError(nil)
 
 		paramsBytes, _ := json.Marshal(validParams)
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts", server.URL), strings.NewReader(string(paramsBytes)))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts", server.URL),
+			strings.NewReader(string(paramsBytes)),
+		)
 		assert.NoError(t, err)
 
 		res, err := http.DefaultClient.Do(req)
@@ -69,7 +73,11 @@ func TestHandleCreatePost(t *testing.T) {
 		}
 
 		paramsBytes, _ := json.Marshal(invalidParams)
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts", server.URL), strings.NewReader(string(paramsBytes)))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts", server.URL),
+			strings.NewReader(string(paramsBytes)),
+		)
 		assert.NoError(t, err)
 
 		res, err := http.DefaultClient.Do(req)
@@ -83,7 +91,11 @@ func TestHandleCreatePost(t *testing.T) {
 		store.SetError(errors.NewDatabaseError(fmt.Errorf("db error")))
 
 		paramsBytes, _ := json.Marshal(validParams)
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts", server.URL), strings.NewReader(string(paramsBytes)))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts", server.URL),
+			strings.NewReader(string(paramsBytes)),
+		)
 		assert.NoError(t, err)
 
 		res, err := http.DefaultClient.Do(req)
@@ -115,7 +127,11 @@ func TestHandleCreatePostUnauthorized(t *testing.T) {
 
 	t.Run("returning 401 on invalid auth", func(t *testing.T) {
 		paramsBytes, _ := json.Marshal(validParams)
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts", server.URL), strings.NewReader(string(paramsBytes)))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts", server.URL),
+			strings.NewReader(string(paramsBytes)),
+		)
 		assert.NoError(t, err)
 
 		res, err := http.DefaultClient.Do(req)
@@ -343,22 +359,6 @@ func TestHandleUpdatePostsById(t *testing.T) {
 	})
 }
 
-func samplePost() db.Post {
-	return db.Post{
-		ID:       1,
-		AuthorID: 1,
-		Content:  "Hello world",
-	}
-}
-
-func samplePostRow() db.GetPostRow {
-	return db.GetPostRow{
-		ID:       1,
-		AuthorID: 1,
-		Content:  "Hello world",
-	}
-}
-
 func TestHandleDeletePostsById(t *testing.T) {
 	store := &db.MockStore{}
 
@@ -569,4 +569,20 @@ func TestHandleRemoveLikeFromPost(t *testing.T) {
 
 		require.Equal(t, http.StatusBadRequest, res.StatusCode)
 	})
+}
+
+func samplePost() db.Post {
+	return db.Post{
+		ID:       1,
+		AuthorID: 1,
+		Content:  "Hello world",
+	}
+}
+
+func samplePostRow() db.GetPostRow {
+	return db.GetPostRow{
+		ID:       1,
+		AuthorID: 1,
+		Content:  "Hello world",
+	}
 }

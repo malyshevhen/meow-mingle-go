@@ -49,7 +49,11 @@ func TestHandleCreateComment(t *testing.T) {
 	defer server.Close()
 
 	t.Run("returns 201 and created comment if valid", func(t *testing.T) {
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts/1/comments", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts/1/comments", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -60,18 +64,32 @@ func TestHandleCreateComment(t *testing.T) {
 		assert.NoError(t, err, "read response body")
 
 		if status := resp.StatusCode; status != http.StatusCreated {
-			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusCreated)
+			t.Errorf(
+				"handler returned wrong status code: got %v want %v",
+				status,
+				http.StatusCreated,
+			)
 		}
 
 		user, err := Unmarshal[db.Comment](body)
 
 		assert.NoErrorf(t, err, "unmarshal response body")
-		assert.Truef(t, reflect.DeepEqual(user, comment), "handler returned wrong body: got %v want %v", user, comment)
+		assert.Truef(
+			t,
+			reflect.DeepEqual(user, comment),
+			"handler returned wrong body: got %v want %v",
+			user,
+			comment,
+		)
 		assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	})
 
 	t.Run("returns 400 if invalid post ID", func(t *testing.T) {
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts/invalid/comments", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts/invalid/comments", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -82,7 +100,11 @@ func TestHandleCreateComment(t *testing.T) {
 	})
 
 	t.Run("returns 400 if invalid content", func(t *testing.T) {
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts/1/comments", server.URL), reqBodyOf(invalidParams))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts/1/comments", server.URL),
+			reqBodyOf(invalidParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -95,7 +117,11 @@ func TestHandleCreateComment(t *testing.T) {
 	t.Run("returns 500 if error creating comment", func(t *testing.T) {
 		store.SetError(errors.NewInternalServerError(fmt.Errorf("error creating comment")))
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/posts/1/comments", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/posts/1/comments", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -246,7 +272,11 @@ func TestHandleUpdateComment(t *testing.T) {
 	defer server.Close()
 
 	t.Run("returns 200 and updated comment if valid", func(t *testing.T) {
-		req, err := http.NewRequest("PUT", fmt.Sprintf("%s/comments/1", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"PUT",
+			fmt.Sprintf("%s/comments/1", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -258,12 +288,22 @@ func TestHandleUpdateComment(t *testing.T) {
 
 		comment, err := Unmarshal[db.Comment](body)
 		assert.NoErrorf(t, err, "unmarshal response body")
-		assert.Truef(t, reflect.DeepEqual(comment, updatedComment), "handler returned wrong body: got %v want %v", comment, updatedComment)
+		assert.Truef(
+			t,
+			reflect.DeepEqual(comment, updatedComment),
+			"handler returned wrong body: got %v want %v",
+			comment,
+			updatedComment,
+		)
 		assert.Equal(t, http.StatusOK, resp.StatusCode)
 	})
 
 	t.Run("returns 400 if invalid comment ID", func(t *testing.T) {
-		req, err := http.NewRequest("PUT", fmt.Sprintf("%s/comments/1", server.URL), reqBodyOf(invalidParams))
+		req, err := http.NewRequest(
+			"PUT",
+			fmt.Sprintf("%s/comments/1", server.URL),
+			reqBodyOf(invalidParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -276,7 +316,11 @@ func TestHandleUpdateComment(t *testing.T) {
 	t.Run("returns 500 on unexpected error", func(t *testing.T) {
 		store.SetError(errors.NewInternalServerError(fmt.Errorf("unexpected error")))
 
-		req, err := http.NewRequest("PUT", fmt.Sprintf("%s/comments/1", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"PUT",
+			fmt.Sprintf("%s/comments/1", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -424,7 +468,11 @@ func TestHandleLikeComment(t *testing.T) {
 	defer server.Close()
 
 	t.Run("returns 204 if valid", func(t *testing.T) {
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/comments/1/likes", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/comments/1/likes", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
@@ -438,7 +486,11 @@ func TestHandleLikeComment(t *testing.T) {
 	t.Run("returns 500 on error", func(t *testing.T) {
 		store.SetError(errors.NewInternalServerError(fmt.Errorf("error liking comment")))
 
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/comments/1/likes", server.URL), reqBodyOf(validParams))
+		req, err := http.NewRequest(
+			"POST",
+			fmt.Sprintf("%s/comments/1/likes", server.URL),
+			reqBodyOf(validParams),
+		)
 		assert.NoError(t, err)
 
 		resp, err := http.DefaultClient.Do(req)
