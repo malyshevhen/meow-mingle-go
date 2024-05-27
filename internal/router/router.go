@@ -21,7 +21,7 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *http.ServeMux {
 		)
 	}
 
-	noAuth := func(handler func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+	puplic := func(handler func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 		return middleware.MiddlewareChain(
 			handler,
 			middleware.LoggerMW,
@@ -30,22 +30,22 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *http.ServeMux {
 	}
 
 	mux.HandleFunc("GET /users/{id}", authenticated(api.HandleGetUser(store)))
-	mux.HandleFunc("POST /users/register", noAuth(api.HandleCreateUser(store, cfg)))
+	mux.HandleFunc("POST /users/register", puplic(api.HandleCreateUser(store, cfg)))
 	mux.HandleFunc("POST /users/{id}/subscriptions", authenticated(api.HandleSubscribe(store)))
 	mux.HandleFunc("DELETE /users/{id}/subscriptions", authenticated(api.HandleUnsubscribe(store)))
 	mux.HandleFunc("GET /users/feed", authenticated(api.HandleOwnersFeed(store)))
-	mux.HandleFunc("GET /users/{id}/feed", noAuth(api.HandleUsersFeed(store)))
+	mux.HandleFunc("GET /users/{id}/feed", puplic(api.HandleUsersFeed(store)))
 
-	mux.HandleFunc("GET /users/{id}/posts", noAuth(api.HandleGetUserPosts(store)))
+	mux.HandleFunc("GET /users/{id}/posts", puplic(api.HandleGetUserPosts(store)))
 	mux.HandleFunc("POST /posts", authenticated(api.HandleCreatePost(store)))
 	mux.HandleFunc("POST /posts/{id}/likes", authenticated(api.HandleLikePost(store)))
 	mux.HandleFunc("PUT /posts/{id}", authenticated(api.HandleUpdatePostsById(store)))
 	mux.HandleFunc("DELETE /posts/{id}", authenticated(api.HandleDeletePostsById(store)))
 	mux.HandleFunc("DELETE /posts/{id}/likes", authenticated(api.HandleRemoveLikeFromPost(store)))
-	mux.HandleFunc("GET /posts/{id}", noAuth(api.HandleGetPostsById(store)))
+	mux.HandleFunc("GET /posts/{id}", puplic(api.HandleGetPostsById(store)))
 
 	mux.HandleFunc("POST /posts/{id}/comments", authenticated(api.HandleCreateComment(store)))
-	mux.HandleFunc("GET /posts/{id}/comments", noAuth(api.HandleGetComments(store)))
+	mux.HandleFunc("GET /posts/{id}/comments", puplic(api.HandleGetComments(store)))
 	mux.HandleFunc("PUT /comments/{id}", authenticated(api.HandleUpdateComments(store)))
 	mux.HandleFunc("POST /comments/{id}/likes", authenticated(api.HandleLikeComment(store)))
 	mux.HandleFunc("DELETE /comments/{id}", authenticated(api.HandleDeleteComments(store)))
