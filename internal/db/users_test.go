@@ -2,26 +2,10 @@ package db
 
 import (
 	"context"
-	"log"
-
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
-
-func setupTest(_ testing.TB) func(tb testing.TB) {
-	log.Println("setup test")
-	if err := Migration.Up(); err != nil {
-		log.Fatal(err)
-	}
-
-	return func(_ testing.TB) {
-		log.Println("teardown test")
-		if err := Migration.Down(); err != nil {
-			log.Fatal(err)
-		}
-	}
-}
 
 func TestCreateUser(t *testing.T) {
 	args := CreateUserParams{
@@ -32,7 +16,7 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	t.Run("test create user with valid params", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		user, err := TestStore.CreateUserTx(context.Background(), args)
@@ -47,7 +31,7 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("test create user with invalid email", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		invalidEmailArgs := CreateUserParams{
@@ -64,7 +48,7 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("test create user with duplicate email", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		_, err := TestStore.CreateUserTx(context.Background(), args)
@@ -82,7 +66,7 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("test create user with invalid password", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		invalidPasswordArgs := CreateUserParams{
@@ -97,7 +81,7 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("test create user with invalid first name", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		invalidFirstNameArgs := CreateUserParams{
@@ -112,7 +96,7 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("test create user with invalid last name", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		invalidLastNameArgs := CreateUserParams{
@@ -136,7 +120,7 @@ func TestGetUser(t *testing.T) {
 	}
 
 	t.Run("test get existing user", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		existingUser, err := TestStore.CreateUserTx(context.Background(), args)
@@ -154,7 +138,7 @@ func TestGetUser(t *testing.T) {
 	})
 
 	t.Run("test error if user does not exists", func(t *testing.T) {
-		teardown := setupTest(t)
+		teardown := SetupTest(t)
 		defer teardown(t)
 
 		_, err := TestStore.GetUserTx(context.Background(), 1_000_000)

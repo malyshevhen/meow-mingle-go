@@ -90,3 +90,17 @@ func runPostgresContainer(ctx context.Context) (pgContainer *postgres.PostgresCo
 	}
 	return
 }
+
+func SetupTest(_ testing.TB) func(tb testing.TB) {
+	log.Println("setup test")
+	if err := Migration.Up(); err != nil {
+		log.Fatal(err)
+	}
+
+	return func(_ testing.TB) {
+		log.Println("teardown test")
+		if err := Migration.Down(); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
