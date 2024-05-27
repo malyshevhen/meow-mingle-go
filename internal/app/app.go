@@ -17,22 +17,56 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/server"
 )
 
-func Start(ctx context.Context) (func() error, error) {
-	cfg := config.InitConfig()
 const MIGRATION_SOURCE_URL string = "file://./db/migration"
 
-	DB, err := db.NewDB(cfg)
+func Start(ctx context.Context) (closer func() error, err error) {
+	var (
+		cfg       = config.InitConfig()
+		DB        *sql.DB
+		migration *migrate.Migrate
+		store     *db.SQLStore
+		mux       *http.ServeMux
+	)
+
+	DB, err = db.NewDB(cfg)
 	if err != nil {
-		log.Fatalf("DB connection refused: %s", err.Error())
+		log.Printf("%-15s ==> Database connection refused: %s\n", "Application", err.Error())
+		err = fmt.Errorf("database connection refused: %s", err.Error())
+		return
+	}
+	log.Printf("%-15s ==> Database connection createt successfully", "Application")
+
+	err = DB.Ping()
+	if err != nil {
+		log.Printf("%-15s ==> Database is not reachable: %s\n", "Application", err.Error())
+		return
+	}
+	log.Printf("%-15s ==> Database connection is alive", "Application")
+
+	migration, err = migrate.New(MIGRATION_SOURCE_URL, cfg.DBSource)
+	if err != nil {
+		log.Printf("%-15s ==> Migration failed to prepare: %s\n", "Application", err.Error())
+		return
+	}
+	log.Printf("%-15s ==> Migration configured successfully", "Application")
+
+	err = migration.Up()
+	if err != nil {
+		log.Printf("%-15s ==> Migration failed to apply: %s\n", "Application", err.Error())
+		return
+	}
+	log.Printf("%-15s ==> Migration applied successfully", "Application")
+
+	store = db.NewSQLStore(DB)
+	mux = router.RegisterRoutes(store, cfg)
+	err = server.Serve(mux, cfg)
+	if err != nil {
+		err = fmt.Errorf("an error occured while server starts: %s", err.Error())
+		return
 	}
 
-	store := db.NewSQLStore(DB)
-	mux := router.RegisterRoutes(store, cfg)
-	if err := server.Serve(mux, cfg); err != nil {
-		return nil, fmt.Errorf("an error occured while server starts: %s", err.Error())
-	}
-
-	return func() error {
+	closer = func() error {
 		return DB.Close()
-	}, nil
+	}
+	return
 }

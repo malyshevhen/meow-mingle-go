@@ -8,7 +8,7 @@ import (
 )
 
 func Serve(muxer *http.ServeMux, cfg config.Config) error {
-	log.Printf("Server starting at port: %s\n", cfg.ServerPort)
+	log.Printf("%-15s ==> Starting at port: %s\n", "Server", cfg.ServerPort)
 
 	return http.ListenAndServe(cfg.ServerPort, muxer)
 }
