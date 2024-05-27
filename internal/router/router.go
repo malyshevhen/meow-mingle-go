@@ -45,7 +45,7 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *mux.Router {
 
 	postsMux.HandleFunc("/{id}", puplic(api.HandleGetPostsById(store))).Methods("GET")
 	postsMux.HandleFunc("/{id}/comments", puplic(api.HandleGetComments(store))).Methods("GET")
-	postsMux.HandleFunc("/", authenticated(api.HandleCreatePost(store))).Methods("POST")
+	postsMux.HandleFunc("", authenticated(api.HandleCreatePost(store))).Methods("POST")
 	postsMux.HandleFunc("/{id}", authenticated(api.HandleUpdatePostsById(store))).Methods("PUT")
 	postsMux.HandleFunc("/{id}", authenticated(api.HandleDeletePostsById(store))).Methods("DELETE")
 	postsMux.HandleFunc("/{id}/likes", authenticated(api.HandleLikePost(store))).Methods("POST")
