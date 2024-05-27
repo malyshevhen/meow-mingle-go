@@ -11,6 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const TOKEN_COOKIE_KEY string = "access_token"
+
 func GetAuthUserId(r *http.Request) (int64, error) {
 	numId, ok := r.Context().Value(UserIdKey).(int64)
 	if !ok {
@@ -29,14 +31,19 @@ func GetAuthUserId(r *http.Request) (int64, error) {
 func GetTokenFromRequest(r *http.Request) string {
 	log.Printf("%-15s ==>️ Validating for Authorization header...", "Authentication")
 
-	tokenAuth := r.Header.Get("Authorization")
+	authCookie, err := r.Cookie(TOKEN_COOKIE_KEY)
+	if err != nil {
+		log.Printf("%-15s ==> No access token cookie found!", "Authentication")
+		return ""
+	}
 
+	tokenAuth := authCookie.Value
 	if tokenAuth != "" {
-		log.Printf("%-15s ==> Authorization header found!", "Authentication")
+		log.Printf("%-15s ==> Access token found!", "Authentication")
 		return tokenAuth
 	}
 
-	log.Printf("%-15s ==> No Authorization header found.", "Authentication")
+	log.Printf("%-15s ==> No access token found.", "Authentication")
 	return ""
 }
 
@@ -44,7 +51,6 @@ func HashPwd(s string) (string, error) {
 	log.Printf("%-15s ==> Starting password hashing...", "Authentication")
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.DefaultCost)
-
 	if err != nil {
 		log.Printf("%-15s ==> Error generating password hash: %v", "Authentication", err)
 		return "", errors.NewInternalServerError(err)
@@ -75,9 +81,7 @@ func CreateJwt(secret []byte, id int64) (string, error) {
 }
 
 func ValidateJWT(t, secret string) (token *jwt.Token, err error) {
-	var (
-		fail = func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
-	)
+	fail := func() (*jwt.Token, error) { return nil, errors.NewUnauthorizedError() }
 
 	log.Printf("%-15s ==> Validating JWT token...", "Authentication")
 

@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
@@ -67,8 +68,12 @@ func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 		log.Printf("%-15s ==> Setting auth cookie..\n", "User Handler.")
 
 		http.SetCookie(w, &http.Cookie{
-			Name:  "Authorization",
-			Value: token,
+			Name:     utils.TOKEN_COOKIE_KEY,
+			Value:    token,
+			Path:     "/",
+			Expires:  time.Now().Add(12 * time.Hour),
+			Secure:   true,
+			HttpOnly: true,
 		})
 
 		log.Printf("%-15s ==> User created successfully!\n", "User Handler")
