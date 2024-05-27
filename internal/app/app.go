@@ -19,7 +19,7 @@ import (
 
 const MIGRATION_SOURCE_URL string = "file://./db/migration"
 
-func Start(ctx context.Context) (closer func() error, err error) {
+func Start(ctx context.Context) (closer func() error, appError error) {
 	var (
 		cfg       = config.InitConfig()
 		DB        *sql.DB
@@ -28,40 +28,41 @@ func Start(ctx context.Context) (closer func() error, err error) {
 		mux       *http.ServeMux
 	)
 
-	DB, err = db.NewDB(cfg)
+	DB, err := db.NewDB(cfg)
 	if err != nil {
 		log.Printf("%-15s ==> Database connection refused: %s\n", "Application", err.Error())
-		err = fmt.Errorf("database connection refused: %s", err.Error())
+		appError = fmt.Errorf("database connection refused: %s", err.Error())
 		return
 	}
 	log.Printf("%-15s ==> Database connection createt successfully", "Application")
 
-	err = DB.Ping()
-	if err != nil {
+	if err := DB.Ping(); err != nil {
 		log.Printf("%-15s ==> Database is not reachable: %s\n", "Application", err.Error())
+		appError = fmt.Errorf("database is not reachable: %s", err.Error())
 		return
 	}
-	log.Printf("%-15s ==> Database connection is alive", "Application")
+	log.Printf("%-15s ==> Database connection is reachable", "Application")
 
 	migration, err = migrate.New(MIGRATION_SOURCE_URL, cfg.DBSource)
 	if err != nil {
 		log.Printf("%-15s ==> Migration failed to prepare: %s\n", "Application", err.Error())
+		appError = fmt.Errorf("migration configuration failed: %s", err.Error())
 		return
 	}
 	log.Printf("%-15s ==> Migration configured successfully", "Application")
 
-	err = migration.Up()
-	if err != nil {
+	if err := migration.Up(); err != nil {
 		log.Printf("%-15s ==> Migration failed to apply: %s\n", "Application", err.Error())
+		appError = fmt.Errorf("migration failed: %s", err.Error())
 		return
 	}
 	log.Printf("%-15s ==> Migration applied successfully", "Application")
 
 	store = db.NewSQLStore(DB)
 	mux = router.RegisterRoutes(store, cfg)
-	err = server.Serve(mux, cfg)
-	if err != nil {
-		err = fmt.Errorf("an error occured while server starts: %s", err.Error())
+	if err := server.Serve(mux, cfg); err != nil {
+		log.Printf("%-15s ==> Server failed to start: %s\n", "Application", err.Error())
+		appError = fmt.Errorf("an error occured while server starts: %s", err.Error())
 		return
 	}
 
