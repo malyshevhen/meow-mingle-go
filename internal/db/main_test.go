@@ -17,6 +17,18 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+const (
+	DB_HEALTH_MSG        string        = "database system is ready to accept connections"
+	SSL_MODE_PARAM       string        = "sslmode=disable"
+	POSTGESQL_IMAGE      string        = "postgres:16-alpine"
+	DB_NAME              string        = "mingle-db"
+	DB_USER              string        = "postgres"
+	DB_PASSWORD          string        = "example"
+	MIGRATION_SOURCE_URL string        = "file://./../../db/migration"
+	STARTUP_TIMEOUT      time.Duration = 6 * time.Second
+	STRATEGY_OCC         int           = 2
+)
+
 var (
 	TestStore IStore
 	Migration *migrate.Migrate
@@ -24,6 +36,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
+
 	container, connURL, err := runPostgresContainer(ctx)
 	if err != nil {
 		log.Fatal("can not create container:", err)
@@ -38,7 +51,7 @@ func TestMain(m *testing.M) {
 	TestStore = NewSQLStore(conn)
 
 	Migration, err = migrate.New(
-		"file://./../../db/migration",
+		MIGRATION_SOURCE_URL,
 		connURL)
 	if err != nil {
 		log.Fatal(err)
@@ -47,23 +60,31 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func runPostgresContainer(
-	ctx context.Context,
-) (pgContainer *postgres.PostgresContainer, connStr string, err error) {
-	pgContainer, err = postgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:16-alpine"),
-		postgres.WithDatabase("mingle-db"),
-		postgres.WithUsername("postgres"),
-		postgres.WithPassword("example"),
-		testcontainers.WithWaitStrategy(
-			wait.ForLog("database system is ready to accept connections").
-				WithOccurrence(2).WithStartupTimeout(6*time.Second)),
+func runPostgresContainer(ctx context.Context) (pgContainer *postgres.PostgresContainer, connStr string, err error) {
+	withImage := testcontainers.WithImage(POSTGESQL_IMAGE)
+	withDB := postgres.WithDatabase(DB_NAME)
+	withUsername := postgres.WithUsername(DB_USER)
+	withPassword := postgres.WithPassword(DB_PASSWORD)
+	withStrategy := testcontainers.WithWaitStrategy(
+		wait.
+			ForLog(DB_HEALTH_MSG).
+			WithOccurrence(STRATEGY_OCC).
+			WithStartupTimeout(STARTUP_TIMEOUT),
+	)
+
+	pgContainer, err = postgres.RunContainer(
+		ctx,
+		withImage,
+		withDB,
+		withUsername,
+		withPassword,
+		withStrategy,
 	)
 	if err != nil {
 		return nil, "", err
 	}
 
-	connStr, err = pgContainer.ConnectionString(ctx, "sslmode=disable")
+	connStr, err = pgContainer.ConnectionString(ctx, SSL_MODE_PARAM)
 	if err != nil {
 		return nil, "", err
 	}
