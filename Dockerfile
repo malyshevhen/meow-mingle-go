@@ -39,6 +39,9 @@ FROM scratch
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
 
+# Copy Database migrations
+COPY ./db/migration ./db/migration
+
 # Copy our static executable
 COPY --from=builder /go/bin/meow_mingle /go/bin/meow_mingle
 EXPOSE 8080
