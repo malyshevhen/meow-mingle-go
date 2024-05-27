@@ -2,9 +2,15 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/lib/pq"
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/router"
@@ -13,6 +19,7 @@ import (
 
 func Start(ctx context.Context) (func() error, error) {
 	cfg := config.InitConfig()
+const MIGRATION_SOURCE_URL string = "file://./db/migration"
 
 	DB, err := db.NewDB(cfg)
 	if err != nil {
