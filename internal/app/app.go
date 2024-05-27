@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
@@ -19,13 +19,13 @@ import (
 
 const MIGRATION_SOURCE_URL string = "file://./db/migration"
 
-func Start(ctx context.Context) (closer func() error, appError error) {
+func Start(ctx context.Context) (closerFunc func() error, appError error) {
 	var (
 		cfg       = config.InitConfig()
 		DB        *sql.DB
 		migration *migrate.Migrate
 		store     *db.SQLStore
-		mux       *http.ServeMux
+		mux       *mux.Router
 	)
 
 	DB, err := db.NewDB(cfg)
@@ -52,11 +52,15 @@ func Start(ctx context.Context) (closer func() error, appError error) {
 	log.Printf("%-15s ==> Migration configured successfully", "Application")
 
 	if err := migration.Up(); err != nil {
-		log.Printf("%-15s ==> Migration failed to apply: %s\n", "Application", err.Error())
-		appError = fmt.Errorf("migration failed: %s", err.Error())
-		return
+		if err.Error() != "no change" {
+			log.Printf("%-15s ==> Migration failed to apply: %s\n", "Application", err.Error())
+			appError = fmt.Errorf("migration failed: %s", err.Error())
+			return
+		}
+		log.Printf("%-15s ==> Migration not applied: %s", "Application", err.Error())
+	} else {
+		log.Printf("%-15s ==> Migration applied successfully", "Application")
 	}
-	log.Printf("%-15s ==> Migration applied successfully", "Application")
 
 	store = db.NewSQLStore(DB)
 	mux = router.RegisterRoutes(store, cfg)
@@ -66,7 +70,7 @@ func Start(ctx context.Context) (closer func() error, appError error) {
 		return
 	}
 
-	closer = func() error {
+	closerFunc = func() error {
 		return DB.Close()
 	}
 	return

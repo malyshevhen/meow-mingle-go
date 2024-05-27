@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 )
 
@@ -43,7 +44,8 @@ func Validate(s interface{}) error {
 }
 
 func ParseIdParam(r *http.Request) (int64, error) {
-	id := r.PathValue("id")
+	vars := mux.Vars(r)
+	id := vars["id"]
 
 	numId, err := strconv.Atoi(id)
 	if err != nil {
