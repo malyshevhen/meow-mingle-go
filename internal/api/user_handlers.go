@@ -16,13 +16,6 @@ import (
 
 const TOKEN_EXPIRATION_TIME int = 12
 
-type UserRegistrationForm struct {
-	Email     string `json:"email" validate:"required,email"`
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	Password  string `json:"password" validate:"required"`
-}
-
 func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()

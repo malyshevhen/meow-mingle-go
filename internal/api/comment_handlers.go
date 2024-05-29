@@ -21,7 +21,7 @@ func HandleCreateComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		params, err := readCreateCommentParams(r)
+		content, err := ReadReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
@@ -33,14 +33,15 @@ func HandleCreateComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		params.AuthorID = userId
-		params.PostID = postId
+		params := Map(content, func(c ContentForm) db.CreateCommentParams {
+			return db.CreateCommentParams{
+				Content:  c.Content,
+				AuthorID: userId,
+				PostID:   postId,
+			}
+		})
 
-		if err := utils.Validate(params); err != nil {
-			return err
-		}
-
-		comment, err := store.CreateCommentTx(ctx, *params)
+		comment, err := store.CreateCommentTx(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
 			return err

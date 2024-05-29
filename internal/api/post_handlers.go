@@ -10,21 +10,17 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-type PostContent struct {
-	Content string `json:"content" validate:"required"`
-}
-
 func HandleCreatePost(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		postContent, err := ReadReqBody[PostContent](r)
+		postContent, err := ReadReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading post request: %v\n", "Post Handler", err)
 			return err
 		}
 
-		params := Map(postContent, func(s PostContent) db.CreatePostParams {
+		params := Map(postContent, func(s ContentForm) db.CreatePostParams {
 			return db.CreatePostParams{Content: postContent.Content}
 		})
 
@@ -100,13 +96,13 @@ func HandleUpdatePostsById(store db.IStore) types.Handler {
 			return err
 		}
 
-		postContent, err := ReadReqBody[PostContent](r)
+		postContent, err := ReadReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading update request: %v\n", "Post Handler", err)
 			return err
 		}
 
-		params := Map(postContent, func(content PostContent) db.UpdatePostParams {
+		params := Map(postContent, func(content ContentForm) db.UpdatePostParams {
 			return db.UpdatePostParams{
 				ID:      id,
 				Content: content.Content,
