@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -14,7 +15,6 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/router"
-	"github.com/malyshEvhen/meow_mingle/internal/server"
 )
 
 const MIGRATION_SOURCE_URL string = "file://./db/migration"
@@ -64,7 +64,7 @@ func Start(ctx context.Context) (closerFunc func() error, appError error) {
 
 	store = db.NewSQLStore(DB)
 	mux = router.RegisterRoutes(store, cfg)
-	if err := server.Serve(mux, cfg); err != nil {
+	if err := http.ListenAndServe(cfg.ServerPort, mux); err != nil {
 		log.Printf("%-15s ==> Server failed to start: %s\n", "Application", err.Error())
 		appError = fmt.Errorf("an error occured while server starts: %s", err.Error())
 		return
