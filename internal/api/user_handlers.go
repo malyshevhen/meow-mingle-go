@@ -14,6 +14,8 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
+const TOKEN_EXPIRATION_TIME int = 12
+
 type UserRegistrationForm struct {
 	Email     string `json:"email" validate:"required,email"`
 	FirstName string `json:"first_name" validate:"required"`
@@ -68,7 +70,7 @@ func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 			Name:     utils.TOKEN_COOKIE_KEY,
 			Value:    token,
 			Path:     "/",
-			Expires:  time.Now().Add(12 * time.Hour),
+			Expires:  time.Now().Add(time.Duration(TOKEN_EXPIRATION_TIME) * time.Hour),
 			Secure:   true,
 			HttpOnly: true,
 		})
