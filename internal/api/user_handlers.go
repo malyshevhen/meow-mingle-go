@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -15,28 +14,26 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
+type UserRegistrationForm struct {
+	Email     string `json:"email" validate:"required,email"`
+	FirstName string `json:"first_name" validate:"required"`
+	LastName  string `json:"last_name" validate:"required"`
+	Password  string `json:"password" validate:"required"`
+}
+
 func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		body, err := io.ReadAll(r.Body)
+		uForm, err := ReadReqBody[UserRegistrationForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading request body: %v\n", "User Handler", err)
-			return errors.NewValidationError("Invalid request body")
-		}
-		defer r.Body.Close()
-
-		user, err := utils.Unmarshal[db.CreateUserParams](body)
-		if err != nil {
-			log.Printf("%-15s ==> Error unmarshal JSON: %v\n", "User Handler", err)
 			return err
 		}
 
-		log.Printf("%-15s ==> Validating user payload: %s\n", "User Handler", user)
-
-		if err := utils.Validate(user); err != nil {
-			return err
-		}
+		user := Map(uForm, func(uf UserRegistrationForm) db.CreateUserParams {
+			return db.CreateUserParams(uForm)
+		})
 
 		log.Printf("%-15s ==> Hashing password...", "User Handler")
 
