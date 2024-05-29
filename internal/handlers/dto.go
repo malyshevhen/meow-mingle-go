@@ -1,4 +1,4 @@
-package api
+package handlers
 
 type UserRegistrationForm struct {
 	Email     string `json:"email" validate:"required,email"`
