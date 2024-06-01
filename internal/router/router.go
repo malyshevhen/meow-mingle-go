@@ -3,14 +3,16 @@ package router
 import (
 	"net/http"
 
-	"github.com/malyshEvhen/meow_mingle/internal/api"
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/handlers"
 	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 )
 
-func RegisterRoutes(store db.IStore, cfg config.Config) *http.ServeMux {
-	mux := http.NewServeMux()
+func RegisterRoutes(store db.IStore, cfg config.Config) *mux.Router {
+	mux := mux.NewRouter()
+	apiMux := mux.PathPrefix("/api/v1").Subrouter()
 
 	authenticated := func(handler func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 		return middleware.MiddlewareChain(
@@ -29,33 +31,31 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *http.ServeMux {
 		)
 	}
 
-	mux.HandleFunc("GET /users/{id}", authenticated(api.HandleGetUser(store)))
-	mux.HandleFunc("POST /users/register", puplic(api.HandleCreateUser(store, cfg)))
-	mux.HandleFunc("POST /users/{id}/subscriptions", authenticated(api.HandleSubscribe(store)))
-	mux.HandleFunc("DELETE /users/{id}/subscriptions", authenticated(api.HandleUnsubscribe(store)))
-	mux.HandleFunc("GET /users/feed", authenticated(api.HandleOwnersFeed(store)))
-	mux.HandleFunc("GET /users/{id}/feed", puplic(api.HandleUsersFeed(store)))
+	usersMux := apiMux.PathPrefix("/users").Subrouter()
+	postsMux := apiMux.PathPrefix("/posts").Subrouter()
+	commentsMux := apiMux.PathPrefix("/comments").Subrouter()
 
-	mux.HandleFunc("GET /users/{id}/posts", puplic(api.HandleGetUserPosts(store)))
-	mux.HandleFunc("POST /posts", authenticated(api.HandleCreatePost(store)))
-	mux.HandleFunc("POST /posts/{id}/likes", authenticated(api.HandleLikePost(store)))
-	mux.HandleFunc("PUT /posts/{id}", authenticated(api.HandleUpdatePostsById(store)))
-	mux.HandleFunc("DELETE /posts/{id}", authenticated(api.HandleDeletePostsById(store)))
-	mux.HandleFunc("DELETE /posts/{id}/likes", authenticated(api.HandleRemoveLikeFromPost(store)))
-	mux.HandleFunc("GET /posts/{id}", puplic(api.HandleGetPostsById(store)))
+	usersMux.HandleFunc("/register", puplic(handlers.HandleCreateUser(store, cfg))).Methods("POST")
+	usersMux.HandleFunc("/{id}/feed", puplic(handlers.HandleUsersFeed(store))).Methods("GET")
+	usersMux.HandleFunc("/{id}/posts", puplic(handlers.HandleGetUserPosts(store))).Methods("GET")
+	usersMux.HandleFunc("/{id}", authenticated(handlers.HandleGetUser(store))).Methods("GET")
+	usersMux.HandleFunc("/feed", authenticated(handlers.HandleOwnersFeed(store))).Methods("GET")
+	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleSubscribe(store))).Methods("POST")
+	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleUnsubscribe(store))).Methods("POST")
 
-	mux.HandleFunc("POST /posts/{id}/comments", authenticated(api.HandleCreateComment(store)))
-	mux.HandleFunc("GET /posts/{id}/comments", puplic(api.HandleGetComments(store)))
-	mux.HandleFunc("PUT /comments/{id}", authenticated(api.HandleUpdateComments(store)))
-	mux.HandleFunc("POST /comments/{id}/likes", authenticated(api.HandleLikeComment(store)))
-	mux.HandleFunc("DELETE /comments/{id}", authenticated(api.HandleDeleteComments(store)))
-	mux.HandleFunc(
-		"DELETE /comments/{id}/likes",
-		authenticated(api.HandleRemoveLikeFromComment(store)),
-	)
+	postsMux.HandleFunc("/{id}", puplic(handlers.HandleGetPostsById(store))).Methods("GET")
+	postsMux.HandleFunc("/{id}/comments", puplic(handlers.HandleGetComments(store))).Methods("GET")
+	postsMux.HandleFunc("", authenticated(handlers.HandleCreatePost(store))).Methods("POST")
+	postsMux.HandleFunc("/{id}", authenticated(handlers.HandleUpdatePostsById(store))).Methods("PUT")
+	postsMux.HandleFunc("/{id}", authenticated(handlers.HandleDeletePostsById(store))).Methods("DELETE")
+	postsMux.HandleFunc("/{id}/likes", authenticated(handlers.HandleLikePost(store))).Methods("POST")
+	postsMux.HandleFunc("/{id}/likes", authenticated(handlers.HandleRemoveLikeFromPost(store))).Methods("DELETE")
+	postsMux.HandleFunc("/{id}/comments", authenticated(handlers.HandleCreateComment(store))).Methods("POST")
 
-	muxer := http.NewServeMux()
-	muxer.Handle("/api/v1/", http.StripPrefix("/api/v1", mux))
+	commentsMux.HandleFunc("/{id}", authenticated(handlers.HandleUpdateComments(store))).Methods("PUT")
+	commentsMux.HandleFunc("/{id}", authenticated(handlers.HandleDeleteComments(store))).Methods("DELETE")
+	commentsMux.HandleFunc("/{id}/likes", authenticated(handlers.HandleLikeComment(store))).Methods("POST")
+	commentsMux.HandleFunc("/{id}/likes", authenticated(handlers.HandleRemoveLikeFromComment(store))).Methods("DELETE")
 
-	return muxer
+	return mux
 }

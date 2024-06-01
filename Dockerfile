@@ -29,7 +29,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary.
-RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/meow_mingle cmd/api-server/main.go
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/meow_mingle cmd/api/main.go
 
 
 # Runner

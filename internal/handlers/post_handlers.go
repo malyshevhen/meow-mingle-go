@@ -1,13 +1,11 @@
-package api
+package handlers
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
@@ -16,11 +14,15 @@ func HandleCreatePost(store db.IStore) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		params, err := readCreatePostParams(r)
+		postContent, err := ReadReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading post request: %v\n", "Post Handler", err)
 			return err
 		}
+
+		params := Map(postContent, func(s ContentForm) db.CreatePostParams {
+			return db.CreatePostParams{Content: postContent.Content}
+		})
 
 		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
@@ -30,11 +32,7 @@ func HandleCreatePost(store db.IStore) types.Handler {
 
 		params.AuthorID = userId
 
-		if err := utils.Validate(params); err != nil {
-			return err
-		}
-
-		savedPost, err := store.CreatePostTx(ctx, *params)
+		savedPost, err := store.CreatePostTx(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating post in store %v\n", "Post Handler", err)
 			return err
@@ -98,22 +96,25 @@ func HandleUpdatePostsById(store db.IStore) types.Handler {
 			return err
 		}
 
-		params, err := readUpdatePostParams(r)
+		postContent, err := ReadReqBody[ContentForm](r)
 		if err != nil {
+			log.Printf("%-15s ==> Error reading update request: %v\n", "Post Handler", err)
 			return err
 		}
-		params.ID = id
 
-		if err := utils.Validate(params); err != nil {
-			return err
-		}
+		params := Map(postContent, func(content ContentForm) db.UpdatePostParams {
+			return db.UpdatePostParams{
+				ID:      id,
+				Content: content.Content,
+			}
+		})
 
 		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
 
-		postResponse, err := store.UpdatePostTx(ctx, userId, *params)
+		postResponse, err := store.UpdatePostTx(ctx, userId, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error updating post by Id in store %v\n", "Post Handler", err)
 			return err
@@ -209,36 +210,4 @@ func HandleRemoveLikeFromPost(store db.IStore) types.Handler {
 
 		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
-}
-
-func readCreatePostParams(r *http.Request) (*db.CreatePostParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, errors.NewValidationError("parameter ID is not valid")
-	}
-	defer r.Body.Close()
-
-	p, err := utils.Unmarshal[db.CreatePostParams](body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &p, nil
-}
-
-func readUpdatePostParams(r *http.Request) (*db.UpdatePostParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("%-15s ==> Error reading post request %v\n", "Post Handler", err)
-		return nil, errors.NewValidationError("parameter ID is not valid")
-	}
-	defer r.Body.Close()
-
-	p, err := utils.Unmarshal[db.UpdatePostParams](body)
-	if err != nil {
-		log.Printf("%-15s ==> Error reading post request %v\n", "Post Handler", err)
-		return nil, err
-	}
-
-	return &p, nil
 }

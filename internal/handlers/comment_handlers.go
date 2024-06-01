@@ -1,8 +1,7 @@
-package api
+package handlers
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
 
@@ -21,7 +20,7 @@ func HandleCreateComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		params, err := readCreateCommentParams(r)
+		content, err := ReadReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
@@ -33,14 +32,15 @@ func HandleCreateComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		params.AuthorID = userId
-		params.PostID = postId
+		params := Map(content, func(c ContentForm) db.CreateCommentParams {
+			return db.CreateCommentParams{
+				Content:  c.Content,
+				AuthorID: userId,
+				PostID:   postId,
+			}
+		})
 
-		if err := utils.Validate(params); err != nil {
-			return err
-		}
-
-		comment, err := store.CreateCommentTx(ctx, *params)
+		comment, err := store.CreateCommentTx(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
 			return err
@@ -86,28 +86,28 @@ func HandleUpdateComments(store db.IStore) types.Handler {
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
 			return err
-
 		}
 
-		params, err := readUpdateCommentParams(r)
+		content, err := ReadReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
-			return err
-
-		}
-
-		params.ID = id
-
-		if err := utils.Validate(params); err != nil {
 			return err
 		}
 
 		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
+			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
 			return err
 		}
 
-		comment, err := store.UpdateCommentTx(ctx, userId, *params)
+		params := Map(content, func(c ContentForm) db.UpdateCommentParams {
+			return db.UpdateCommentParams{
+				ID:      id,
+				Content: c.Content,
+			}
+		})
+
+		comment, err := store.UpdateCommentTx(ctx, userId, params)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Error updating comment by Id in stor %v\n",
@@ -211,34 +211,4 @@ func HandleRemoveLikeFromComment(store db.IStore) types.Handler {
 
 		return utils.WriteJson(w, http.StatusNoContent, nil)
 	}
-}
-
-func readCreateCommentParams(r *http.Request) (*db.CreateCommentParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-
-	c, err := utils.Unmarshal[db.CreateCommentParams](body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &c, nil
-}
-
-func readUpdateCommentParams(r *http.Request) (*db.UpdateCommentParams, error) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer r.Body.Close()
-
-	c, err := utils.Unmarshal[db.UpdateCommentParams](body)
-	if err != nil {
-		return nil, err
-	}
-
-	return &c, nil
 }

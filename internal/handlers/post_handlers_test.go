@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"encoding/json"
@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/middleware"
@@ -21,15 +22,15 @@ import (
 func TestHandleCreatePost(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /posts",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts",
 		middleware.MiddlewareChain(
 			HandleCreatePost(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -112,15 +113,15 @@ func TestHandleCreatePost(t *testing.T) {
 func TestHandleCreatePostUnauthorized(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /posts",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts",
 		middleware.MiddlewareChain(
 			HandleCreatePost(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -149,15 +150,15 @@ func TestHandleCreatePostUnauthorized(t *testing.T) {
 func TestHandleGetUserPosts(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /users/{id}/posts",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}/posts",
 		middleware.MiddlewareChain(
 			HandleGetUserPosts(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -186,7 +187,6 @@ func TestHandleGetUserPosts(t *testing.T) {
 		postsResp, err := utils.Unmarshal[[]db.PostInfo](body)
 		assert.NoError(t, err)
 		assert.Equal(t, post, postsResp[0])
-
 	})
 
 	t.Run("returning 404 if no posts found for user", func(t *testing.T) {
@@ -219,15 +219,15 @@ func TestHandleGetUserPosts(t *testing.T) {
 func TestHandleGetUserPostsUnauthorized(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /users/{id}/posts",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}/posts",
 		middleware.MiddlewareChain(
 			HandleGetUserPosts(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -254,14 +254,14 @@ func TestHandleGetUserPostsUnauthorized(t *testing.T) {
 func TestHandleGetPostsById(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /posts/{id}",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}",
 		middleware.MiddlewareChain(
 			HandleGetPostsById(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -309,15 +309,15 @@ func TestHandleGetPostsById(t *testing.T) {
 func TestHandleUpdatePostsById(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("PUT /posts/{id}",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}",
 		middleware.MiddlewareChain(
 			HandleUpdatePostsById(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("PUT")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -366,15 +366,15 @@ func TestHandleUpdatePostsById(t *testing.T) {
 func TestHandleDeletePostsById(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("DELETE /posts/{id}",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}",
 		middleware.MiddlewareChain(
 			HandleDeletePostsById(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -422,15 +422,15 @@ func TestHandleDeletePostsById(t *testing.T) {
 func TestHandleLikePost(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /posts/{id}/like",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/like",
 		middleware.MiddlewareChain(
 			HandleLikePost(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -461,30 +461,6 @@ func TestHandleLikePost(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, res.StatusCode)
 	})
 
-	t.Run("returns 401 if unauthorized", func(t *testing.T) {
-		mux := http.NewServeMux()
-		mux.HandleFunc("POST /posts/{id}/like",
-			middleware.MiddlewareChain(
-				HandleLikePost(store),
-				middleware.LoggerMW,
-				middleware.ErrorHandler,
-				middleware.WithJWTAuth(store, testCfg),
-			),
-		)
-
-		server := httptest.NewServer(mux)
-		defer server.Close()
-
-		url := fmt.Sprintf("%s/posts/1/like", server.URL)
-		req, err := http.NewRequest("POST", url, nil)
-		require.NoError(t, err)
-
-		res, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-
-		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
-	})
-
 	t.Run("returns 400 if invalid post ID", func(t *testing.T) {
 		url := fmt.Sprintf("%s/posts/invalid/like", server.URL)
 		req, err := http.NewRequest("POST", url, nil)
@@ -497,18 +473,46 @@ func TestHandleLikePost(t *testing.T) {
 	})
 }
 
+func TestHandleLikePostUnauthorized(t *testing.T) {
+	store := &mock.MockStore{}
+
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/like",
+		middleware.MiddlewareChain(
+			HandleLikePost(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
+		),
+	).Methods("POST")
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Run("returns 401 if unauthorized", func(t *testing.T) {
+		url := fmt.Sprintf("%s/posts/1/like", server.URL)
+		req, err := http.NewRequest("POST", url, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
+	})
+}
+
 func TestHandleRemoveLikeFromPost(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("DELETE /posts/{id}/like",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/like",
 		middleware.MiddlewareChain(
 			HandleRemoveLikeFromPost(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -539,30 +543,6 @@ func TestHandleRemoveLikeFromPost(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, res.StatusCode)
 	})
 
-	t.Run("returns 401 if unauthorized", func(t *testing.T) {
-		mux := http.NewServeMux()
-		mux.HandleFunc("DELETE /posts/{id}/like",
-			middleware.MiddlewareChain(
-				HandleRemoveLikeFromPost(store),
-				middleware.LoggerMW,
-				middleware.ErrorHandler,
-				middleware.WithJWTAuth(store, testCfg),
-			),
-		)
-
-		server := httptest.NewServer(mux)
-		defer server.Close()
-
-		url := fmt.Sprintf("%s/posts/1/like", server.URL)
-		req, err := http.NewRequest("DELETE", url, nil)
-		require.NoError(t, err)
-
-		res, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-
-		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
-	})
-
 	t.Run("returns 400 if invalid post ID", func(t *testing.T) {
 		url := fmt.Sprintf("%s/posts/invalid/like", server.URL)
 		req, err := http.NewRequest("DELETE", url, nil)
@@ -572,6 +552,34 @@ func TestHandleRemoveLikeFromPost(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
+}
+
+func TestHandleRemoveLikeFromPostUnauthorized(t *testing.T) {
+	store := &mock.MockStore{}
+
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/like",
+		middleware.MiddlewareChain(
+			HandleRemoveLikeFromPost(store),
+			middleware.LoggerMW,
+			middleware.ErrorHandler,
+			middleware.WithJWTAuth(store, testCfg),
+		),
+	).Methods("DELETE")
+
+	server := httptest.NewServer(mux)
+	defer server.Close()
+
+	t.Run("returns 401 if unauthorized", func(t *testing.T) {
+		url := fmt.Sprintf("%s/posts/1/like", server.URL)
+		req, err := http.NewRequest("DELETE", url, nil)
+		require.NoError(t, err)
+
+		res, err := http.DefaultClient.Do(req)
+		require.NoError(t, err)
+
+		require.Equal(t, http.StatusUnauthorized, res.StatusCode)
 	})
 }
 

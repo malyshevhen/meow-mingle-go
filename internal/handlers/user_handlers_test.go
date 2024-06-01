@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/middleware"
@@ -25,7 +26,6 @@ import (
 type Feed []db.PostInfo
 
 func TestHandleCreateUser(t *testing.T) {
-
 	user := db.User{
 		ID:        1,
 		Email:     "john@doe.com",
@@ -142,7 +142,6 @@ func TestHandleCreateUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-
 	userRow := db.GetUserRow{
 		ID:        1,
 		Email:     "john@doe.com",
@@ -154,21 +153,20 @@ func TestHandleGetUser(t *testing.T) {
 	store := &mock.MockStore{}
 	store.SetGetUserRow(userRow)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /users/{id}",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}",
 		middleware.MiddlewareChain(
 			HandleGetUser(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(userRow.ID),
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	t.Run("should return 200 and user if user exists", func(t *testing.T) {
-
 		emptyRequest := bytes.NewBuffer([]byte{})
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/users/1", server.URL), emptyRequest)
 		assert.NoError(t, err, "create request")
@@ -198,7 +196,6 @@ func TestHandleGetUser(t *testing.T) {
 	})
 
 	t.Run("should return 403 if user ID does not match auth user ID", func(t *testing.T) {
-
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/users/2", server.URL), nil)
 		assert.NoError(t, err, "create request")
 
@@ -212,7 +209,6 @@ func TestHandleGetUser(t *testing.T) {
 	})
 
 	t.Run("should return 404 if user not found", func(t *testing.T) {
-
 		store.SetError(errors.NewNotFoundError("user not found"))
 
 		req, err := http.NewRequest("GET", fmt.Sprintf("%s/users/1", server.URL), nil)
@@ -228,18 +224,17 @@ func TestHandleGetUser(t *testing.T) {
 }
 
 func TestHandleAuthenticatedSubscribe(t *testing.T) {
-
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /users/{id}/subscriptions",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}/subscriptions",
 		middleware.MiddlewareChain(
 			HandleSubscribe(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(int64(1)),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -301,24 +296,22 @@ func TestHandleAuthenticatedSubscribe(t *testing.T) {
 }
 
 func TestHandleUnauthenticatedSubscribe(t *testing.T) {
-
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /users/{id}/subscriptions",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}/subscriptions",
 		middleware.MiddlewareChain(
 			HandleSubscribe(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
 
 	t.Run("should return 401 if user is not authenticated", func(t *testing.T) {
-
 		req, err := http.NewRequest(
 			"POST",
 			fmt.Sprintf("%s/users/1/subscriptions", server.URL),
@@ -337,18 +330,17 @@ func TestHandleUnauthenticatedSubscribe(t *testing.T) {
 }
 
 func TestHandleUnsubscribe(t *testing.T) {
-
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("DELETE /users/{id}/subscriptions",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}/subscriptions",
 		middleware.MiddlewareChain(
 			HandleUnsubscribe(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(int64(1)),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -391,18 +383,17 @@ func TestHandleUnsubscribe(t *testing.T) {
 }
 
 func TestHandleOwnersFeedAuthenticated(t *testing.T) {
-
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /users/feed",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/feed",
 		middleware.MiddlewareChain(
 			HandleOwnersFeed(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(int64(1)),
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -450,17 +441,16 @@ func TestHandleOwnersFeedAuthenticated(t *testing.T) {
 }
 
 func TestHandleOwnersFeedUnauthenticated(t *testing.T) {
-
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /users/feed",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/feed",
 		middleware.MiddlewareChain(
 			HandleOwnersFeed(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -477,18 +467,17 @@ func TestHandleOwnersFeedUnauthenticated(t *testing.T) {
 }
 
 func TestHandleUsersFeed(t *testing.T) {
-
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /users/{id}/feed",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/users/{id}/feed",
 		middleware.MiddlewareChain(
 			HandleUsersFeed(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("GET")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()

@@ -1,4 +1,4 @@
-package api
+package handlers
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/middleware"
@@ -38,15 +39,15 @@ func TestHandleCreateComment(t *testing.T) {
 	}
 	store.SetComment(comment)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /posts/{id}/comments",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/comments",
 		middleware.MiddlewareChain(
 			HandleCreateComment(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -138,15 +139,15 @@ func TestHandleCreateComment(t *testing.T) {
 func TestHandleCreateCommentUnauthenticated(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /posts/{id}/comments",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/comments",
 		middleware.MiddlewareChain(
 			HandleCreateComment(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -166,15 +167,15 @@ func TestHandleCreateCommentUnauthenticated(t *testing.T) {
 func TestHandleGetComments(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /posts/{id}/comments",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/posts/{id}/comments",
 		middleware.MiddlewareChain(
 			HandleGetComments(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("GET")
 
 	commentRow := db.CommentInfo{
 		ID:       1,
@@ -261,15 +262,15 @@ func TestHandleUpdateComment(t *testing.T) {
 	}
 	store.SetComment(updatedComment)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("PUT /comments/{id}",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/comments/{id}",
 		middleware.MiddlewareChain(
 			HandleUpdateComments(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("PUT")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -337,15 +338,15 @@ func TestHandleUpdateComment(t *testing.T) {
 func TestHandleUpdateCommentUnauthorized(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("PUT /comments/{id}",
+	mux := mux.NewRouter()
+	mux.HandleFunc("/comments/{id}",
 		middleware.MiddlewareChain(
 			HandleUpdateComments(store),
 			middleware.LoggerMW,
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("PUT")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -370,7 +371,7 @@ func TestHandleDeleteComment(t *testing.T) {
 	}
 	store.SetComment(comment)
 
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 	mux.HandleFunc("/comments/{id}",
 		middleware.MiddlewareChain(
 			HandleDeleteComments(store),
@@ -378,7 +379,7 @@ func TestHandleDeleteComment(t *testing.T) {
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -424,7 +425,7 @@ func TestHandleDeleteComment(t *testing.T) {
 func TestHandleDeleteCommentUnauthorized(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 	mux.HandleFunc("/comments/{id}",
 		middleware.MiddlewareChain(
 			HandleDeleteComments(store),
@@ -432,7 +433,7 @@ func TestHandleDeleteCommentUnauthorized(t *testing.T) {
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -457,7 +458,7 @@ func TestHandleLikeComment(t *testing.T) {
 		CommentID: 1,
 	}
 
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 	mux.HandleFunc("/comments/{id}/likes",
 		middleware.MiddlewareChain(
 			HandleLikeComment(store),
@@ -465,7 +466,7 @@ func TestHandleLikeComment(t *testing.T) {
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("POST")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -507,7 +508,7 @@ func TestHandleLikeComment(t *testing.T) {
 func TestHandleRemoveLikeFromComment(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 	mux.HandleFunc("/comments/{id}/likes",
 		middleware.MiddlewareChain(
 			HandleRemoveLikeFromComment(store),
@@ -515,7 +516,7 @@ func TestHandleRemoveLikeFromComment(t *testing.T) {
 			middleware.ErrorHandler,
 			fakeAuth(1),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
@@ -561,7 +562,7 @@ func TestHandleRemoveLikeFromComment(t *testing.T) {
 func TestHandleRemoveLikeFromCommentUnauthorized(t *testing.T) {
 	store := &mock.MockStore{}
 
-	mux := http.NewServeMux()
+	mux := mux.NewRouter()
 	mux.HandleFunc("/comments/{id}/likes",
 		middleware.MiddlewareChain(
 			HandleRemoveLikeFromComment(store),
@@ -569,7 +570,7 @@ func TestHandleRemoveLikeFromCommentUnauthorized(t *testing.T) {
 			middleware.ErrorHandler,
 			middleware.WithJWTAuth(store, testCfg),
 		),
-	)
+	).Methods("DELETE")
 
 	server := httptest.NewServer(mux)
 	defer server.Close()
