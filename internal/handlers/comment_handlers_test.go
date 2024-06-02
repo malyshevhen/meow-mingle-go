@@ -20,7 +20,15 @@ import (
 type Comments []db.CommentInfo
 
 func TestHandleCreateComment(t *testing.T) {
+	var (
+		store  = &mock.MockStore{}
+		router = mux.NewRouter()
+		path   = "/posts/{id}/comments"
+		method = "POST"
+	)
+
 	type input struct {
+		postID  int
 		comment db.CreateCommentParams
 		error   errors.Error
 	}
@@ -38,6 +46,7 @@ func TestHandleCreateComment(t *testing.T) {
 		{
 			name: "happy path",
 			input: input{
+				postID: 1,
 				comment: db.CreateCommentParams{
 					PostID:  1,
 					Content: "Test Comment",
@@ -55,6 +64,7 @@ func TestHandleCreateComment(t *testing.T) {
 		{
 			name: "returns 400 if invalid post ID",
 			input: input{
+				postID: 1,
 				comment: db.CreateCommentParams{
 					Content:  "",
 					AuthorID: 0,
@@ -69,6 +79,7 @@ func TestHandleCreateComment(t *testing.T) {
 		{
 			name: "returns 500 if store returns an error",
 			input: input{
+				postID: 1,
 				comment: db.CreateCommentParams{
 					PostID:  1,
 					Content: "Test Comment",
@@ -83,29 +94,28 @@ func TestHandleCreateComment(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			store := &mock.MockStore{}
-			store.SetError(tc.input.error)
-			store.SetComment(tc.want.comment)
+		store.SetError(tc.input.error)
+		store.SetComment(tc.want.comment)
 
-			mux := mux.NewRouter()
-			mux.HandleFunc("/posts/{id}/comments",
+		t.Run(tc.name, func(t *testing.T) {
+			router.HandleFunc(path,
 				middleware.MiddlewareChain(
 					HandleCreateComment(store),
 					middleware.LoggerMW,
 					middleware.ErrorHandler,
-					fakeAuth(1),
+					fakeAuth(tc.input.comment.AuthorID),
 				),
-			).Methods("POST")
-			server := httptest.NewServer(mux)
+			).Methods(method)
+
+			server := httptest.NewServer(router)
 			defer server.Close()
 
 			req, err := http.NewRequest(
-				"POST",
-				fmt.Sprintf("%s/posts/1/comments", server.URL),
+				method,
+				fmt.Sprintf("%s/posts/%d/comments", server.URL, tc.input.postID),
 				reqBodyOf(tc.input.comment),
 			)
-			assert.NoError(t, err)
+			assert.NoError(t, err, "creating request")
 
 			resp, err := http.DefaultClient.Do(req)
 			assert.NoError(t, err, "perform the request")
@@ -114,6 +124,7 @@ func TestHandleCreateComment(t *testing.T) {
 			t.Run("check that request body is the same as expected", func(t *testing.T) {
 				body, err := io.ReadAll(resp.Body)
 				assert.NoError(t, err, "read response body")
+
 				createdComment, err := utils.Unmarshal[db.Comment](body)
 				assert.NoErrorf(t, err, "unmarshal response body")
 				assert.Truef(
@@ -161,174 +172,229 @@ func TestHandleCreateCommentUnauthenticated(t *testing.T) {
 }
 
 func TestHandleGetComments(t *testing.T) {
-	store := &mock.MockStore{}
+	var (
+		router = mux.NewRouter()
+		store  = &mock.MockStore{}
+		path   = "/posts/{id}/comments"
+		method = "GET"
+	)
 
-	mux := mux.NewRouter()
-	mux.HandleFunc("/posts/{id}/comments",
-		middleware.MiddlewareChain(
-			HandleGetComments(store),
-			middleware.LoggerMW,
-			middleware.ErrorHandler,
-			fakeAuth(1),
-		),
-	).Methods("GET")
-
-	commentRow := db.CommentInfo{
-		ID:       1,
-		AuthorID: 1,
-		Content:  "Test Comment",
+	type input struct {
+		postID int
+		error  errors.Error
 	}
 
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	type want struct {
+		status  int
+		comment db.CommentInfo
+	}
 
-	t.Run("returns 200 and comments if valid", func(t *testing.T) {
-		store.AddComments(commentRow)
+	testCases := []struct {
+		name  string
+		input input
+		want  want
+	}{
+		{
+			name: "returns 200 if comment exists",
+			input: input{
+				postID: 1,
+			},
+			want: want{
+				status: http.StatusOK,
+				comment: db.CommentInfo{
+					ID:       1,
+					AuthorID: 1,
+					PostID:   1,
+					Content:  "Test Comment",
+				},
+			},
+		},
+		{
+			name: "returns 404 if post not found",
+			input: input{
+				postID: 1,
+				error:  errors.NewNotFoundError("post not found"),
+			},
+			want: want{
+				status: http.StatusNotFound,
+			},
+		},
+		{
+			name: "returns 500 on unexpected error",
+			input: input{
+				postID: 1,
+				error:  errors.NewInternalServerError(fmt.Errorf("unexpected error")),
+			},
+			want: want{
+				status: http.StatusInternalServerError,
+			},
+		},
+	}
 
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/posts/1/comments", server.URL), nil)
-		assert.NoError(t, err)
+	for _, tc := range testCases {
+		store.SetError(tc.input.error)
+		store.AddComments(tc.want.comment)
 
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err, "perform the request")
-		defer resp.Body.Close()
+		router.HandleFunc(path,
+			middleware.MiddlewareChain(
+				HandleGetComments(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
+			),
+		).Methods(method)
 
-		assert.Equalf(t, http.StatusOK, resp.StatusCode,
-			"handler returned wrong status code: got %v want %v",
-			resp.StatusCode, http.StatusOK)
+		server := httptest.NewServer(router)
+		defer server.Close()
 
-		body, err := io.ReadAll(resp.Body)
-		assert.NoError(t, err)
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest(method, fmt.Sprintf("%s/posts/%d/comments", server.URL, tc.input.postID), nil)
+			assert.NoError(t, err)
 
-		respComments, err := utils.Unmarshal[Comments](body)
-		assert.NoError(t, err)
-		assert.NotEmpty(t, respComments)
-		assert.Equalf(t, commentRow, respComments[0],
-			"handler returned unexpected body: got %v want %v",
-			respComments[0], commentRow)
-	})
+			resp, err := http.DefaultClient.Do(req)
+			assert.NoError(t, err, "perform the request")
+			defer resp.Body.Close()
 
-	t.Run("returns 404 if post not found", func(t *testing.T) {
-		store.SetError(errors.NewNotFoundError("post not found"))
+			t.Run("check if status code is correct", func(t *testing.T) {
+				assert.Equalf(t, tc.want.status, resp.StatusCode,
+					"handler returned wrong status code: got %v want %v",
+					resp.StatusCode, tc.want.status)
+			})
 
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/posts/1/comments", server.URL), nil)
-		assert.NoError(t, err)
+			if tc.want.status == 200 {
+				t.Run("check that body is not empty and contains comment that we expect", func(t *testing.T) {
+					body, err := io.ReadAll(resp.Body)
+					assert.NoError(t, err)
 
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err, "perform the request")
-		defer resp.Body.Close()
-
-		assert.Equalf(t, http.StatusNotFound, resp.StatusCode,
-			"handler returned wrong status code: got %v want %v",
-			resp.StatusCode, http.StatusOK)
-	})
-
-	t.Run("returns 500 on unexpected error", func(t *testing.T) {
-		store.SetError(errors.NewInternalServerError(fmt.Errorf("unexpected error")))
-
-		req, err := http.NewRequest("GET", fmt.Sprintf("%s/posts/1/comments", server.URL), nil)
-		assert.NoError(t, err)
-
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err, "perform the request")
-		defer resp.Body.Close()
-
-		assert.Equalf(t, http.StatusInternalServerError, resp.StatusCode,
-			"handler returned wrong status code: got %v want %v",
-			resp.StatusCode, http.StatusOK)
-	})
+					respComments, err := utils.Unmarshal[Comments](body)
+					assert.NoErrorf(t, err, "unmarshal response body")
+					assert.NotEmpty(t, respComments, "empty comments")
+					assert.Equalf(t, tc.want.comment, respComments[0],
+						"handler returned unexpected body: got %v want %v",
+						respComments[0], tc.want.comment)
+				})
+			}
+		})
+	}
 }
 
-func TestHandleUpdateComment(t *testing.T) {
-	store := &mock.MockStore{}
+func TestHandleUpdateCommentAuthorized(t *testing.T) {
+	var (
+		router = mux.NewRouter()
+		store  = &mock.MockStore{}
+		path   = "/comments/{id}"
+		method = "PUT"
+	)
 
-	validParams := db.UpdateCommentParams{
-		ID:      1,
-		Content: "Updated Comment",
+	type input struct {
+		commentID int
+		comment   db.UpdateCommentParams
+		error     errors.Error
 	}
 
-	invalidParams := db.UpdateCommentParams{
-		ID:      0,
-		Content: "",
+	type want struct {
+		status  int
+		comment db.Comment
 	}
 
-	updatedComment := db.Comment{
-		ID:       1,
-		AuthorID: 1,
-		Content:  "Updated Comment",
+	testCases := []struct {
+		name  string
+		input input
+		want  want
+	}{
+		{
+			name: "should return 200 if params is valid",
+			input: input{
+				commentID: 1,
+				comment: db.UpdateCommentParams{
+					ID:      1,
+					Content: "Updated Comment",
+				},
+			},
+			want: want{
+				status: http.StatusOK,
+				comment: db.Comment{
+					ID:       1,
+					AuthorID: 1,
+					Content:  "Updated Comment",
+				},
+			},
+		},
+		// TODO: write TC for each invalid parameter.
+		{
+			name: "should return 400 if params is invalid",
+			input: input{
+				commentID: 1,
+			},
+			want: want{
+				status: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "should return 500 if DB error was occured",
+			input: input{
+				error:     errors.NewInternalServerError(fmt.Errorf("unexpected error")),
+				commentID: 1,
+				comment: db.UpdateCommentParams{
+					ID:      1,
+					Content: "Updated Comment",
+				},
+			},
+			want: want{
+				status: http.StatusInternalServerError,
+			},
+		},
 	}
-	store.SetComment(updatedComment)
 
-	mux := mux.NewRouter()
-	mux.HandleFunc("/comments/{id}",
-		middleware.MiddlewareChain(
-			HandleUpdateComments(store),
-			middleware.LoggerMW,
-			middleware.ErrorHandler,
-			fakeAuth(1),
-		),
-	).Methods("PUT")
+	for _, tc := range testCases {
+		store.SetError(tc.input.error)
+		store.SetComment(tc.want.comment)
 
-	server := httptest.NewServer(mux)
-	defer server.Close()
+		router.HandleFunc(path,
+			middleware.MiddlewareChain(
+				HandleUpdateComments(store),
+				middleware.LoggerMW,
+				middleware.ErrorHandler,
+				fakeAuth(1),
+			),
+		).Methods(method)
 
-	t.Run("returns 200 and updated comment if valid", func(t *testing.T) {
-		req, err := http.NewRequest(
-			"PUT",
-			fmt.Sprintf("%s/comments/1", server.URL),
-			reqBodyOf(validParams),
-		)
-		assert.NoError(t, err)
+		server := httptest.NewServer(router)
+		defer server.Close()
 
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err, "perform the request")
-		defer resp.Body.Close()
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequest(
+				method,
+				fmt.Sprintf("%s/comments/%d", server.URL, tc.input.commentID),
+				reqBodyOf(tc.input.comment),
+			)
+			assert.NoError(t, err, "creating request")
 
-		body, err := io.ReadAll(resp.Body)
-		assert.NoError(t, err, "read response body")
+			resp, err := http.DefaultClient.Do(req)
+			assert.NoError(t, err, "perform the request")
+			defer resp.Body.Close()
 
-		comment, err := utils.Unmarshal[db.Comment](body)
-		assert.NoErrorf(t, err, "unmarshal response body")
-		assert.Truef(
-			t,
-			reflect.DeepEqual(comment, updatedComment),
-			"handler returned wrong body: got %v want %v",
-			comment,
-			updatedComment,
-		)
-		assert.Equal(t, http.StatusOK, resp.StatusCode)
-	})
+			t.Run("check if status code is correct", func(t *testing.T) {
+				assert.Equal(t, tc.want.status, resp.StatusCode)
+			})
 
-	t.Run("returns 400 if invalid comment ID", func(t *testing.T) {
-		req, err := http.NewRequest(
-			"PUT",
-			fmt.Sprintf("%s/comments/1", server.URL),
-			reqBodyOf(invalidParams),
-		)
-		assert.NoError(t, err)
+			if tc.want.status == 200 {
+				t.Run("check that body is not empty and contains comment that we expect", func(t *testing.T) {
+					body, err := io.ReadAll(resp.Body)
+					assert.NoError(t, err, "read response body")
 
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err, "perform the request")
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
-	})
-
-	t.Run("returns 500 on unexpected error", func(t *testing.T) {
-		store.SetError(errors.NewInternalServerError(fmt.Errorf("unexpected error")))
-
-		req, err := http.NewRequest(
-			"PUT",
-			fmt.Sprintf("%s/comments/1", server.URL),
-			reqBodyOf(validParams),
-		)
-		assert.NoError(t, err)
-
-		resp, err := http.DefaultClient.Do(req)
-		assert.NoError(t, err, "perform the request")
-		defer resp.Body.Close()
-
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
-	})
+					comment, err := utils.Unmarshal[db.Comment](body)
+					assert.NoErrorf(t, err, "unmarshal response body")
+					assert.Truef(
+						t,
+						reflect.DeepEqual(comment, tc.want.comment),
+						"handler returned wrong body: got %v want %v",
+						comment,
+						tc.want.comment,
+					)
+				})
+			}
+		})
+	}
 }
 
 func TestHandleUpdateCommentUnauthorized(t *testing.T) {
