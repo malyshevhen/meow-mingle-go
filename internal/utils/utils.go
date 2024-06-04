@@ -55,3 +55,7 @@ func ParseIdParam(r *http.Request) (int64, error) {
 
 	return int64(numId), nil
 }
+
+func IsEmpty[T comparable](object *T) bool {
+	return *object == *new(T)
+}

@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,7 +16,6 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 	"github.com/malyshEvhen/meow_mingle/internal/mock"
-	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -532,21 +529,4 @@ func TestHandleUsersFeed(t *testing.T) {
 
 		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	})
-}
-
-func fakeAuth(id int64) types.Middleware {
-	return func(h types.Handler) types.Handler {
-		return func(w http.ResponseWriter, r *http.Request) error {
-			rCtx := context.WithValue(r.Context(), utils.UserIdKey, id)
-			r = r.WithContext(rCtx)
-
-			return h(w, r)
-		}
-	}
-}
-
-func reqBodyOf(content interface{}) io.Reader {
-	jsonBytes, _ := json.Marshal(content)
-
-	return bytes.NewBuffer(jsonBytes)
 }

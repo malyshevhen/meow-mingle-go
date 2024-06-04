@@ -12,12 +12,11 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	migrations "github.com/malyshEvhen/meow_mingle/db"
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/router"
 )
-
-const MIGRATION_SOURCE_URL string = "file://./db/migration"
 
 func Start(ctx context.Context) (closerFunc func() error, appError error) {
 	var (
@@ -43,7 +42,12 @@ func Start(ctx context.Context) (closerFunc func() error, appError error) {
 	}
 	log.Printf("%-15s ==> Database connection is reachable", "Application")
 
-	migration, err = migrate.New(MIGRATION_SOURCE_URL, cfg.DBSource)
+	sd, sourceName, err := migrations.Init()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create migration source driver: %s", err.Error())
+	}
+
+	migration, err = migrate.NewWithSourceInstance(sourceName, sd, cfg.DBSource)
 	if err != nil {
 		log.Printf("%-15s ==> Migration failed to prepare: %s\n", "Application", err.Error())
 		appError = fmt.Errorf("migration configuration failed: %s", err.Error())

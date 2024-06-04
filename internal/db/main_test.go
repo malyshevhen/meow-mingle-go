@@ -12,6 +12,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
+	migrations "github.com/malyshEvhen/meow_mingle/db"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -50,9 +51,12 @@ func TestMain(m *testing.M) {
 
 	TestStore = NewSQLStore(conn)
 
-	Migration, err = migrate.New(
-		MIGRATION_SOURCE_URL,
-		connURL)
+	sd, sourceName, err := migrations.Init()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	Migration, err = migrate.NewWithSourceInstance(sourceName, sd, connURL)
 	if err != nil {
 		log.Fatal(err)
 	}
