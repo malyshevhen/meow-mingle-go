@@ -9,7 +9,7 @@ import (
 )
 
 func NewDB(cfg config.Config) (*sql.DB, error) {
-	dbURL := cfg.DBSource
+	dbURL := cfg.DBConnURL
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		return db, err

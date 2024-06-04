@@ -47,7 +47,7 @@ func Start(ctx context.Context) (closerFunc func() error, appError error) {
 		return nil, fmt.Errorf("failed to create migration source driver: %s", err.Error())
 	}
 
-	migration, err = migrate.NewWithSourceInstance(sourceName, sd, cfg.DBSource)
+	migration, err = migrate.NewWithSourceInstance(sourceName, sd, cfg.DBConnURL)
 	if err != nil {
 		log.Printf("%-15s ==> Migration failed to prepare: %s\n", "Application", err.Error())
 		appError = fmt.Errorf("migration configuration failed: %s", err.Error())
