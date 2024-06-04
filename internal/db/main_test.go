@@ -10,7 +10,6 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	migrations "github.com/malyshEvhen/meow_mingle/db"
 	"github.com/testcontainers/testcontainers-go"
@@ -19,15 +18,14 @@ import (
 )
 
 const (
-	DB_HEALTH_MSG        string        = "database system is ready to accept connections"
-	SSL_MODE_PARAM       string        = "sslmode=disable"
-	POSTGESQL_IMAGE      string        = "postgres:16-alpine"
-	DB_NAME              string        = "mingle-db"
-	DB_USER              string        = "postgres"
-	DB_PASSWORD          string        = "example"
-	MIGRATION_SOURCE_URL string        = "file://./../../db/migration"
-	STARTUP_TIMEOUT      time.Duration = 6 * time.Second
-	STRATEGY_OCC         int           = 2
+	DB_HEALTH_MSG   string        = "database system is ready to accept connections"
+	SSL_MODE_PARAM  string        = "sslmode=disable"
+	POSTGESQL_IMAGE string        = "postgres:16-alpine"
+	DB_NAME         string        = "mingle-db"
+	DB_USER         string        = "postgres"
+	DB_PASSWORD     string        = "example"
+	STARTUP_TIMEOUT time.Duration = 6 * time.Second
+	STRATEGY_OCC    int           = 2
 )
 
 var (
@@ -85,12 +83,12 @@ func runPostgresContainer(ctx context.Context) (pgContainer *postgres.PostgresCo
 		withStrategy,
 	)
 	if err != nil {
-		return nil, "", err
+		return
 	}
 
 	connStr, err = pgContainer.ConnectionString(ctx, SSL_MODE_PARAM)
 	if err != nil {
-		return nil, "", err
+		return
 	}
 	return
 }
