@@ -23,7 +23,7 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *mux.Router {
 		)
 	}
 
-	puplic := func(handler func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
+	public := func(handler func(w http.ResponseWriter, r *http.Request) error) http.HandlerFunc {
 		return middleware.MiddlewareChain(
 			handler,
 			middleware.LoggerMW,
@@ -35,16 +35,16 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *mux.Router {
 	postsMux := apiMux.PathPrefix("/posts").Subrouter()
 	commentsMux := apiMux.PathPrefix("/comments").Subrouter()
 
-	usersMux.HandleFunc("/register", puplic(handlers.HandleCreateUser(store, cfg))).Methods("POST")
-	usersMux.HandleFunc("/{id}/feed", puplic(handlers.HandleUsersFeed(store))).Methods("GET")
-	usersMux.HandleFunc("/{id}/posts", puplic(handlers.HandleGetUserPosts(store))).Methods("GET")
+	usersMux.HandleFunc("/register", public(handlers.HandleCreateUser(store, cfg))).Methods("POST")
+	usersMux.HandleFunc("/{id}/feed", public(handlers.HandleUsersFeed(store))).Methods("GET")
+	usersMux.HandleFunc("/{id}/posts", public(handlers.HandleGetUserPosts(store))).Methods("GET")
 	usersMux.HandleFunc("/{id}", authenticated(handlers.HandleGetUser(store))).Methods("GET")
 	usersMux.HandleFunc("/feed", authenticated(handlers.HandleOwnersFeed(store))).Methods("GET")
 	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleSubscribe(store))).Methods("POST")
 	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleUnsubscribe(store))).Methods("POST")
 
-	postsMux.HandleFunc("/{id}", puplic(handlers.HandleGetPostsById(store))).Methods("GET")
-	postsMux.HandleFunc("/{id}/comments", puplic(handlers.HandleGetComments(store))).Methods("GET")
+	postsMux.HandleFunc("/{id}", public(handlers.HandleGetPostsById(store))).Methods("GET")
+	postsMux.HandleFunc("/{id}/comments", public(handlers.HandleGetComments(store))).Methods("GET")
 	postsMux.HandleFunc("", authenticated(handlers.HandleCreatePost(store))).Methods("POST")
 	postsMux.HandleFunc("/{id}", authenticated(handlers.HandleUpdatePostsById(store))).Methods("PUT")
 	postsMux.HandleFunc("/{id}", authenticated(handlers.HandleDeletePostsById(store))).Methods("DELETE")

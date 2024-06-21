@@ -12,11 +12,16 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/db"
 )
 
-//go:embed cypher/create_user.cypher
-var createUserCypher string
+var (
+	//go:embed cypher/create_user.cypher
+	createUserCypher string
 
-//go:embed cypher/match_user_by_id.cypher
-var getUserCypher string
+	//go:embed cypher/match_user_by_id.cypher
+	getUserCypher string
+
+	//go:embed cypher/create_post.cypher
+	createPostCypher string
+)
 
 type VStore struct {
 	driver neo4j.DriverWithContext
@@ -40,7 +45,7 @@ func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (u
 	defer session.Close(ctx)
 
 	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		record, id, err := persist[User](ctx, tx, userForm)
+		record, id, err := persist[User](ctx, tx, createUserCypher, "u", userForm)
 		if err != nil {
 			return nil, err
 		}
@@ -56,8 +61,50 @@ func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (u
 	return
 }
 
-func (s *VStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	params := map[string]interface{}{
+		"id": id,
+	}
+
+	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		record, err := retrieve[GetUserRow](ctx, tx, "u", params)
+		if err != nil {
+			return nil, err
+		}
+		user = record
+		user.ID = id
+
+		return nil, err
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
+}
+
+func (s *VStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		record, id, err := persist[Post](ctx, tx, createPostCypher, "p", params)
+		if err != nil {
+			return nil, err
+		}
+		post = record
+		post.AuthorID = params.AuthorID
+		post.ID = id
+
+		return record, err
+	}); err != nil {
+		execErr = err
+		return
+	}
+
+	return
 }
 
 func (s *VStore) CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
@@ -73,10 +120,6 @@ func (s *VStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLi
 }
 
 func (s *VStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error {
-	panic("not implemented") // TODO: Implement
-}
-
-func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, err error) {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -124,7 +167,13 @@ func (s *VStore) DeleteSubscriptionTx(ctx context.Context, params DeleteSubscrip
 	panic("not implemented") // TODO: Implement
 }
 
-func persist[T any](ctx context.Context, tx neo4j.ManagedTransaction, form any) (obj T, id int64, err error) {
+func persist[T any](
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	cypher string,
+	alias string,
+	form any,
+) (obj T, id int64, err error) {
 	fail := func(msg string) (res T, id int64, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
 		return
@@ -132,35 +181,63 @@ func persist[T any](ctx context.Context, tx neo4j.ManagedTransaction, form any) 
 
 	params, err := mapToProperties(form)
 	if err != nil {
-		return fail("convert to properties")
+		return fail(fmt.Sprintf("convert to properties: %s", err.Error()))
 	}
 
-	result, err := tx.Run(ctx, createUserCypher, params)
+	result, err := tx.Run(ctx, cypher, params)
 	if err != nil {
-		return fail("executing transaction")
+		return fail(fmt.Sprintf("executing transaction: %s", err.Error()))
 	}
 
 	record, err := result.Single(ctx)
 	if err != nil {
-		return fail("saving new record")
+		return fail(fmt.Sprintf("saving new record: %s", err.Error()))
 	}
 
-	return parceRecord[T](record)
+	return parceRecord[T](record, alias)
 }
 
-func parceRecord[T any](r *db.Record) (result T, id int64, err error) {
+func retrieve[T any](
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	alias string,
+	params map[string]interface{},
+) (obj T, err error) {
+	fail := func(msg string) (res T, err error) {
+		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
+		return
+	}
+
+	result, err := tx.Run(ctx, getUserCypher, params)
+	if err != nil {
+		return fail(fmt.Sprintf("executing transaction: %s", err.Error()))
+	}
+
+	record, err := result.Single(ctx)
+	if err != nil {
+		return fail(fmt.Sprintf("saving new record: %s", err.Error()))
+	}
+
+	obj, _, err = parceRecord[T](record, alias)
+
+	return
+}
+
+func parceRecord[T any](r *db.Record, alias string) (result T, id int64, err error) {
 	fail := func(msg string) (res T, id int64, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
 		return
 	}
-	propsMap := r.AsMap()["u"]
+	propsMap := r.AsMap()[alias]
 
-	userJson, err := json.MarshalIndent(propsMap, "", "  ")
+	respJson, err := json.MarshalIndent(propsMap, "", "  ")
 	if err != nil {
 		return fail(fmt.Sprintf("marshal JSON from DB: %s", err.Error()))
 	}
 
-	resp, err := utils.Unmarshal[Neo4jResponse[T]](userJson)
+	fmt.Printf("DB RECORD: %s", string(respJson))
+
+	resp, err := utils.Unmarshal[Neo4jResponse[T]](respJson)
 	if err != nil {
 		return fail(fmt.Sprintf("unmarshal response from DB: %s", err.Error()))
 	}
