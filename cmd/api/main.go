@@ -16,7 +16,7 @@ func main() {
 		log.Fatalf("Application failed to start: %s", err.Error())
 	}
 	defer func() {
-		if err := shutDown(); err != nil {
+		if err := shutDown(ctx); err != nil {
 			log.Fatalf("Application failed to shut down: %s", err.Error())
 		}
 	}()

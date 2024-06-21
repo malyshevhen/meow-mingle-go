@@ -26,9 +26,7 @@ func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 			return err
 		}
 
-		user := Map(uForm, func(uf UserRegistrationForm) db.CreateUserParams {
-			return db.CreateUserParams(uForm)
-		})
+		user := db.CreateUserParams(uForm)
 
 		log.Printf("%-15s ==> Hashing password...", "User Handler")
 

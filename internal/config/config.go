@@ -13,7 +13,7 @@ const (
 	DEFAULT_SERVER_PORT string = ":8080"
 	DEFAULT_DB_URL      string = "bolt://localhost:7687"
 	DEFAULT_DB_USER     string = "neo4j"
-	DEFAULT_DB_PASSWORD string = "example"
+	DEFAULT_DB_PASSWORD string = "example123"
 	DEFAULT_JWT_KEY     string = "13bb62a3f8a44d0523918228c3ea7643547495c7ba74c893f9546d6de37ad996"
 )
 

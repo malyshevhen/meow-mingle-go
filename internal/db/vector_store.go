@@ -3,17 +3,36 @@ package db
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/internal/utils"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/neo4j/neo4j-go-driver/v5/neo4j/db"
 )
 
 //go:embed cypher/create_user.cypher
 var createUserCypher string
 
+//go:embed cypher/match_user_by_id.cypher
+var getUserCypher string
+
 type VStore struct {
 	driver neo4j.DriverWithContext
+}
+
+func NewVstore(d neo4j.DriverWithContext) IStore {
+	return &VStore{
+		driver: d,
+	}
+}
+
+type Neo4jResponse[T any] struct {
+	ID        int64    `json:"Id"`
+	ElementID string   `json:"ElementId"`
+	Labels    []string `json:"Labels"`
+	Props     T
 }
 
 func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (user User, execErr error) {
@@ -21,11 +40,12 @@ func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (u
 	defer session.Close(ctx)
 
 	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		record, err := s.persistUser(ctx, tx, userForm)
+		record, id, err := persist[User](ctx, tx, userForm)
 		if err != nil {
 			return nil, err
 		}
-		user = record.(User)
+		user = record
+		user.ID = id
 
 		return record, err
 	}); err != nil {
@@ -34,43 +54,6 @@ func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (u
 	}
 
 	return
-}
-
-func (s *VStore) persistUser(
-	ctx context.Context,
-	tx neo4j.ManagedTransaction,
-	userForm CreateUserParams,
-) (user any, err error) {
-	params := map[string]interface{}{
-		"email":    userForm.Email,
-		"password": userForm.Password,
-	}
-
-	fail := func(msg string) (any, error) {
-		err = errors.NewDatabaseError(fmt.Errorf("error occured while %s: %s", msg, userForm.Email))
-		return nil, err
-	}
-	result, err := tx.Run(ctx, createUserCypher, params)
-	if err != nil {
-		return fail("executing transaction")
-	}
-
-	record, err := result.Single(ctx)
-	if err != nil {
-		return fail("saving new user wiht email")
-	}
-
-	id, ok := record.Values[0].(int64)
-	if !ok {
-		return fail("extracting the ID")
-	}
-
-	user = User{
-		ID:    id,
-		Email: userForm.Email,
-	}
-
-	return user, nil
 }
 
 func (s *VStore) CreatePostTx(ctx context.Context, params CreatePostParams) (post Post, err error) {
@@ -139,4 +122,64 @@ func (s *VStore) DeleteCommentLikeTx(ctx context.Context, params DeleteCommentLi
 
 func (s *VStore) DeleteSubscriptionTx(ctx context.Context, params DeleteSubscriptionParams) error {
 	panic("not implemented") // TODO: Implement
+}
+
+func persist[T any](ctx context.Context, tx neo4j.ManagedTransaction, form any) (obj T, id int64, err error) {
+	fail := func(msg string) (res T, id int64, err error) {
+		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
+		return
+	}
+
+	params, err := mapToProperties(form)
+	if err != nil {
+		return fail("convert to properties")
+	}
+
+	result, err := tx.Run(ctx, createUserCypher, params)
+	if err != nil {
+		return fail("executing transaction")
+	}
+
+	record, err := result.Single(ctx)
+	if err != nil {
+		return fail("saving new record")
+	}
+
+	return parceRecord[T](record)
+}
+
+func parceRecord[T any](r *db.Record) (result T, id int64, err error) {
+	fail := func(msg string) (res T, id int64, err error) {
+		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
+		return
+	}
+	propsMap := r.AsMap()["u"]
+
+	userJson, err := json.MarshalIndent(propsMap, "", "  ")
+	if err != nil {
+		return fail(fmt.Sprintf("marshal JSON from DB: %s", err.Error()))
+	}
+
+	resp, err := utils.Unmarshal[Neo4jResponse[T]](userJson)
+	if err != nil {
+		return fail(fmt.Sprintf("unmarshal response from DB: %s", err.Error()))
+	}
+	result = resp.Props
+	id = resp.ID
+
+	return
+}
+
+func mapToProperties[T any](params T) (map[string]interface{}, error) {
+	marshaled, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+
+	props, err := utils.Unmarshal[map[string]interface{}](marshaled)
+	if err != nil {
+		return nil, err
+	}
+
+	return props, nil
 }

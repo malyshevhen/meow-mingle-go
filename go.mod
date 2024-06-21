@@ -6,8 +6,9 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/lib/pq v1.10.9
 	github.com/testcontainers/testcontainers-go v0.30.0
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.29.1
 )
+
+require github.com/kr/text v0.2.0 // indirect
 
 require (
 	dario.cat/mergo v1.0.0 // indirect
@@ -44,7 +45,7 @@ require (
 	github.com/moby/sys/user v0.1.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/neo4j/neo4j-go-driver/v5 v5.20.0 // indirect
+	github.com/neo4j/neo4j-go-driver/v5 v5.20.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -77,7 +78,6 @@ require (
 	github.com/go-playground/validator/v10 v10.19.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang-migrate/migrate/v4 v4.17.1
-	github.com/jackc/pgx/v5 v5.5.5 // indirect
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/crypto v0.21.0
 )

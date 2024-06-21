@@ -48,4 +48,3 @@ USER appuser:appuser
 
 # Run the binary
 ENTRYPOINT ["/go/bin/meow_mingle"]
-

@@ -59,3 +59,7 @@ func ParseIdParam(r *http.Request) (int64, error) {
 func IsEmpty[T comparable](object *T) bool {
 	return *object == *new(T)
 }
+
+func Map[T, S any](source S, mapper func(S) T) (target T) {
+	return mapper(source)
+}

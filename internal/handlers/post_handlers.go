@@ -20,7 +20,7 @@ func HandleCreatePost(store db.IStore) types.Handler {
 			return err
 		}
 
-		params := Map(postContent, func(s ContentForm) db.CreatePostParams {
+		params := utils.Map(postContent, func(s ContentForm) db.CreatePostParams {
 			return db.CreatePostParams{Content: postContent.Content}
 		})
 
@@ -102,7 +102,7 @@ func HandleUpdatePostsById(store db.IStore) types.Handler {
 			return err
 		}
 
-		params := Map(postContent, func(content ContentForm) db.UpdatePostParams {
+		params := utils.Map(postContent, func(content ContentForm) db.UpdatePostParams {
 			return db.UpdatePostParams{
 				ID:      id,
 				Content: content.Content,

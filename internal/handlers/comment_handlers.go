@@ -32,7 +32,7 @@ func HandleCreateComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		params := Map(content, func(c ContentForm) db.CreateCommentParams {
+		params := utils.Map(content, func(c ContentForm) db.CreateCommentParams {
 			return db.CreateCommentParams{
 				Content:  c.Content,
 				AuthorID: userId,
@@ -100,7 +100,7 @@ func HandleUpdateComments(store db.IStore) types.Handler {
 			return err
 		}
 
-		params := Map(content, func(c ContentForm) db.UpdateCommentParams {
+		params := utils.Map(content, func(c ContentForm) db.UpdateCommentParams {
 			return db.UpdateCommentParams{
 				ID:      id,
 				Content: c.Content,

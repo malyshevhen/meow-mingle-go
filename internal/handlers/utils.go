@@ -34,7 +34,3 @@ func ReadReqBody[T any](r *http.Request) (target T, readErr error) {
 
 	return
 }
-
-func Map[T, S any](source S, mapper func(S) T) (target T) {
-	return mapper(source)
-}
