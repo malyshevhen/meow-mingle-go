@@ -4,8 +4,7 @@ MATCH
 WHERE
     ID(u)=$author_id AND ID(p)=$post_id
 CREATE
-    (c:Comment {content: $content})-[:ON]->(p),
-    (u)-[:WRITE {role: 'Author'}]->(c)
+    (u)-[:WRITE {role: 'Author'}]->(c:Comment {content: $content})-[:ON]->(p)
 RETURN
     ID(c) AS id,
     c.content AS content,

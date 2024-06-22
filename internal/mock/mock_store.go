@@ -245,7 +245,6 @@ func (m *MockStore) ListUserPostsTx(
 // UpdateCommentTx implements IStore.
 func (m *MockStore) UpdateCommentTx(
 	ctx context.Context,
-	userId int64,
 	params db.UpdateCommentParams,
 ) (comment db.Comment, err error) {
 	return m.comment, m.err

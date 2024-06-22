@@ -40,6 +40,9 @@ var (
 
 	//go:embed cypher/update_post.cypher
 	updatePostCypher string
+
+	//go:embed cypher/update_comment.cypher
+	updateCommentCypher string
 )
 
 type VStore struct {
@@ -90,7 +93,6 @@ func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, exec
 		execErr = err
 		return
 	}
-
 	return
 }
 
@@ -222,8 +224,23 @@ func (s *VStore) UpdatePostTx(ctx context.Context, params UpdatePostParams) (pos
 	return
 }
 
-func (s *VStore) UpdateCommentTx(ctx context.Context, userId int64, params UpdateCommentParams) (comment Comment, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *VStore) UpdateCommentTx(ctx context.Context, params UpdateCommentParams) (comment Comment, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := persist[Comment](ctx, tx, updateCommentCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		comment = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
 }
 
 func (s *VStore) GetFeed(ctx context.Context, userId int64) (feed []PostInfo, err error) {

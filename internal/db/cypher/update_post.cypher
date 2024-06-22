@@ -1,14 +1,11 @@
 MATCH
-    (p:Post),
-    (u:User)
+    (u:User)-[:WRITE]->(p:Post)
 OPTIONAL MATCH
     (p)-[l:LIKE]-()
 WITH
     u,p,count(l) AS likes
 WHERE
-    ID(p)=$id
-    AND ID(u)=$author_id
-    AND (u)-[:WRITE]->(p)
+    ID(p)=$id AND ID(u)=$author_id
 SET
     p.content=$content
 RETURN

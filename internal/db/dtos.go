@@ -24,8 +24,9 @@ type CreateCommentParams struct {
 }
 
 type UpdateCommentParams struct {
-	ID      int64  `json:"id"`
-	Content string `json:"content" validate:"required"`
+	ID       int64  `json:"id"`
+	Content  string `json:"content" validate:"required"`
+	AuthorId int64  `json:"author_id"`
 }
 
 type CreatePostLikeParams struct {

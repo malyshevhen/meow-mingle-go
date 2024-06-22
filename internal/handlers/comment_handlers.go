@@ -102,12 +102,13 @@ func HandleUpdateComments(store db.IStore) types.Handler {
 
 		params := utils.Map(content, func(c ContentForm) db.UpdateCommentParams {
 			return db.UpdateCommentParams{
-				ID:      id,
-				Content: c.Content,
+				ID:       id,
+				Content:  c.Content,
+				AuthorId: userId,
 			}
 		})
 
-		comment, err := store.UpdateCommentTx(ctx, userId, params)
+		comment, err := store.UpdateCommentTx(ctx, params)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Error updating comment by Id in stor %v\n",
