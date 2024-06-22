@@ -41,7 +41,7 @@ func RegisterRoutes(store db.IStore, cfg config.Config) *mux.Router {
 	usersMux.HandleFunc("/{id}", authenticated(handlers.HandleGetUser(store))).Methods("GET")
 	usersMux.HandleFunc("/feed", authenticated(handlers.HandleOwnersFeed(store))).Methods("GET")
 	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleSubscribe(store))).Methods("POST")
-	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleUnsubscribe(store))).Methods("POST")
+	usersMux.HandleFunc("/{id}/subscriptions", authenticated(handlers.HandleUnsubscribe(store))).Methods("DELETE")
 
 	postsMux.HandleFunc("/{id}", public(handlers.HandleGetPostsById(store))).Methods("GET")
 	postsMux.HandleFunc("/{id}/comments", public(handlers.HandleGetComments(store))).Methods("GET")
