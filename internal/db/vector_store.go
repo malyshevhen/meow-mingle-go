@@ -25,6 +25,9 @@ var (
 
 	//go:embed cypher/match_post_by_id.cypher
 	getPostCypher string
+
+	//go:embed cypher/create_comment.cypher
+	createCommentCypher string
 )
 
 type VStore struct {
@@ -121,8 +124,23 @@ func (s *VStore) GetPostTx(ctx context.Context, id int64) (post PostInfo, execEr
 	return
 }
 
-func (s *VStore) CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *VStore) CreateCommentTx(ctx context.Context, params CreateCommentParams) (comment Comment, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := persist[Comment](ctx, tx, createCommentCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		comment = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
 }
 
 func (s *VStore) CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error {
