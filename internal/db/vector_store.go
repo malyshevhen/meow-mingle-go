@@ -43,6 +43,9 @@ var (
 
 	//go:embed cypher/update_comment.cypher
 	updateCommentCypher string
+
+	//go:embed cypher/delete_post.cypher
+	deletePostCypher string
 )
 
 type VStore struct {
@@ -256,7 +259,24 @@ func (s *VStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []Comm
 }
 
 func (s *VStore) DeletePostTx(ctx context.Context, userId int64, postId int64) error {
-	panic("not implemented") // TODO: Implement
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	params := map[string]int64{
+		"id":        postId,
+		"author_id": userId,
+	}
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		err := exec(ctx, tx, deletePostCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *VStore) DeletePostLikeTx(ctx context.Context, params DeletePostLikeParams) error {
