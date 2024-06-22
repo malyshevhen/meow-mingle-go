@@ -28,6 +28,9 @@ var (
 
 	//go:embed cypher/create_comment.cypher
 	createCommentCypher string
+
+	//go:embed cypher/create_like_on_post.cypher
+	createLikeOnPostCypher string
 )
 
 type VStore struct {
@@ -144,7 +147,19 @@ func (s *VStore) CreateCommentTx(ctx context.Context, params CreateCommentParams
 }
 
 func (s *VStore) CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error {
-	panic("not implemented") // TODO: Implement
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		err := exec(ctx, tx, createLikeOnPostCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *VStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error) {
@@ -193,6 +208,29 @@ func (s *VStore) DeleteCommentLikeTx(ctx context.Context, params DeleteCommentLi
 
 func (s *VStore) DeleteSubscriptionTx(ctx context.Context, params DeleteSubscriptionParams) error {
 	panic("not implemented") // TODO: Implement
+}
+
+func exec(
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	cypher string,
+	form any,
+) (err error) {
+	fail := func(msg string) (err error) {
+		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
+		return
+	}
+
+	params, err := mapToProperties(form)
+	if err != nil {
+		return fail(fmt.Sprintf("convert to properties: %s", err.Error()))
+	}
+
+	_, err = tx.Run(ctx, cypher, params)
+	if err != nil {
+		return fail(fmt.Sprintf("executing transaction: %s", err.Error()))
+	}
+	return nil
 }
 
 func persist[T any](
