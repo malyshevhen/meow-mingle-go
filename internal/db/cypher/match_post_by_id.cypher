@@ -1,9 +1,9 @@
+// MATCH (p:Post) WHERE ID(p)=$id RETURN p;
 MATCH
+    (p:Post),
     (u:User)
 WHERE
-    ID(u)=$author_id
-CREATE
-    (u)-[:WRITE {role: 'Author'}]->(p:Post {content: $content})
+    ID(p)=11 AND (u)-[:WRITE]->(p)
 RETURN
     ID(p) AS id,
     p.content AS content,

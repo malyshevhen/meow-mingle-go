@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"reflect"
 
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
@@ -21,6 +22,9 @@ var (
 
 	//go:embed cypher/create_post.cypher
 	createPostCypher string
+
+	//go:embed cypher/match_post_by_id.cypher
+	getPostCypher string
 )
 
 type VStore struct {
@@ -33,31 +37,21 @@ func NewVstore(d neo4j.DriverWithContext) IStore {
 	}
 }
 
-type Neo4jResponse[T any] struct {
-	ID        int64    `json:"Id"`
-	ElementID string   `json:"ElementId"`
-	Labels    []string `json:"Labels"`
-	Props     T
-}
-
 func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (user User, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
 	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		record, id, err := persist[User](ctx, tx, createUserCypher, "u", userForm)
+		result, err := persist[User](ctx, tx, createUserCypher, userForm)
 		if err != nil {
 			return nil, err
 		}
-		user = record
-		user.ID = id
-
-		return record, err
+		user = result
+		return result, nil
 	}); err != nil {
 		execErr = err
 		return
 	}
-
 	return
 }
 
@@ -70,18 +64,18 @@ func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, exec
 	}
 
 	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		record, err := retrieve[GetUserRow](ctx, tx, "u", params)
+		result, err := retrieve[GetUserRow](ctx, tx, getUserCypher, params)
 		if err != nil {
 			return nil, err
 		}
-		user = record
-		user.ID = id
+		user = result
 
-		return nil, err
+		return result, nil
 	}); err != nil {
 		execErr = err
 		return
 	}
+
 	return
 }
 
@@ -90,20 +84,40 @@ func (s *VStore) CreatePostTx(ctx context.Context, params CreatePostParams) (pos
 	defer session.Close(ctx)
 
 	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		record, id, err := persist[Post](ctx, tx, createPostCypher, "p", params)
+		result, err := persist[Post](ctx, tx, createPostCypher, params)
 		if err != nil {
 			return nil, err
 		}
-		post = record
-		post.AuthorID = params.AuthorID
-		post.ID = id
+		post = result
 
-		return record, err
+		return result, nil
 	}); err != nil {
 		execErr = err
 		return
 	}
+	return
+}
 
+func (s *VStore) GetPostTx(ctx context.Context, id int64) (post PostInfo, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	params := map[string]interface{}{
+		"id": id,
+	}
+
+	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := retrieve[PostInfo](ctx, tx, getPostCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		post = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
 	return
 }
 
@@ -120,10 +134,6 @@ func (s *VStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLi
 }
 
 func (s *VStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error {
-	panic("not implemented") // TODO: Implement
-}
-
-func (s *VStore) GetPostTx(ctx context.Context, id int64) (post PostInfo, err error) {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -171,10 +181,9 @@ func persist[T any](
 	ctx context.Context,
 	tx neo4j.ManagedTransaction,
 	cypher string,
-	alias string,
 	form any,
-) (obj T, id int64, err error) {
-	fail := func(msg string) (res T, id int64, err error) {
+) (obj T, err error) {
+	fail := func(msg string) (res T, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
 		return
 	}
@@ -194,13 +203,13 @@ func persist[T any](
 		return fail(fmt.Sprintf("saving new record: %s", err.Error()))
 	}
 
-	return parceRecord[T](record, alias)
+	return parceRecord[T](record)
 }
 
 func retrieve[T any](
 	ctx context.Context,
 	tx neo4j.ManagedTransaction,
-	alias string,
+	cypher string,
 	params map[string]interface{},
 ) (obj T, err error) {
 	fail := func(msg string) (res T, err error) {
@@ -208,43 +217,57 @@ func retrieve[T any](
 		return
 	}
 
-	result, err := tx.Run(ctx, getUserCypher, params)
+	result, err := tx.Run(ctx, cypher, params)
 	if err != nil {
 		return fail(fmt.Sprintf("executing transaction: %s", err.Error()))
 	}
 
 	record, err := result.Single(ctx)
 	if err != nil {
-		return fail(fmt.Sprintf("saving new record: %s", err.Error()))
+		return fail(fmt.Sprintf("retrieving the record: %s", err.Error()))
 	}
 
-	obj, _, err = parceRecord[T](record, alias)
-
-	return
+	return parceRecord[T](record)
 }
 
-func parceRecord[T any](r *db.Record, alias string) (result T, id int64, err error) {
-	fail := func(msg string) (res T, id int64, err error) {
+func parceRecord[T any](r *db.Record) (result T, err error) {
+	fail := func(msg string) (res T, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
 		return
 	}
-	propsMap := r.AsMap()[alias]
 
-	respJson, err := json.MarshalIndent(propsMap, "", "  ")
+	typ := reflect.TypeFor[T]()
+
+	rows := readJsonTags(typ)
+	vals := getRecordValues(r, rows)
+
+	respJson, err := json.MarshalIndent(vals, "", "  ")
 	if err != nil {
 		return fail(fmt.Sprintf("marshal JSON from DB: %s", err.Error()))
 	}
 
-	fmt.Printf("DB RECORD: %s", string(respJson))
+	fmt.Printf("DB RECORD: \n %s", string(respJson))
 
-	resp, err := utils.Unmarshal[Neo4jResponse[T]](respJson)
-	if err != nil {
-		return fail(fmt.Sprintf("unmarshal response from DB: %s", err.Error()))
+	return utils.Unmarshal[T](respJson)
+}
+
+func readJsonTags(typ reflect.Type) []string {
+	rows := []string{}
+	for i := 0; i < typ.NumField(); i++ {
+		field := typ.Field(i)
+		jsonTag := field.Tag.Get("json")
+		rows = append(rows, jsonTag)
 	}
-	result = resp.Props
-	id = resp.ID
+	return rows
+}
 
-	return
+func getRecordValues(r *db.Record, rows []string) map[string]interface{} {
+	vals := make(map[string]interface{})
+	for _, key := range rows {
+		val, _ := r.Get(key)
+		vals[key] = val
+	}
+	return vals
 }
 
 func mapToProperties[T any](params T) (map[string]interface{}, error) {
