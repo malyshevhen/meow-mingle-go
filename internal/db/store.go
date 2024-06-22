@@ -16,7 +16,7 @@ type IStore interface {
 	GetFeed(ctx context.Context, userId int64) (feed []PostInfo, err error)
 	ListUserPostsTx(ctx context.Context, userId int64) (posts []PostInfo, err error)
 	ListPostCommentsTx(ctx context.Context, id int64) (posts []CommentInfo, err error)
-	UpdatePostTx(ctx context.Context, userId int64, params UpdatePostParams) (post Post, err error)
+	UpdatePostTx(ctx context.Context, params UpdatePostParams) (post Post, err error)
 	UpdateCommentTx(
 		ctx context.Context,
 		userId int64,

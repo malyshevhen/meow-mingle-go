@@ -31,6 +31,15 @@ var (
 
 	//go:embed cypher/create_like_on_post.cypher
 	createLikeOnPostCypher string
+
+	//go:embed cypher/create_like_on_comment.cypher
+	createLikeOnCommentCypher string
+
+	//go:embed cypher/create_subscription.cypher
+	createSubscriptionCypher string
+
+	//go:embed cypher/update_post.cypher
+	updatePostCypher string
 )
 
 type VStore struct {
@@ -163,10 +172,57 @@ func (s *VStore) CreatePostLikeTx(ctx context.Context, params CreatePostLikePara
 }
 
 func (s *VStore) CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error) {
-	panic("not implemented") // TODO: Implement
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		err := exec(ctx, tx, createLikeOnCommentCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *VStore) CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		err := exec(ctx, tx, createSubscriptionCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *VStore) UpdatePostTx(ctx context.Context, params UpdatePostParams) (post Post, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	if _, err := session.ExecuteWrite(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := persist[Post](ctx, tx, updatePostCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		post = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
+}
+
+func (s *VStore) UpdateCommentTx(ctx context.Context, userId int64, params UpdateCommentParams) (comment Comment, err error) {
 	panic("not implemented") // TODO: Implement
 }
 
@@ -179,14 +235,6 @@ func (s *VStore) ListUserPostsTx(ctx context.Context, userId int64) (posts []Pos
 }
 
 func (s *VStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []CommentInfo, err error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (s *VStore) UpdatePostTx(ctx context.Context, userId int64, params UpdatePostParams) (post Post, err error) {
-	panic("not implemented") // TODO: Implement
-}
-
-func (s *VStore) UpdateCommentTx(ctx context.Context, userId int64, params UpdateCommentParams) (comment Comment, err error) {
 	panic("not implemented") // TODO: Implement
 }
 

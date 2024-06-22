@@ -102,19 +102,20 @@ func HandleUpdatePostsById(store db.IStore) types.Handler {
 			return err
 		}
 
-		params := utils.Map(postContent, func(content ContentForm) db.UpdatePostParams {
-			return db.UpdatePostParams{
-				ID:      id,
-				Content: content.Content,
-			}
-		})
-
 		userId, err := utils.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
 
-		postResponse, err := store.UpdatePostTx(ctx, userId, params)
+		params := utils.Map(postContent, func(content ContentForm) db.UpdatePostParams {
+			return db.UpdatePostParams{
+				ID:       id,
+				Content:  content.Content,
+				AuthorId: userId,
+			}
+		})
+
+		postResponse, err := store.UpdatePostTx(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error updating post by Id in store %v\n", "Post Handler", err)
 			return err
