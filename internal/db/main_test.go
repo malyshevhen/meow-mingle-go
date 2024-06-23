@@ -16,7 +16,6 @@ import (
 )
 
 const (
-	DB_NAME         string        = "mingle-db"
 	DB_USER         string        = "neo4j"
 	DB_PASSWORD     string        = "example123"
 	STARTUP_TIMEOUT time.Duration = 6 * time.Second
