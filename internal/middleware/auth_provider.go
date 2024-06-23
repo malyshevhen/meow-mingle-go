@@ -29,7 +29,12 @@ func (ai *AuthProvider) WithJWTAuth(h types.Handler) types.Handler {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request) error {
-		tokenString := utils.GetTokenFromRequest(r)
+		authCookie, err := utils.GetAuthCookie(r)
+		if err != nil {
+			return errors.NewUnauthorizedError()
+		}
+
+		tokenString := utils.GetTokenFromCookie(authCookie)
 
 		token, err := utils.ValidateJWT(tokenString, ai.cfg.JWTSecret)
 		if err != nil {
@@ -54,6 +59,9 @@ func (ai *AuthProvider) WithJWTAuth(h types.Handler) types.Handler {
 		r = r.WithContext(rCtx)
 
 		log.Printf("%-15s ==> User %s athenticated successfully", "AuthMW", id)
+
+		http.SetCookie(w, authCookie)
+
 		return h(w, r)
 	}
 }

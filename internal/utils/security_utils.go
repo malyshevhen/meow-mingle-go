@@ -27,23 +27,29 @@ func GetAuthUserId(r *http.Request) (string, error) {
 	return id, nil
 }
 
-func GetTokenFromRequest(r *http.Request) string {
+func GetTokenFromCookie(authCookie *http.Cookie) string {
 	log.Printf("%-15s ==>️ Validating for Authorization header...", "Authentication")
+
+	tokenAuth := authCookie.Value
+	if tokenAuth == "" {
+		log.Printf("%-15s ==> No access token found.", "Authentication")
+		return ""
+	}
+
+	log.Printf("%-15s ==> Access token found!", "Authentication")
+	return tokenAuth
+}
+
+func GetAuthCookie(r *http.Request) (*http.Cookie, error) {
+	log.Printf("%-15s ==>️ Extract Authorization cookie...", "Authentication")
 
 	authCookie, err := r.Cookie(TOKEN_COOKIE_KEY)
 	if err != nil {
 		log.Printf("%-15s ==> No access token cookie found!", "Authentication")
-		return ""
+		return nil, err
 	}
 
-	tokenAuth := authCookie.Value
-	if tokenAuth != "" {
-		log.Printf("%-15s ==> Access token found!", "Authentication")
-		return tokenAuth
-	}
-
-	log.Printf("%-15s ==> No access token found.", "Authentication")
-	return ""
+	return authCookie, nil
 }
 
 func HashPwd(s string) (string, error) {
