@@ -13,13 +13,14 @@ import (
 )
 
 type LoginHandler struct {
-	userRepo *db.IUserReposytory
-	cfg      *config.Config
+	userRepo db.IUserReposytory
+	cfg      config.Config
 }
 
-func NewLoginHandler(userRepo *db.IUserReposytory, cfg *config.Config) *LoginHandler {
+func NewLoginHandler(userRepo db.IUserReposytory, cfg config.Config) *LoginHandler {
 	return &LoginHandler{
 		userRepo: userRepo,
+		cfg:      cfg,
 	}
 }
 

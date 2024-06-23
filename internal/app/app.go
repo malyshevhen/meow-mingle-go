@@ -67,14 +67,17 @@ func initRouter(ctx context.Context, cfg config.Config, driver neo4j.DriverWithC
 	userHandler := handlers.NewUserHandler(userRepo)
 	postHandler := handlers.NewPostHandler(postRepo)
 	commentHandler := handlers.NewCommentHandler(commentRepo)
+	loginHandler := handlers.NewLoginHandler(userRepo, cfg)
 
 	userRouret := router.NewUserRouter(authMW, userHandler, postHandler)
 	postRouter := router.NewPostRouter(authMW, postHandler, commentHandler, userRepo)
 	commentRouter := router.NewCommentRouter(authMW, userRepo, commentHandler)
+	loginRouter := router.NewLoginHandler(loginHandler, authMW)
 
 	userRouret.RegisterRouts(ctx, apiMux, cfg)
 	postRouter.RegisterRouts(ctx, apiMux, cfg)
 	commentRouter.RegisterRouts(ctx, apiMux, cfg)
+	loginRouter.RegisterRouts(ctx, apiMux, cfg)
 
 	return muxer
 }

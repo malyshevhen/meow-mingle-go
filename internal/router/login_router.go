@@ -16,7 +16,7 @@ type LoginRouter struct {
 	authMW       *middleware.AuthProvider
 }
 
-func NewLoginController(
+func NewLoginHandler(
 	loginHandler *handlers.LoginHandler,
 	authMW *middleware.AuthProvider,
 ) *LoginRouter {
