@@ -34,7 +34,7 @@ func (s *Reposytory[T]) Create(ctx context.Context, params interface{}, cypher s
 	return
 }
 
-func (s *Reposytory[T]) GetById(ctx context.Context, cypher string, id int64) (entity T, execErr error) {
+func (s *Reposytory[T]) GetById(ctx context.Context, cypher string, id string) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -92,7 +92,7 @@ func (s *Reposytory[T]) Update(ctx context.Context, cypher string, params interf
 	return
 }
 
-func (s *Reposytory[T]) List(ctx context.Context, cypher string, id int64) (list []T, execErr error) {
+func (s *Reposytory[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
@@ -66,11 +67,7 @@ func (ch *CommentHandler) HandleGetComments() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
-		if err != nil {
-			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
-			return err
-		}
+		id := mux.Vars(r)["id"]
 
 		comments, err := ch.commentRepo.ListPostComments(ctx, id)
 		if err != nil {

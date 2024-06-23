@@ -1,12 +1,10 @@
 MATCH
-    (u:User),
-    (p:Post)
-WHERE
-    ID(u)=$author_id AND ID(p)=$post_id
+    (u:User {id: $author_id}),
+    (p:Post {id: $post_id})
 CREATE
-    (u)-[:WRITE {role: 'Author'}]->(c:Comment {content: $content})-[:ON]->(p)
+    (u)-[:WRITE {role: 'Author'}]->(c:Comment {id: $id, content: $content})-[:ON]->(p)
 RETURN
-    ID(c) AS id,
+    c.id AS id,
     c.content AS content,
-    ID(p) AS post_id,
-    ID(u) AS author_id;
+    p.id AS post_id,
+    u.id AS author_id;

@@ -5,18 +5,18 @@ import (
 )
 
 type Comment struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Content   string    `json:"content" validate:"required"`
-	AuthorID  int64     `json:"author_id" validate:"required"`
-	PostID    int64     `json:"post_id" validate:"required"`
+	AuthorID  string    `json:"author_id" validate:"required"`
+	PostID    string    `json:"post_id" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type CommentInfo struct {
-	ID        int64     `json:"id"`
-	AuthorID  int64     `json:"author_id"`
-	PostID    int64     `json:"post_id"`
+	ID        string    `json:"id"`
+	AuthorID  string    `json:"author_id"`
+	PostID    string    `json:"post_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -24,21 +24,21 @@ type CommentInfo struct {
 }
 
 type CommentLike struct {
-	UserID    int64 `json:"user_id" validate:"required"`
-	CommentID int64 `json:"comment_id" validate:"required"`
+	UserID    string `json:"user_id" validate:"required"`
+	CommentID string `json:"comment_id" validate:"required"`
 }
 
 type Post struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Content   string    `json:"content" validate:"required"`
-	AuthorID  int64     `json:"author_id" validate:"required"`
+	AuthorID  string    `json:"author_id" validate:"required"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type PostInfo struct {
-	ID        int64     `json:"id"`
-	AuthorID  int64     `json:"author_id"`
+	ID        string    `json:"id"`
+	AuthorID  string    `json:"author_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -46,12 +46,12 @@ type PostInfo struct {
 }
 
 type PostLike struct {
-	UserID int64 `json:"user_id" validate:"required"`
-	PostID int64 `json:"post_id" validate:"required"`
+	UserID string `json:"user_id" validate:"required"`
+	PostID string `json:"post_id" validate:"required"`
 }
 
 type User struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Email     string    `json:"email" validate:"required,email"`
 	FirstName string    `json:"first_name" validate:"required"`
 	LastName  string    `json:"last_name" validate:"required"`
@@ -60,7 +60,7 @@ type User struct {
 }
 
 type UserInfo struct {
-	ID        int64     `json:"id"`
+	ID        string    `json:"id"`
 	Email     string    `json:"email" validate:"required,email"`
 	FirstName string    `json:"first_name" validate:"required"`
 	LastName  string    `json:"last_name" validate:"required"`
@@ -68,6 +68,6 @@ type UserInfo struct {
 }
 
 type UsersSubscription struct {
-	UserID         int64 `json:"user_id"`
-	SubscriptionID int64 `json:"subscription_id"`
+	UserID         string `json:"user_id"`
+	SubscriptionID string `json:"subscription_id"`
 }

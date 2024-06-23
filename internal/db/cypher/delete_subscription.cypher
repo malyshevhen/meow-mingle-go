@@ -1,3 +1,2 @@
-MATCH (f:User)-[s:SUBSCRIBE]->(u:User)
-WHERE ID(f)=$user_id AND ID(u)=$subscription_id
+MATCH (f:User {id: $user_id})-[s:SUBSCRIBE]->(u:User {id: $subscription_id})
 DELETE s;

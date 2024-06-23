@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -114,17 +113,8 @@ func WithJWTAuth(store db.IUserReposytory, cfg config.Config) types.Middleware {
 
 			claims := token.Claims.(jwt.MapClaims)
 			id := claims["userId"].(string)
-			numId, err := strconv.Atoi(id)
-			if err != nil {
-				log.Printf(
-					"%-15s ==> Failed to convert user Id to integer. Error: %v",
-					"AuthMW",
-					err,
-				)
-				return errors.NewUnauthorizedError()
-			}
 
-			user, err := store.GetUser(ctx, int64(numId))
+			user, err := store.GetUser(ctx, id)
 			if err != nil {
 				log.Printf(
 					"%-15s ==> Authentication failed: User Id not found. Error: %v",
@@ -137,7 +127,7 @@ func WithJWTAuth(store db.IUserReposytory, cfg config.Config) types.Middleware {
 			rCtx := context.WithValue(r.Context(), utils.UserIdKey, user.ID)
 			r = r.WithContext(rCtx)
 
-			log.Printf("%-15s ==> User %d authenticated successfully", "AuthMW", numId)
+			log.Printf("%-15s ==> User %s athenticated successfully", "AuthMW", id)
 			return h(w, r)
 		}
 	}

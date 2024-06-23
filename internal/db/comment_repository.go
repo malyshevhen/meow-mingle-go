@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/google/uuid"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -30,9 +31,9 @@ var (
 type ICommentRepository interface {
 	CreateComment(ctx context.Context, params CreateCommentParams) (comment Comment, err error)
 	CreateCommentLike(ctx context.Context, params CreateCommentLikeParams) (err error)
-	ListPostComments(ctx context.Context, id int64) (posts []Comment, err error)
+	ListPostComments(ctx context.Context, id string) (posts []Comment, err error)
 	UpdateComment(ctx context.Context, params UpdateCommentParams) (comment Comment, err error)
-	DeleteComment(ctx context.Context, userId, commentId int64) (err error)
+	DeleteComment(ctx context.Context, userId, commentId string) (err error)
 	DeleteCommentLike(ctx context.Context, params DeleteCommentLikeParams) error
 }
 
@@ -49,14 +50,26 @@ func NewCommentRepository(driver neo4j.DriverWithContext) *CommentRepository {
 }
 
 func (cr *CommentRepository) CreateComment(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return
+	}
+	params.ID = id.String()
+
 	return cr.Create(ctx, params, createCommentCypher)
 }
 
 func (cr *CommentRepository) CreateCommentLike(ctx context.Context, params CreateCommentLikeParams) (err error) {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return
+	}
+	params.ID = id.String()
+
 	return cr.Write(ctx, createLikeOnCommentCypher, params)
 }
 
-func (cr *CommentRepository) ListPostComments(ctx context.Context, id int64) (posts []Comment, err error) {
+func (cr *CommentRepository) ListPostComments(ctx context.Context, id string) (posts []Comment, err error) {
 	return cr.List(ctx, listPostComments, id)
 }
 
@@ -64,7 +77,7 @@ func (cr *CommentRepository) UpdateComment(ctx context.Context, params UpdateCom
 	return cr.Update(ctx, updateCommentCypher, params)
 }
 
-func (cr *CommentRepository) DeleteComment(ctx context.Context, userId, commentId int64) (err error) {
+func (cr *CommentRepository) DeleteComment(ctx context.Context, userId, commentId string) (err error) {
 	return cr.Delete(ctx, deleteCommentCypher, map[string]interface{}{
 		"id":        commentId,
 		"author_id": userId,

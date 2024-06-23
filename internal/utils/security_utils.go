@@ -3,7 +3,6 @@ package utils
 import (
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -13,19 +12,19 @@ import (
 
 const TOKEN_COOKIE_KEY string = "access_token"
 
-func GetAuthUserId(r *http.Request) (int64, error) {
-	numId, ok := r.Context().Value(UserIdKey).(int64)
+func GetAuthUserId(r *http.Request) (string, error) {
+	id, ok := r.Context().Value(UserIdKey).(string)
 	if !ok {
 		log.Printf("%-15s ==> Failed to convert user Id to integer", "Authentication")
-		return 0, errors.NewUnauthorizedError()
+		return "", errors.NewUnauthorizedError()
 	}
 
 	log.Printf(
-		"%-15s ==> User Id founded in the request context. ID: %d\n",
+		"%-15s ==> User Id founded in the request context. ID: %s\n",
 		"Authentication",
-		numId,
+		id,
 	)
-	return int64(numId), nil
+	return id, nil
 }
 
 func GetTokenFromRequest(r *http.Request) string {
@@ -60,11 +59,11 @@ func HashPwd(s string) (string, error) {
 	return string(hash), nil
 }
 
-func CreateJwt(secret []byte, id int64) (string, error) {
+func CreateJwt(secret []byte, id string) (string, error) {
 	log.Printf("%-15s ==> Starting JWT token creation...", "Authentication")
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"userId":    strconv.Itoa(int(id)),
+		"userId":    id,
 		"expiresAt": time.Now().Add(time.Hour * 24 * 120).Unix(),
 	})
 

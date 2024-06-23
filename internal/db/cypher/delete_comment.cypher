@@ -1,3 +1,2 @@
-MATCH (u:User)-[:WRITE]->(c:Comment)
-WHERE ID(c)=$id AND ID(u)=$author_id
+MATCH (u:User {id: $author_id})-[:WRITE]->(c:Comment {id: $id})
 DETACH DELETE c;

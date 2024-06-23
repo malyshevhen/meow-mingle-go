@@ -1,7 +1,5 @@
 MATCH
-    (u:User),
-    (c:Comment)
-WHERE
-    ID(u)=$user_id AND ID(c)=$comment_id
+    (u:User {id: $user_id}),
+    (c:Comment {id: $comment_id})
 CREATE
     (u)-[:LIKE]->(c);

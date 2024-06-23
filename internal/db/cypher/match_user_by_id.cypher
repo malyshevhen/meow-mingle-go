@@ -1,9 +1,7 @@
 MATCH
-    (u:User)
-WHERE
-    ID(u)=$id
+    (u:User {id: $id})
 RETURN
-    ID(u) AS id,
+    u.id AS id,
     u.email AS email,
     u.first_name AS first_name,
     u.last_name AS last_name;

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
@@ -36,7 +37,12 @@ func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 			return err
 		}
 
-		user := db.CreateUserParams(uForm)
+		user := db.CreateUserParams{
+			Email:     uForm.Email,
+			FirstName: uForm.FirstName,
+			LastName:  uForm.LastName,
+			Password:  uForm.Password,
+		}
 
 		log.Printf("%-15s ==> Hashing password...", "User Handler")
 
@@ -88,11 +94,11 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 
 		id, err := utils.ParseIdParam(r)
 		if err != nil {
-			msg := fmt.Sprintf("Invalid ID parameter: '%d' Error: %v", id, err)
+			msg := fmt.Sprintf("Invalid ID parameter: '%s' Error: %v", id, err)
 			return errors.NewValidationError(msg)
 		}
 
-		log.Printf("User ID is %d\n", id)
+		log.Printf("User ID is %s\n", id)
 
 		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {
@@ -102,7 +108,7 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 
 		if id != authUserID {
 			log.Printf(
-				"%-15s ==> User with ID: %d have no permissions to access account with ID: %d\n",
+				"%-15s ==> User with ID: %s have no permissions to access account with ID: %s\n",
 				"User Handler",
 				authUserID,
 				id,
@@ -110,15 +116,15 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 			return errors.NewForbiddenError()
 		}
 
-		log.Printf("%-15s ==> Searching for user with Id:%d\n", "User Handler", id)
+		log.Printf("%-15s ==> Searching for user with Id:%s\n", "User Handler", id)
 
 		savedUser, err := uh.userRepo.GetUser(ctx, id)
 		if err != nil {
-			log.Printf("%-15s ==> User not found for Id:%d\n", "User Handler", id)
+			log.Printf("%-15s ==> User not found for Id:%s\n", "User Handler", id)
 			return err
 		}
 
-		log.Printf("%-15s ==> Found user: %d\n", "User Handler", savedUser.ID)
+		log.Printf("%-15s ==> Found user: %s\n", "User Handler", savedUser.ID)
 
 		return utils.WriteJson(w, http.StatusOK, savedUser)
 	}
@@ -128,10 +134,7 @@ func (uh *UserHandler) HandleSubscribe() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
-		if err != nil {
-			return errors.NewValidationError("ID parameter is invalid")
-		}
+		id := mux.Vars(r)["id"]
 
 		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {
@@ -154,10 +157,7 @@ func (uh *UserHandler) HandleUnsubscribe() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
-		if err != nil {
-			return errors.NewValidationError("ID parameter is invalid")
-		}
+		id := mux.Vars(r)["id"]
 
 		authUserID, err := utils.GetAuthUserId(r)
 		if err != nil {

@@ -2,9 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -43,17 +41,11 @@ func Validate(s interface{}) error {
 	return nil
 }
 
-func ParseIdParam(r *http.Request) (int64, error) {
+func ParseIdParam(r *http.Request) (string, error) {
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	numId, err := strconv.Atoi(id)
-	if err != nil {
-		log.Printf("%-15s ==> Error parsing Id parameter %v\n", "Post Handler", err)
-		return 0, errors.NewValidationError("Error parsing Id parameter")
-	}
-
-	return int64(numId), nil
+	return id, nil
 }
 
 func IsEmpty[T comparable](object *T) bool {

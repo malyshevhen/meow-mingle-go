@@ -1,3 +1,2 @@
-MATCH (u:User)-[l:LIKE]->(p:Post)
-WHERE ID(u)=$user_id AND ID(p)=$post_id
+MATCH (u:User {id: $user_id})-[l:LIKE]->(p:Post {id: $post_id})
 DELETE l;
