@@ -6,23 +6,24 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/config"
-	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/handlers"
+	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 	"github.com/malyshEvhen/meow_mingle/internal/types"
 )
 
 type UserRouter struct {
-	userRepo    db.IUserReposytory
+	authMW      *middleware.AuthProvider
 	userHandler *handlers.UserHandler
 	postHandler *handlers.PostHandler
 }
 
 func NewUserRouter(
-	userRepo db.IUserReposytory,
+	authMW *middleware.AuthProvider,
 	userHandler *handlers.UserHandler,
 	postHandler *handlers.PostHandler,
 ) *UserRouter {
 	return &UserRouter{
+		authMW:      authMW,
 		userHandler: userHandler,
 		postHandler: postHandler,
 	}
@@ -32,7 +33,7 @@ func (ur *UserRouter) RegisterRouts(ctx context.Context, mux *mux.Router, cfg co
 	usersMux := mux.PathPrefix("/users").Subrouter()
 
 	auth := func(handler types.Handler) http.HandlerFunc {
-		return Authenticated(ur.userRepo, cfg, handler)
+		return Authenticated(handler, ur.authMW.WithJWTAuth)
 	}
 
 	usersMux.HandleFunc("/register", Public(ur.userHandler.HandleCreateUser(cfg))).Methods("POST")

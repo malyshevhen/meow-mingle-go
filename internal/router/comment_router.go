@@ -8,19 +8,23 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/handlers"
+	"github.com/malyshEvhen/meow_mingle/internal/middleware"
 	"github.com/malyshEvhen/meow_mingle/internal/types"
 )
 
 type CommentRouter struct {
+	authMW         *middleware.AuthProvider
 	commentHandler *handlers.CommentHandler
 	userRepo       db.IUserReposytory
 }
 
 func NewCommentRouter(
+	authMW *middleware.AuthProvider,
 	userRepo db.IUserReposytory,
 	commentHandler *handlers.CommentHandler,
 ) *CommentRouter {
 	return &CommentRouter{
+		authMW:         authMW,
 		commentHandler: commentHandler,
 		userRepo:       userRepo,
 	}
@@ -30,7 +34,7 @@ func (cr *CommentRouter) RegisterRouts(ctx context.Context, mux *mux.Router, cfg
 	commentsMux := mux.PathPrefix("/comments").Subrouter()
 
 	auth := func(handler types.Handler) http.HandlerFunc {
-		return Authenticated(cr.userRepo, cfg, handler)
+		return Authenticated(handler, cr.authMW.WithJWTAuth)
 	}
 
 	commentsMux.HandleFunc("/{id}", auth(cr.commentHandler.HandleUpdateComments())).Methods("PUT")

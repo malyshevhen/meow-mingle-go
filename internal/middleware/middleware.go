@@ -1,14 +1,10 @@
 package middleware
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
-	"github.com/malyshEvhen/meow_mingle/internal/config"
-	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
@@ -95,40 +91,5 @@ func ErrorHandler(h types.Handler) types.Handler {
 		}
 
 		return nil
-	}
-}
-
-func WithJWTAuth(store db.IUserReposytory, cfg config.Config) types.Middleware {
-	ctx := context.Background()
-
-	return func(h types.Handler) types.Handler {
-		return func(w http.ResponseWriter, r *http.Request) error {
-			tokenString := utils.GetTokenFromRequest(r)
-
-			token, err := utils.ValidateJWT(tokenString, cfg.JWTSecret)
-			if err != nil {
-				log.Printf("%-15s ==> Authentication failed. Error: %v", "AuthMW", err)
-				return errors.NewUnauthorizedError()
-			}
-
-			claims := token.Claims.(jwt.MapClaims)
-			id := claims["userId"].(string)
-
-			user, err := store.GetUser(ctx, id)
-			if err != nil {
-				log.Printf(
-					"%-15s ==> Authentication failed: User Id not found. Error: %v",
-					"AuthMW",
-					err,
-				)
-				return errors.NewUnauthorizedError()
-			}
-
-			rCtx := context.WithValue(r.Context(), utils.UserIdKey, user.ID)
-			r = r.WithContext(rCtx)
-
-			log.Printf("%-15s ==> User %s athenticated successfully", "AuthMW", id)
-			return h(w, r)
-		}
 	}
 }
