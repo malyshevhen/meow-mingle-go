@@ -16,12 +16,9 @@ import (
 )
 
 const (
-	DB_HEALTH_MSG   string        = "database system is ready to accept connections"
-	SSL_MODE_PARAM  string        = "sslmode=disable"
-	POSTGESQL_IMAGE string        = "postgres:16-alpine"
 	DB_NAME         string        = "mingle-db"
-	DB_USER         string        = "postgres"
-	DB_PASSWORD     string        = "example"
+	DB_USER         string        = "neo4j"
+	DB_PASSWORD     string        = "example123"
 	STARTUP_TIMEOUT time.Duration = 6 * time.Second
 	STRATEGY_OCC    int           = 2
 )
@@ -29,19 +26,15 @@ const (
 var TestStore IStore
 
 func TestMain(m *testing.M) {
-	var (
-		username = "neo4j"
-		password = "exam"
-	)
 	ctx := context.Background()
 
-	container, connURL, err := startContainer(ctx, username, password)
+	container, connURL, err := startContainer(ctx, DB_USER, DB_PASSWORD)
 	if err != nil {
 		log.Fatal("can not create container:", err)
 	}
 	defer container.Terminate(ctx)
 
-	driver, err := neo4j.NewDriverWithContext(connURL, neo4j.BasicAuth(username, password, ""))
+	driver, err := neo4j.NewDriverWithContext(connURL, neo4j.BasicAuth(DB_USER, DB_PASSWORD, ""))
 	if err != nil {
 		log.Fatal("can not create neo4j driver:", err)
 	}
