@@ -139,7 +139,7 @@ func TestHandleCreateUser(t *testing.T) {
 }
 
 func TestHandleGetUser(t *testing.T) {
-	userRow := db.GetUserRow{
+	userRow := db.UserInfo{
 		ID:        1,
 		Email:     "john@doe.com",
 		FirstName: "John",
@@ -180,7 +180,7 @@ func TestHandleGetUser(t *testing.T) {
 			t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 		}
 
-		user, err := utils.Unmarshal[db.GetUserRow](body)
+		user, err := utils.Unmarshal[db.UserInfo](body)
 
 		assert.NoErrorf(t, err, "unmarshal response body")
 		assert.Truef(

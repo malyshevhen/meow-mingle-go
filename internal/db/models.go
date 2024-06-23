@@ -59,6 +59,14 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type UserInfo struct {
+	ID        int64     `json:"id"`
+	Email     string    `json:"email" validate:"required,email"`
+	FirstName string    `json:"first_name" validate:"required"`
+	LastName  string    `json:"last_name" validate:"required"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type UsersSubscription struct {
 	UserID         int64 `json:"user_id"`
 	SubscriptionID int64 `json:"subscription_id"`

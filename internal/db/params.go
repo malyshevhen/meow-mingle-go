@@ -1,7 +1,5 @@
 package db
 
-import "time"
-
 type CreateCommentLikeParams struct {
 	UserID    int64 `json:"user_id" validate:"required"`
 	CommentID int64 `json:"comment_id" validate:"required"`
@@ -75,22 +73,6 @@ type CreateUserParams struct {
 	FirstName string `json:"first_name" validate:"required"`
 	LastName  string `json:"last_name" validate:"required"`
 	Password  string `json:"password" validate:"required"`
-}
-
-type GetUserRow struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email" validate:"required,email"`
-	FirstName string    `json:"first_name" validate:"required"`
-	LastName  string    `json:"last_name" validate:"required"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-type ListUsersRow struct {
-	ID        int64     `json:"id"`
-	Email     string    `json:"email" validate:"required,email"`
-	FirstName string    `json:"first_name" validate:"required"`
-	LastName  string    `json:"last_name" validate:"required"`
-	CreatedAt time.Time `json:"created_at"`
 }
 
 type UpdateUserParams struct {

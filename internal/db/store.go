@@ -11,7 +11,7 @@ type IStore interface {
 	CreatePostLikeTx(ctx context.Context, params CreatePostLikeParams) error
 	CreateCommentLikeTx(ctx context.Context, params CreateCommentLikeParams) (err error)
 	CreateSubscriptionTx(ctx context.Context, params CreateSubscriptionParams) error
-	GetUserTx(ctx context.Context, id int64) (user GetUserRow, err error)
+	GetUserTx(ctx context.Context, id int64) (user UserInfo, err error)
 	GetPostTx(ctx context.Context, id int64) (post PostInfo, err error)
 	GetFeed(ctx context.Context, userId int64) (feed []PostInfo, err error)
 	ListUserPostsTx(ctx context.Context, userId int64) (posts []PostInfo, err error)

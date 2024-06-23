@@ -97,7 +97,7 @@ func (s *VStore) CreateUserTx(ctx context.Context, userForm CreateUserParams) (u
 	return
 }
 
-func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, execErr error) {
+func (s *VStore) GetUserTx(ctx context.Context, id int64) (user UserInfo, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -106,7 +106,7 @@ func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, exec
 	}
 
 	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		result, err := retrieveSingle[GetUserRow](ctx, tx, getUserCypher, params)
+		result, err := retrieveSingle[UserInfo](ctx, tx, getUserCypher, params)
 		if err != nil {
 			return nil, err
 		}

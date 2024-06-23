@@ -12,7 +12,7 @@ type MockStore struct {
 	post                db.Post
 	comment             db.Comment
 	getPostRow          db.PostInfo
-	getUserRow          db.GetUserRow
+	getUserRow          db.UserInfo
 	listPostCommentRows []db.CommentInfo
 	listPostRows        []db.PostInfo
 	createSubCalled     bool
@@ -42,7 +42,7 @@ func (m *MockStore) SetGetPostRow(row db.PostInfo) {
 	m.getPostRow = row
 }
 
-func (m *MockStore) SetGetUserRow(row db.GetUserRow) {
+func (m *MockStore) SetGetUserRow(row db.UserInfo) {
 	m.getUserRow = row
 }
 
@@ -222,7 +222,7 @@ func (m *MockStore) GetPostTx(ctx context.Context, id int64) (post db.PostInfo, 
 }
 
 // GetUserTx implements IStore.
-func (m *MockStore) GetUserTx(ctx context.Context, id int64) (user db.GetUserRow, err error) {
+func (m *MockStore) GetUserTx(ctx context.Context, id int64) (user db.UserInfo, err error) {
 	return m.getUserRow, m.err
 }
 
