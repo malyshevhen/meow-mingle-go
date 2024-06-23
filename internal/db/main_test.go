@@ -22,7 +22,7 @@ const (
 	STRATEGY_OCC    int           = 2
 )
 
-var TestStore IStore
+var TestUserRepository IUserReposytory
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 		log.Fatal("can not create neo4j driver:", err)
 	}
 
-	TestStore = NewVstore(driver)
+	TestUserRepository = NewUserReposiory(driver)
 
 	os.Exit(m.Run())
 }

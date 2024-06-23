@@ -19,7 +19,7 @@ func TestCreateUser(t *testing.T) {
 		teardown := SetupTest(t)
 		defer teardown(t)
 
-		user, err := TestStore.CreateUserTx(context.Background(), args)
+		user, err := TestUserRepository.CreateUser(context.Background(), args)
 		require.NoError(t, err)
 		require.NotEmpty(t, user)
 		require.Equal(t, args.Email, user.Email)
@@ -41,7 +41,7 @@ func TestCreateUser(t *testing.T) {
 			Password:  "password",
 		}
 
-		savedUser, err := TestStore.CreateUserTx(context.Background(), invalidEmailArgs)
+		savedUser, err := TestUserRepository.CreateUser(context.Background(), invalidEmailArgs)
 		require.Error(t, err)
 
 		t.Logf("Saved user: %v", savedUser)
@@ -51,7 +51,7 @@ func TestCreateUser(t *testing.T) {
 		teardown := SetupTest(t)
 		defer teardown(t)
 
-		_, err := TestStore.CreateUserTx(context.Background(), args)
+		_, err := TestUserRepository.CreateUser(context.Background(), args)
 		require.NoError(t, err)
 
 		duplicateArgs := CreateUserParams{
@@ -61,7 +61,7 @@ func TestCreateUser(t *testing.T) {
 			Password:  "password",
 		}
 
-		_, err = TestStore.CreateUserTx(context.Background(), duplicateArgs)
+		_, err = TestUserRepository.CreateUser(context.Background(), duplicateArgs)
 		require.Error(t, err)
 	})
 
@@ -76,7 +76,7 @@ func TestCreateUser(t *testing.T) {
 			Password:  "",
 		}
 
-		_, err := TestStore.CreateUserTx(context.Background(), invalidPasswordArgs)
+		_, err := TestUserRepository.CreateUser(context.Background(), invalidPasswordArgs)
 		require.Error(t, err)
 	})
 
@@ -91,7 +91,7 @@ func TestCreateUser(t *testing.T) {
 			Password:  "First_Name",
 		}
 
-		_, err := TestStore.CreateUserTx(context.Background(), invalidFirstNameArgs)
+		_, err := TestUserRepository.CreateUser(context.Background(), invalidFirstNameArgs)
 		require.Error(t, err)
 	})
 
@@ -106,7 +106,7 @@ func TestCreateUser(t *testing.T) {
 			Password:  "Last_Name",
 		}
 
-		_, err := TestStore.CreateUserTx(context.Background(), invalidLastNameArgs)
+		_, err := TestUserRepository.CreateUser(context.Background(), invalidLastNameArgs)
 		require.Error(t, err)
 	})
 }
@@ -123,10 +123,10 @@ func TestGetUser(t *testing.T) {
 		teardown := SetupTest(t)
 		defer teardown(t)
 
-		existingUser, err := TestStore.CreateUserTx(context.Background(), args)
+		existingUser, err := TestUserRepository.CreateUser(context.Background(), args)
 		require.NoError(t, err)
 
-		user, err := TestStore.GetUserTx(context.Background(), existingUser.ID)
+		user, err := TestUserRepository.GetUser(context.Background(), existingUser.ID)
 
 		require.NoError(t, err)
 		require.NotEmpty(t, user)
@@ -141,7 +141,7 @@ func TestGetUser(t *testing.T) {
 		teardown := SetupTest(t)
 		defer teardown(t)
 
-		_, err := TestStore.GetUserTx(context.Background(), 1_000_000)
+		_, err := TestUserRepository.GetUser(context.Background(), 1_000_000)
 
 		require.Error(t, err)
 	})

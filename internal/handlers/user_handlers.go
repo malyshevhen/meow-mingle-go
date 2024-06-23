@@ -16,7 +16,17 @@ import (
 
 const TOKEN_EXPIRATION_TIME int = 12
 
-func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
+type UserHandler struct {
+	userRepo db.IUserReposytory
+}
+
+func NewUserHandler(userRepo db.IUserReposytory) *UserHandler {
+	return &UserHandler{
+		userRepo: userRepo,
+	}
+}
+
+func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -40,7 +50,7 @@ func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 
 		log.Printf("%-15s ==> Creating user in database...\n", "User Handler")
 
-		savedUser, err := store.CreateUserTx(ctx, user)
+		savedUser, err := uh.userRepo.CreateUser(ctx, user)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating user: %v\n", "User Handler", err)
 			return err
@@ -72,7 +82,7 @@ func HandleCreateUser(store db.IStore, cfg config.Config) types.Handler {
 	}
 }
 
-func HandleGetUser(store db.IStore) types.Handler {
+func (uh *UserHandler) HandleGetUser() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -102,7 +112,7 @@ func HandleGetUser(store db.IStore) types.Handler {
 
 		log.Printf("%-15s ==> Searching for user with Id:%d\n", "User Handler", id)
 
-		savedUser, err := store.GetUserTx(ctx, id)
+		savedUser, err := uh.userRepo.GetUser(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> User not found for Id:%d\n", "User Handler", id)
 			return err
@@ -114,7 +124,7 @@ func HandleGetUser(store db.IStore) types.Handler {
 	}
 }
 
-func HandleSubscribe(store db.IStore) types.Handler {
+func (uh *UserHandler) HandleSubscribe() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -129,7 +139,7 @@ func HandleSubscribe(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.CreateSubscriptionTx(ctx, db.CreateSubscriptionParams{
+		if err := uh.userRepo.CreateSubscription(ctx, db.CreateSubscriptionParams{
 			UserID:         authUserID,
 			SubscriptionID: id,
 		}); err != nil {
@@ -140,7 +150,7 @@ func HandleSubscribe(store db.IStore) types.Handler {
 	}
 }
 
-func HandleUnsubscribe(store db.IStore) types.Handler {
+func (uh *UserHandler) HandleUnsubscribe() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -155,7 +165,7 @@ func HandleUnsubscribe(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.DeleteSubscriptionTx(ctx, db.DeleteSubscriptionParams{
+		if err := uh.userRepo.DeleteSubscription(ctx, db.DeleteSubscriptionParams{
 			UserID:         authUserID,
 			SubscriptionID: id,
 		}); err != nil {
@@ -163,41 +173,5 @@ func HandleUnsubscribe(store db.IStore) types.Handler {
 		}
 
 		return utils.WriteJson(w, http.StatusNoContent, nil)
-	}
-}
-
-func HandleOwnersFeed(store db.IStore) types.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
-
-		authUserID, err := utils.GetAuthUserId(r)
-		if err != nil {
-			log.Printf("%-15s ==> No authenticated user found", "User Handler")
-			return err
-		}
-
-		feed, err := store.GetFeed(ctx, authUserID)
-		if err != nil {
-			return err
-		}
-
-		return utils.WriteJson(w, http.StatusOK, feed)
-	}
-}
-
-func HandleUsersFeed(store db.IStore) types.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
-
-		id, err := utils.ParseIdParam(r)
-		if err != nil {
-			return errors.NewValidationError("ID parameter is invalid")
-		}
-
-		feed, err := store.GetFeed(ctx, id)
-		if err != nil {
-			return err
-		}
-		return utils.WriteJson(w, http.StatusOK, feed)
 	}
 }

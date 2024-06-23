@@ -99,7 +99,7 @@ func ErrorHandler(h types.Handler) types.Handler {
 	}
 }
 
-func WithJWTAuth(store db.IStore, cfg config.Config) types.Middleware {
+func WithJWTAuth(store db.IUserReposytory, cfg config.Config) types.Middleware {
 	ctx := context.Background()
 
 	return func(h types.Handler) types.Handler {
@@ -124,7 +124,7 @@ func WithJWTAuth(store db.IStore, cfg config.Config) types.Middleware {
 				return errors.NewUnauthorizedError()
 			}
 
-			user, err := store.GetUserTx(ctx, int64(numId))
+			user, err := store.GetUser(ctx, int64(numId))
 			if err != nil {
 				log.Printf(
 					"%-15s ==> Authentication failed: User Id not found. Error: %v",

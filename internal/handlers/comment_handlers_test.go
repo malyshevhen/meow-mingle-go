@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Comments []db.CommentInfo
+type Comments []db.Comment
 
 func TestHandleCreateComment(t *testing.T) {
 	var (

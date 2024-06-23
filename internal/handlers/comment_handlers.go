@@ -10,7 +10,17 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-func HandleCreateComment(store db.IStore) types.Handler {
+type CommentHandler struct {
+	commentRepo db.ICommentRepository
+}
+
+func NewCommentHandler(commentRepo db.ICommentRepository) *CommentHandler {
+	return &CommentHandler{
+		commentRepo: commentRepo,
+	}
+}
+
+func (ch *CommentHandler) HandleCreateComment() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -40,7 +50,7 @@ func HandleCreateComment(store db.IStore) types.Handler {
 			}
 		})
 
-		comment, err := store.CreateCommentTx(ctx, params)
+		comment, err := ch.commentRepo.CreateComment(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
 			return err
@@ -52,7 +62,7 @@ func HandleCreateComment(store db.IStore) types.Handler {
 	}
 }
 
-func HandleGetComments(store db.IStore) types.Handler {
+func (ch *CommentHandler) HandleGetComments() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -62,7 +72,7 @@ func HandleGetComments(store db.IStore) types.Handler {
 			return err
 		}
 
-		comments, err := store.ListPostCommentsTx(ctx, id)
+		comments, err := ch.commentRepo.ListPostComments(ctx, id)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Error getting comment by Id from stor %v\n",
@@ -78,7 +88,7 @@ func HandleGetComments(store db.IStore) types.Handler {
 	}
 }
 
-func HandleUpdateComments(store db.IStore) types.Handler {
+func (ch *CommentHandler) HandleUpdateComments() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -108,7 +118,7 @@ func HandleUpdateComments(store db.IStore) types.Handler {
 			}
 		})
 
-		comment, err := store.UpdateCommentTx(ctx, params)
+		comment, err := ch.commentRepo.UpdateComment(ctx, params)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Error updating comment by Id in stor %v\n",
@@ -124,7 +134,7 @@ func HandleUpdateComments(store db.IStore) types.Handler {
 	}
 }
 
-func HandleDeleteComments(store db.IStore) types.Handler {
+func (ch *CommentHandler) HandleDeleteComments() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -140,7 +150,7 @@ func HandleDeleteComments(store db.IStore) types.Handler {
 			return err
 		}
 
-		err = store.DeleteCommentTx(ctx, userId, id)
+		err = ch.commentRepo.DeleteComment(ctx, userId, id)
 		if err != nil {
 			log.Printf("%-15s ==> Error deleting comment by Id from stor\n ", "Comment Handler")
 			return err
@@ -152,7 +162,7 @@ func HandleDeleteComments(store db.IStore) types.Handler {
 	}
 }
 
-func HandleLikeComment(store db.IStore) types.Handler {
+func (ch *CommentHandler) HandleLikeComment() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -175,7 +185,7 @@ func HandleLikeComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.CreateCommentLikeTx(ctx, params); err != nil {
+		if err := ch.commentRepo.CreateCommentLike(ctx, params); err != nil {
 			return err
 		}
 
@@ -183,7 +193,7 @@ func HandleLikeComment(store db.IStore) types.Handler {
 	}
 }
 
-func HandleRemoveLikeFromComment(store db.IStore) types.Handler {
+func (ch *CommentHandler) HandleRemoveLikeFromComment() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -206,7 +216,7 @@ func HandleRemoveLikeFromComment(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.DeleteCommentLikeTx(ctx, params); err != nil {
+		if err := ch.commentRepo.DeleteCommentLike(ctx, params); err != nil {
 			return err
 		}
 

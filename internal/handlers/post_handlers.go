@@ -6,11 +6,22 @@ import (
 	"net/http"
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/errors"
 	"github.com/malyshEvhen/meow_mingle/internal/types"
 	"github.com/malyshEvhen/meow_mingle/internal/utils"
 )
 
-func HandleCreatePost(store db.IStore) types.Handler {
+type PostHandler struct {
+	postRepo db.IPostRepository
+}
+
+func NewPostHandler(postRepo db.IPostRepository) *PostHandler {
+	return &PostHandler{
+		postRepo: postRepo,
+	}
+}
+
+func (ph *PostHandler) HandleCreatePost() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -32,7 +43,7 @@ func HandleCreatePost(store db.IStore) types.Handler {
 
 		params.AuthorID = userId
 
-		savedPost, err := store.CreatePostTx(ctx, params)
+		savedPost, err := ph.postRepo.CreatePost(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating post in store %v\n", "Post Handler", err)
 			return err
@@ -44,7 +55,7 @@ func HandleCreatePost(store db.IStore) types.Handler {
 	}
 }
 
-func HandleGetUserPosts(store db.IStore) types.Handler {
+func (ph *PostHandler) HandleGetUserPosts() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -54,7 +65,7 @@ func HandleGetUserPosts(store db.IStore) types.Handler {
 			return err
 		}
 
-		postResponses, err := store.ListUserPostsTx(ctx, id)
+		postResponses, err := ph.postRepo.ListUserPosts(ctx, id)
 		if err != nil {
 			return err
 		}
@@ -65,7 +76,7 @@ func HandleGetUserPosts(store db.IStore) types.Handler {
 	}
 }
 
-func HandleGetPostsById(store db.IStore) types.Handler {
+func (ph *PostHandler) HandleGetPostsById() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -75,7 +86,7 @@ func HandleGetPostsById(store db.IStore) types.Handler {
 			return err
 		}
 
-		post, err := store.GetPostTx(ctx, id)
+		post, err := ph.postRepo.GetPost(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting post by Id from stor:%v\n", "Post Handler", err)
 			return err
@@ -87,7 +98,7 @@ func HandleGetPostsById(store db.IStore) types.Handler {
 	}
 }
 
-func HandleUpdatePostsById(store db.IStore) types.Handler {
+func (ph *PostHandler) HandleUpdatePostsById() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -115,7 +126,7 @@ func HandleUpdatePostsById(store db.IStore) types.Handler {
 			}
 		})
 
-		postResponse, err := store.UpdatePostTx(ctx, params)
+		postResponse, err := ph.postRepo.UpdatePost(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error updating post by Id in store %v\n", "Post Handler", err)
 			return err
@@ -127,7 +138,7 @@ func HandleUpdatePostsById(store db.IStore) types.Handler {
 	}
 }
 
-func HandleDeletePostsById(store db.IStore) types.Handler {
+func (ph *PostHandler) HandleDeletePostsById() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -142,7 +153,7 @@ func HandleDeletePostsById(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.DeletePostTx(ctx, userId, id); err != nil {
+		if err := ph.postRepo.DeletePost(ctx, userId, id); err != nil {
 			log.Printf("%-15s ==> Error deleting post by Id from store %v\n", "Post Handler", err)
 			return err
 		}
@@ -153,7 +164,7 @@ func HandleDeletePostsById(store db.IStore) types.Handler {
 	}
 }
 
-func HandleLikePost(store db.IStore) types.Handler {
+func (ph *PostHandler) HandleLikePost() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		id, err := utils.ParseIdParam(r)
 		if err != nil {
@@ -174,7 +185,7 @@ func HandleLikePost(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.CreatePostLikeTx(context.Background(), params); err != nil {
+		if err := ph.postRepo.CreatePostLike(context.Background(), params); err != nil {
 			return err
 		}
 
@@ -182,7 +193,43 @@ func HandleLikePost(store db.IStore) types.Handler {
 	}
 }
 
-func HandleRemoveLikeFromPost(store db.IStore) types.Handler {
+func (ph *PostHandler) HandleOwnersFeed() types.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := context.Background()
+
+		authUserID, err := utils.GetAuthUserId(r)
+		if err != nil {
+			log.Printf("%-15s ==> No authenticated user found", "User Handler")
+			return err
+		}
+
+		feed, err := ph.postRepo.GetFeed(ctx, authUserID)
+		if err != nil {
+			return err
+		}
+
+		return utils.WriteJson(w, http.StatusOK, feed)
+	}
+}
+
+func (ph *PostHandler) HandleUsersFeed() types.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := context.Background()
+
+		id, err := utils.ParseIdParam(r)
+		if err != nil {
+			return errors.NewValidationError("ID parameter is invalid")
+		}
+
+		feed, err := ph.postRepo.GetFeed(ctx, id)
+		if err != nil {
+			return err
+		}
+		return utils.WriteJson(w, http.StatusOK, feed)
+	}
+}
+
+func (ph *PostHandler) HandleRemoveLikeFromPost() types.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
@@ -205,7 +252,7 @@ func HandleRemoveLikeFromPost(store db.IStore) types.Handler {
 			return err
 		}
 
-		if err := store.DeletePostLikeTx(ctx, params); err != nil {
+		if err := ph.postRepo.DeletePostLike(ctx, params); err != nil {
 			return err
 		}
 
