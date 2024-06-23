@@ -13,7 +13,10 @@ var (
 	createUserCypher string
 
 	//go:embed cypher/match_user_by_id.cypher
-	getUserCypher string
+	getUserByIdCypher string
+
+	//go:embed cypher/match_user_by_email.cypher
+	getUserByEmailCypher string
 
 	//go:embed cypher/create_subscription.cypher
 	createSubscriptionCypher string
@@ -25,7 +28,8 @@ var (
 type IUserReposytory interface {
 	CreateUser(ctx context.Context, params CreateUserParams) (user User, err error)
 	CreateSubscription(ctx context.Context, params CreateSubscriptionParams) error
-	GetUser(ctx context.Context, id string) (user User, err error)
+	GetUserById(ctx context.Context, id string) (user User, err error)
+	GetUserByEmail(ctx context.Context, email string) (user User, err error)
 	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
 }
 
@@ -61,8 +65,16 @@ func (ur *UserRepository) CreateSubscription(ctx context.Context, params CreateS
 	return ur.Write(ctx, createSubscriptionCypher, params)
 }
 
-func (ur *UserRepository) GetUser(ctx context.Context, id string) (user User, err error) {
-	return ur.GetById(ctx, getUserCypher, id)
+func (ur *UserRepository) GetUserById(ctx context.Context, id string) (user User, err error) {
+	return ur.Retrieve(ctx, getUserByIdCypher, map[string]interface{}{
+		"id": id,
+	})
+}
+
+func (ur *UserRepository) GetUserByEmail(ctx context.Context, email string) (user User, err error) {
+	return ur.Retrieve(ctx, getUserByEmailCypher, map[string]interface{}{
+		"email": email,
+	})
 }
 
 func (ur *UserRepository) DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error {

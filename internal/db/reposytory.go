@@ -34,13 +34,9 @@ func (s *Reposytory[T]) Create(ctx context.Context, params interface{}, cypher s
 	return
 }
 
-func (s *Reposytory[T]) GetById(ctx context.Context, cypher string, id string) (entity T, execErr error) {
+func (s *Reposytory[T]) Retrieve(ctx context.Context, cypher string, params map[string]interface{}) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
-
-	params := map[string]interface{}{
-		"id": id,
-	}
 
 	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
 		result, err := retrieveSingle[T](ctx, tx, cypher, params)

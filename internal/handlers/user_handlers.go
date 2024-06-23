@@ -118,7 +118,7 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 
 		log.Printf("%-15s ==> Searching for user with Id:%s\n", "User Handler", id)
 
-		savedUser, err := uh.userRepo.GetUser(ctx, id)
+		savedUser, err := uh.userRepo.GetUserById(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> User not found for Id:%s\n", "User Handler", id)
 			return err

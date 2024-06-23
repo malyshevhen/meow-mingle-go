@@ -17,6 +17,18 @@ tags:
   - name: Registration
 
 paths:
+  /login:
+    post:
+      tags:
+        - Login
+      operationId: login
+      responsses:
+        204:
+          description: User login successfully
+        401:
+          $ref: "#/components/responses/401"
+        500:
+          $ref: "#/components/responses/500"
   /users/register:
     post:
       tags:

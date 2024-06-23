@@ -78,7 +78,9 @@ func (pr *PostRepository) CreatePostLike(ctx context.Context, params CreatePostL
 }
 
 func (pr *PostRepository) GetPost(ctx context.Context, id string) (post Post, err error) {
-	return pr.GetById(ctx, getPostCypher, id)
+	return pr.Retrieve(ctx, getPostCypher, map[string]interface{}{
+		"id": id,
+	})
 }
 
 func (pr *PostRepository) GetFeed(ctx context.Context, userId string) (feed []Post, err error) {
