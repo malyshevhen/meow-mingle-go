@@ -58,6 +58,15 @@ var (
 
 	//go:embed cypher/delete_subscription.cypher
 	deleteSubscriptionCypher string
+
+	//go:embed cypher/list_user_posts.cypher
+	listUserPostsCypher string
+
+	//go:embed cypher/list_post_comments.cypher
+	listPostComments string
+
+	//go:embed cypher/list_feed.cypher
+	listFeed string
 )
 
 type VStore struct {
@@ -97,7 +106,7 @@ func (s *VStore) GetUserTx(ctx context.Context, id int64) (user GetUserRow, exec
 	}
 
 	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		result, err := retrieve[GetUserRow](ctx, tx, getUserCypher, params)
+		result, err := retrieveSingle[GetUserRow](ctx, tx, getUserCypher, params)
 		if err != nil {
 			return nil, err
 		}
@@ -139,7 +148,7 @@ func (s *VStore) GetPostTx(ctx context.Context, id int64) (post PostInfo, execEr
 	}
 
 	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
-		result, err := retrieve[PostInfo](ctx, tx, getPostCypher, params)
+		result, err := retrieveSingle[PostInfo](ctx, tx, getPostCypher, params)
 		if err != nil {
 			return nil, err
 		}
@@ -258,16 +267,73 @@ func (s *VStore) UpdateCommentTx(ctx context.Context, params UpdateCommentParams
 	return
 }
 
-func (s *VStore) GetFeed(ctx context.Context, userId int64) (feed []PostInfo, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *VStore) GetFeed(ctx context.Context, userId int64) (feed []PostInfo, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	params := map[string]interface{}{
+		"id": userId,
+	}
+
+	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := retrieveMany[PostInfo](ctx, tx, listFeed, params)
+		if err != nil {
+			return nil, err
+		}
+		feed = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
 }
 
-func (s *VStore) ListUserPostsTx(ctx context.Context, userId int64) (posts []PostInfo, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *VStore) ListUserPostsTx(ctx context.Context, userId int64) (posts []PostInfo, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	params := map[string]interface{}{
+		"id": userId,
+	}
+
+	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := retrieveMany[PostInfo](ctx, tx, listUserPostsCypher, params)
+		if err != nil {
+			return nil, err
+		}
+		posts = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
 }
 
-func (s *VStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []CommentInfo, err error) {
-	panic("not implemented") // TODO: Implement
+func (s *VStore) ListPostCommentsTx(ctx context.Context, id int64) (posts []CommentInfo, execErr error) {
+	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
+	defer session.Close(ctx)
+
+	params := map[string]interface{}{
+		"id": id,
+	}
+
+	if _, err := session.ExecuteRead(ctx, func(tx neo4j.ManagedTransaction) (any, error) {
+		result, err := retrieveMany[CommentInfo](ctx, tx, listPostComments, params)
+		if err != nil {
+			return nil, err
+		}
+		posts = result
+
+		return result, nil
+	}); err != nil {
+		execErr = err
+		return
+	}
+	return
 }
 
 func (s *VStore) DeletePostTx(ctx context.Context, userId int64, postId int64) error {
@@ -412,7 +478,7 @@ func persist[T any](
 	return parceRecord[T](record)
 }
 
-func retrieve[T any](
+func retrieveSingle[T any](
 	ctx context.Context,
 	tx neo4j.ManagedTransaction,
 	cypher string,
@@ -434,6 +500,38 @@ func retrieve[T any](
 	}
 
 	return parceRecord[T](record)
+}
+
+func retrieveMany[T any](
+	ctx context.Context,
+	tx neo4j.ManagedTransaction,
+	cypher string,
+	params map[string]interface{},
+) (obj []T, err error) {
+	fail := func(msg string) (res []T, err error) {
+		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
+		return
+	}
+
+	result, err := tx.Run(ctx, cypher, params)
+	if err != nil {
+		return fail(fmt.Sprintf("executing transaction: %s", err.Error()))
+	}
+
+	records, err := result.Collect(ctx)
+	if err != nil {
+		return fail(fmt.Sprintf("retrieving the record: %s", err.Error()))
+	}
+
+	for _, record := range records {
+		res, err := parceRecord[T](record)
+		if err != nil {
+			return nil, err
+		}
+		obj = append(obj, res)
+	}
+
+	return
 }
 
 func parceRecord[T any](r *db.Record) (result T, err error) {

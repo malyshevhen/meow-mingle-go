@@ -6,7 +6,7 @@ services:
       - 8080:8080
     environment:
       DB_URL: bolt://database:7687
-      DB_USER: neo4j:5.20
+      DB_USER: neo4j
       DB_PASS: ${DB_PASS}
     depends_on:
       database:
@@ -17,14 +17,14 @@ services:
           path: .
 
   database:
-    image: neo4j
-    restart: always
+    image: neo4j:5.20
     ports:
       - 7474:7474
+      - 7687:7687
     environment:
-      NEO4J_AUTH: neo4j/${DB_PASS}
+      - NEO4J_AUTH=neo4j/${DB_PASS}
     healthcheck:
-      test: wget http://localhost:7487 || exit 1
+      test: wget http://localhost:7474 || exit 1
       interval: 3s
       timeout: 10s
       retries: 5
