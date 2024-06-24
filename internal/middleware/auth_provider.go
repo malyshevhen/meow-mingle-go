@@ -73,7 +73,7 @@ func (ai *AuthProvider) WithBasicAuth(h types.Handler) types.Handler {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request) error {
-		authHeader := r.Header.Get("Authentication")
+		authHeader := r.Header.Get("Authorization")
 
 		encodedCredsStr, ok := strings.CutPrefix(authHeader, "Basic ")
 		if !ok {

@@ -27,13 +27,11 @@ func NewLoginHandler(
 }
 
 func (lr *LoginRouter) RegisterRouts(ctx context.Context, mux *mux.Router, cfg config.Config) *mux.Router {
-	loginMux := mux.PathPrefix("/comments").Subrouter()
-
 	auth := func(handler types.Handler) http.HandlerFunc {
 		return Authenticated(handler, lr.authMW.WithBasicAuth)
 	}
 
-	loginMux.HandleFunc("/login", auth(lr.loginHandler.HahdleLogin())).Methods("POST")
+	mux.HandleFunc("/login", auth(lr.loginHandler.HahdleLogin())).Methods("POST")
 
 	return mux
 }
