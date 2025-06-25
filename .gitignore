@@ -6,3 +6,5 @@
 **.sublime-workspace
 
 cspell.json
+
+.env
