@@ -8,6 +8,10 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
+type Handler func(w http.ResponseWriter, r *http.Request) error
+
+type Middleware func(h Handler) Handler
+
 func RegisterRouts(
 	ctx context.Context,
 	authMW *AuthProvider,

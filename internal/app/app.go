@@ -12,8 +12,6 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
-type closerFunc func(context.Context) error
-
 type App struct {
 	s *http.Server
 
