@@ -3,89 +3,83 @@ package app
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
+	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/malyshEvhen/meow_mingle/internal/config"
+	"github.com/gorilla/handlers"
+	"github.com/malyshEvhen/meow_mingle/internal/api"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
-	"github.com/malyshEvhen/meow_mingle/internal/handlers"
-	"github.com/malyshEvhen/meow_mingle/internal/middleware"
-	"github.com/malyshEvhen/meow_mingle/internal/router"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 type closerFunc func(context.Context) error
 
-func Start(ctx context.Context) (cf closerFunc, appError error) {
-	var (
-		cfg    = config.InitConfig()
-		driver neo4j.DriverWithContext
-		muxer  *mux.Router
-	)
+type App struct {
+	s *http.Server
 
-	fail := func(format string, a ...any) (closerFunc, error) {
-		return nil, fmt.Errorf(format, a)
-	}
+	userRepo     db.IUserRepository
+	commentRepo  db.ICommentRepository
+	postRepo     db.IPostRepository
+	authProvider *api.AuthProvider
 
-	driver, err := initDB(cfg)
-	if err != nil {
-		return fail(err.Error())
-	}
-
-	muxer = initRouter(ctx, cfg, driver)
-
-	if err := listenAndServe(cfg, muxer); err != nil {
-		return fail(err.Error())
-	}
-
-	cf = func(ctx context.Context) error {
-		return driver.Close(ctx)
-	}
-	return
+	driver neo4j.DriverWithContext
 }
 
-func initDB(cfg config.Config) (neo4j.DriverWithContext, error) {
+func New(ctx context.Context) (app *App, appError error) {
+	cfg := initConfig()
+
 	driver, err := neo4j.NewDriverWithContext(cfg.DBConnURL, neo4j.BasicAuth(cfg.DBUser, cfg.DBPassword, ""))
 	if err != nil {
-		return nil, fmt.Errorf("an error occured when neo4j driver creates: %s", err.Error())
+		return nil, fmt.Errorf("an error occurred when neo4j driver creates: %s", err.Error())
 	}
 
-	return driver, nil
+	app = &App{}
+	app.driver = driver
+	app.userRepo = db.NewUserRepository(driver)
+	app.commentRepo = db.NewCommentRepository(driver)
+	app.postRepo = db.NewPostRepository(driver)
+	app.authProvider = api.NewAuthProvider(app.userRepo, cfg.JWTSecret)
+
+	mux := api.RegisterRouts(
+		ctx,
+		app.authProvider,
+		app.userRepo,
+		app.commentRepo,
+		app.postRepo,
+		cfg.JWTSecret,
+	)
+
+	recoveryHandler := handlers.RecoveryHandler()
+	corsHandler := handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "OPTIONS"}),
+		handlers.AllowCredentials(),
+		handlers.ExposedHeaders([]string{"Authorization", "Content-Type", "Content-Encoding", "Content-Length", "Location"}),
+	)
+
+	app.s = &http.Server{
+		Addr:         cfg.ServerPort,
+		Handler:      corsHandler(recoveryHandler(mux)),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  10 * time.Second,
+	}
+
+	return app, nil
 }
 
-func initRouter(ctx context.Context, cfg config.Config, driver neo4j.DriverWithContext) *mux.Router {
-	userRepo := db.NewUserReposiory(driver)
-	postRepo := db.NewPostRepository(driver)
-	commentRepo := db.NewCommentRepository(driver)
+func (app *App) Start(ctx context.Context) error {
+	if err := app.s.ListenAndServe(); err != nil {
+		return err
+	}
 
-	authMW := middleware.NewAuthProvider(userRepo, cfg)
-
-	muxer := mux.NewRouter()
-	apiMux := muxer.PathPrefix("/api/v1").Subrouter()
-
-	userHandler := handlers.NewUserHandler(userRepo)
-	postHandler := handlers.NewPostHandler(postRepo)
-	commentHandler := handlers.NewCommentHandler(commentRepo)
-	loginHandler := handlers.NewLoginHandler(userRepo, cfg)
-
-	userRouret := router.NewUserRouter(authMW, userHandler, postHandler)
-	postRouter := router.NewPostRouter(authMW, postHandler, commentHandler, userRepo)
-	commentRouter := router.NewCommentRouter(authMW, userRepo, commentHandler)
-	loginRouter := router.NewLoginHandler(loginHandler, authMW)
-
-	userRouret.RegisterRouts(ctx, apiMux, cfg)
-	postRouter.RegisterRouts(ctx, apiMux, cfg)
-	commentRouter.RegisterRouts(ctx, apiMux, cfg)
-	loginRouter.RegisterRouts(ctx, apiMux, cfg)
-
-	return muxer
+	return nil
 }
 
-func listenAndServe(cfg config.Config, router *mux.Router) error {
-	if err := http.ListenAndServe(cfg.ServerPort, router); err != nil {
-		log.Printf("%-15s ==> Server failed to start: %s\n", "Application", err.Error())
-		return fmt.Errorf("an error occured while server starts: %s", err.Error())
+func (app *App) Stop(ctx context.Context) error {
+	if err := app.driver.Close(ctx); err != nil {
+		return err
 	}
 	return nil
 }

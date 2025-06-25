@@ -1,16 +1,14 @@
-package middleware
+package api
 
 import (
 	"log"
 	"net/http"
 	"time"
 
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
-	"github.com/malyshEvhen/meow_mingle/internal/types"
-	"github.com/malyshEvhen/meow_mingle/internal/utils"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
-func MiddlewareChain(h types.Handler, m ...types.Middleware) http.HandlerFunc {
+func MiddlewareChain(h Handler, m ...Middleware) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(m) < 1 {
 			h(w, r)
@@ -36,7 +34,7 @@ func (ww *wrappedWriter) WriteHeader(code int) {
 	ww.ResponseWriter.WriteHeader(code)
 }
 
-func LoggerMW(h types.Handler) types.Handler {
+func LoggerMW(h Handler) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		start := time.Now()
 
@@ -71,7 +69,7 @@ func NewErrorResponse(message string) *ErrorResponse {
 	}
 }
 
-func ErrorHandler(h types.Handler) types.Handler {
+func ErrorHandler(h Handler) Handler {
 	log.Printf("%-15s Apply error handler", "Error Handler")
 
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -79,10 +77,10 @@ func ErrorHandler(h types.Handler) types.Handler {
 			switch e := err.(type) {
 			case errors.Error:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				utils.WriteJson(w, e.Code(), NewErrorResponse(e.Error()))
+				WriteJson(w, e.Code(), NewErrorResponse(e.Error()))
 			default:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				utils.WriteJson(
+				WriteJson(
 					w,
 					http.StatusInternalServerError,
 					NewErrorResponse("Internal error"),

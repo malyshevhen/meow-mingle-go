@@ -38,12 +38,12 @@ type ICommentRepository interface {
 }
 
 type CommentRepository struct {
-	Reposytory[Comment]
+	Repository[Comment]
 }
 
 func NewCommentRepository(driver neo4j.DriverWithContext) *CommentRepository {
 	return &CommentRepository{
-		Reposytory: Reposytory[Comment]{
+		Repository: Repository[Comment]{
 			driver: driver,
 		},
 	}
@@ -78,7 +78,7 @@ func (cr *CommentRepository) UpdateComment(ctx context.Context, params UpdateCom
 }
 
 func (cr *CommentRepository) DeleteComment(ctx context.Context, userId, commentId string) (err error) {
-	return cr.Delete(ctx, deleteCommentCypher, map[string]interface{}{
+	return cr.Delete(ctx, deleteCommentCypher, map[string]any{
 		"id":        commentId,
 		"author_id": userId,
 	})

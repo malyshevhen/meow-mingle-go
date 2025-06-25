@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -6,36 +6,24 @@ import (
 	"net/http"
 
 	"github.com/malyshEvhen/meow_mingle/internal/db"
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
-	"github.com/malyshEvhen/meow_mingle/internal/types"
-	"github.com/malyshEvhen/meow_mingle/internal/utils"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
-type PostHandler struct {
-	postRepo db.IPostRepository
-}
-
-func NewPostHandler(postRepo db.IPostRepository) *PostHandler {
-	return &PostHandler{
-		postRepo: postRepo,
-	}
-}
-
-func (ph *PostHandler) HandleCreatePost() types.Handler {
+func handleCreatePost(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		postContent, err := ReadReqBody[ContentForm](r)
+		postContent, err := readReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading post request: %v\n", "Post Handler", err)
 			return err
 		}
 
-		params := utils.Map(postContent, func(s ContentForm) db.CreatePostParams {
+		params := Map(postContent, func(s ContentForm) db.CreatePostParams {
 			return db.CreatePostParams{Content: postContent.Content}
 		})
 
-		userId, err := utils.GetAuthUserId(r)
+		userId, err := GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting user Id from token %v\n", "Post Handler ", err)
 			return err
@@ -43,7 +31,7 @@ func (ph *PostHandler) HandleCreatePost() types.Handler {
 
 		params.AuthorID = userId
 
-		savedPost, err := ph.postRepo.CreatePost(ctx, params)
+		savedPost, err := postRepo.CreatePost(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating post in store %v\n", "Post Handler", err)
 			return err
@@ -51,42 +39,42 @@ func (ph *PostHandler) HandleCreatePost() types.Handler {
 
 		log.Printf("%-15s ==> Successfully created new post\n", "Post Handler")
 
-		return utils.WriteJson(w, http.StatusCreated, savedPost)
+		return WriteJson(w, http.StatusCreated, savedPost)
 	}
 }
 
-func (ph *PostHandler) HandleGetUserPosts() types.Handler {
+func handleGetUserPosts(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id param %v\n", "Post Handler", err)
 			return err
 		}
 
-		postResponses, err := ph.postRepo.ListUserPosts(ctx, id)
+		postResponses, err := postRepo.ListUserPosts(ctx, id)
 		if err != nil {
 			return err
 		}
 
 		log.Printf("%-15s ==> Successfully retrieved user posts\n", "Post Handler")
 
-		return utils.WriteJson(w, http.StatusOK, postResponses)
+		return WriteJson(w, http.StatusOK, postResponses)
 	}
 }
 
-func (ph *PostHandler) HandleGetPostsById() types.Handler {
+func handleGetPostsById(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para:%v\n", "Post Handler", err)
 			return err
 		}
 
-		post, err := ph.postRepo.GetPost(ctx, id)
+		post, err := postRepo.GetPost(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting post by Id from stor:%v\n", "Post Handler", err)
 			return err
@@ -94,31 +82,31 @@ func (ph *PostHandler) HandleGetPostsById() types.Handler {
 
 		log.Printf("%-15s ==> Successfully retrieved post by Id\n", "Post Handler")
 
-		return utils.WriteJson(w, http.StatusOK, post)
+		return WriteJson(w, http.StatusOK, post)
 	}
 }
 
-func (ph *PostHandler) HandleUpdatePostsById() types.Handler {
+func handleUpdatePostsById(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		postContent, err := ReadReqBody[ContentForm](r)
+		postContent, err := readReqBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading update request: %v\n", "Post Handler", err)
 			return err
 		}
 
-		userId, err := utils.GetAuthUserId(r)
+		userId, err := GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
 
-		params := utils.Map(postContent, func(content ContentForm) db.UpdatePostParams {
+		params := Map(postContent, func(content ContentForm) db.UpdatePostParams {
 			return db.UpdatePostParams{
 				ID:       id,
 				Content:  content.Content,
@@ -126,7 +114,7 @@ func (ph *PostHandler) HandleUpdatePostsById() types.Handler {
 			}
 		})
 
-		postResponse, err := ph.postRepo.UpdatePost(ctx, params)
+		postResponse, err := postRepo.UpdatePost(ctx, params)
 		if err != nil {
 			log.Printf("%-15s ==> Error updating post by Id in store %v\n", "Post Handler", err)
 			return err
@@ -134,44 +122,44 @@ func (ph *PostHandler) HandleUpdatePostsById() types.Handler {
 
 		log.Printf("%-15s ==> Successfully updated post by Id\n", "Post Handler")
 
-		return utils.WriteJson(w, http.StatusOK, postResponse)
+		return WriteJson(w, http.StatusOK, postResponse)
 	}
 }
 
-func (ph *PostHandler) HandleDeletePostsById() types.Handler {
+func handleDeletePostsById(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id param %v\n", "Post Handler", err)
 			return err
 		}
 
-		userId, err := utils.GetAuthUserId(r)
+		userId, err := GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
 
-		if err := ph.postRepo.DeletePost(ctx, userId, id); err != nil {
+		if err := postRepo.DeletePost(ctx, userId, id); err != nil {
 			log.Printf("%-15s ==> Error deleting post by Id from store %v\n", "Post Handler", err)
 			return err
 		}
 
 		log.Printf("%-15s ==> Successfully deleted post by Id\n", "Post Handler")
 
-		return utils.WriteJson(w, http.StatusNoContent, nil)
+		return WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
-func (ph *PostHandler) HandleLikePost() types.Handler {
+func handleLikePost(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		userId, err := utils.GetAuthUserId(r)
+		userId, err := GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -181,64 +169,64 @@ func (ph *PostHandler) HandleLikePost() types.Handler {
 			PostID: id,
 		}
 
-		if err := utils.Validate(params); err != nil {
+		if err := validate(params); err != nil {
 			return err
 		}
 
-		if err := ph.postRepo.CreatePostLike(context.Background(), params); err != nil {
+		if err := postRepo.CreatePostLike(context.Background(), params); err != nil {
 			return err
 		}
 
-		return utils.WriteJson(w, http.StatusNoContent, nil)
+		return WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
-func (ph *PostHandler) HandleOwnersFeed() types.Handler {
+func handleGetFeed(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		authUserID, err := utils.GetAuthUserId(r)
+		authUserID, err := GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
 		}
 
-		feed, err := ph.postRepo.GetFeed(ctx, authUserID)
+		feed, err := postRepo.GetFeed(ctx, authUserID)
 		if err != nil {
 			return err
 		}
 
-		return utils.WriteJson(w, http.StatusOK, feed)
+		return WriteJson(w, http.StatusOK, feed)
 	}
 }
 
-func (ph *PostHandler) HandleUsersFeed() types.Handler {
+func handleUsersFeed(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			return errors.NewValidationError("ID parameter is invalid")
 		}
 
-		feed, err := ph.postRepo.GetFeed(ctx, id)
+		feed, err := postRepo.GetFeed(ctx, id)
 		if err != nil {
 			return err
 		}
-		return utils.WriteJson(w, http.StatusOK, feed)
+		return WriteJson(w, http.StatusOK, feed)
 	}
 }
 
-func (ph *PostHandler) HandleRemoveLikeFromPost() types.Handler {
+func handleRemoveLikeFromPost(postRepo db.IPostRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			return err
 		}
 
-		userId, err := utils.GetAuthUserId(r)
+		userId, err := GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -248,14 +236,14 @@ func (ph *PostHandler) HandleRemoveLikeFromPost() types.Handler {
 			UserID: userId,
 		}
 
-		if err := utils.Validate(params); err != nil {
+		if err := validate(params); err != nil {
 			return err
 		}
 
-		if err := ph.postRepo.DeletePostLike(ctx, params); err != nil {
+		if err := postRepo.DeletePostLike(ctx, params); err != nil {
 			return err
 		}
 
-		return utils.WriteJson(w, http.StatusNoContent, nil)
+		return WriteJson(w, http.StatusNoContent, nil)
 	}
 }

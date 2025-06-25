@@ -25,7 +25,7 @@ var (
 	deleteSubscriptionCypher string
 )
 
-type IUserReposytory interface {
+type IUserRepository interface {
 	CreateUser(ctx context.Context, params CreateUserParams) (user User, err error)
 	CreateSubscription(ctx context.Context, params CreateSubscriptionParams) error
 	GetUserById(ctx context.Context, id string) (user User, err error)
@@ -34,12 +34,12 @@ type IUserReposytory interface {
 }
 
 type UserRepository struct {
-	Reposytory[User]
+	Repository[User]
 }
 
-func NewUserReposiory(driver neo4j.DriverWithContext) *UserRepository {
+func NewUserRepository(driver neo4j.DriverWithContext) *UserRepository {
 	return &UserRepository{
-		Reposytory: Reposytory[User]{
+		Repository: Repository[User]{
 			driver: driver,
 		},
 	}
@@ -66,13 +66,13 @@ func (ur *UserRepository) CreateSubscription(ctx context.Context, params CreateS
 }
 
 func (ur *UserRepository) GetUserById(ctx context.Context, id string) (user User, err error) {
-	return ur.Retrieve(ctx, getUserByIdCypher, map[string]interface{}{
+	return ur.Retrieve(ctx, getUserByIdCypher, map[string]any{
 		"id": id,
 	})
 }
 
 func (ur *UserRepository) GetUserByEmail(ctx context.Context, email string) (user User, err error) {
-	return ur.Retrieve(ctx, getUserByEmailCypher, map[string]interface{}{
+	return ur.Retrieve(ctx, getUserByEmailCypher, map[string]any{
 		"email": email,
 	})
 }

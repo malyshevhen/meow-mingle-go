@@ -1,4 +1,4 @@
-package middleware
+package api
 
 import (
 	"context"
@@ -8,38 +8,35 @@ import (
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
-	"github.com/malyshEvhen/meow_mingle/internal/types"
-	"github.com/malyshEvhen/meow_mingle/internal/utils"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthProvider struct {
-	userRepo db.IUserReposytory
-	cfg      config.Config
+	userRepo db.IUserRepository
+	secret   string
 }
 
-func NewAuthProvider(userRepo db.IUserReposytory, cfg config.Config) *AuthProvider {
+func NewAuthProvider(userRepo db.IUserRepository, secret string) *AuthProvider {
 	return &AuthProvider{
 		userRepo: userRepo,
-		cfg:      cfg,
+		secret:   secret,
 	}
 }
 
-func (ai *AuthProvider) WithJWTAuth(h types.Handler) types.Handler {
+func (ai *AuthProvider) WithJWTAuth(h Handler) Handler {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request) error {
-		authCookie, err := utils.GetAuthCookie(r)
+		authCookie, err := GetAuthCookie(r)
 		if err != nil {
 			return errors.NewUnauthorizedError()
 		}
 
-		tokenString := utils.GetTokenFromCookie(authCookie)
+		tokenString := GetTokenFromCookie(authCookie)
 
-		token, err := utils.ValidateJWT(tokenString, ai.cfg.JWTSecret)
+		token, err := ValidateJWT(tokenString, ai.secret)
 		if err != nil {
 			log.Printf("%-15s ==> Authentication failed. Error: %v", "AuthMW", err)
 			return errors.NewUnauthorizedError()
@@ -58,10 +55,10 @@ func (ai *AuthProvider) WithJWTAuth(h types.Handler) types.Handler {
 			return errors.NewUnauthorizedError()
 		}
 
-		rCtx := context.WithValue(r.Context(), utils.UserIdKey, user.ID)
+		rCtx := context.WithValue(r.Context(), UserIdKey, user.ID)
 		r = r.WithContext(rCtx)
 
-		log.Printf("%-15s ==> User %s athenticated successfully", "AuthMW", id)
+		log.Printf("%-15s ==> User %s authenticate successfully", "AuthMW", id)
 
 		http.SetCookie(w, authCookie)
 
@@ -69,7 +66,7 @@ func (ai *AuthProvider) WithJWTAuth(h types.Handler) types.Handler {
 	}
 }
 
-func (ai *AuthProvider) WithBasicAuth(h types.Handler) types.Handler {
+func (ai *AuthProvider) WithBasicAuth(h Handler) Handler {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -103,10 +100,10 @@ func (ai *AuthProvider) WithBasicAuth(h types.Handler) types.Handler {
 			return errors.NewUnauthorizedError()
 		}
 
-		rCtx := context.WithValue(r.Context(), utils.UserIdKey, user.ID)
+		rCtx := context.WithValue(r.Context(), UserIdKey, user.ID)
 		r = r.WithContext(rCtx)
 
-		log.Printf("%-15s ==> User %s athenticated successfully", "AuthMW", email)
+		log.Printf("%-15s ==> User %s authenticate successfully", "AuthMW", email)
 
 		return h(w, r)
 	}

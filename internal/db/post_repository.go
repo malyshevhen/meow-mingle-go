@@ -46,12 +46,12 @@ type IPostRepository interface {
 }
 
 type PostRepository struct {
-	Reposytory[Post]
+	Repository[Post]
 }
 
 func NewPostRepository(driver neo4j.DriverWithContext) *PostRepository {
 	return &PostRepository{
-		Reposytory: Reposytory[Post]{
+		Repository: Repository[Post]{
 			driver: driver,
 		},
 	}
@@ -78,7 +78,7 @@ func (pr *PostRepository) CreatePostLike(ctx context.Context, params CreatePostL
 }
 
 func (pr *PostRepository) GetPost(ctx context.Context, id string) (post Post, err error) {
-	return pr.Retrieve(ctx, getPostCypher, map[string]interface{}{
+	return pr.Retrieve(ctx, getPostCypher, map[string]any{
 		"id": id,
 	})
 }
@@ -96,7 +96,7 @@ func (pr *PostRepository) UpdatePost(ctx context.Context, params UpdatePostParam
 }
 
 func (pr *PostRepository) DeletePost(ctx context.Context, userId, postId string) error {
-	return pr.Delete(ctx, deletePostCypher, map[string]interface{}{
+	return pr.Delete(ctx, deletePostCypher, map[string]any{
 		"id":        postId,
 		"author_id": userId,
 	})

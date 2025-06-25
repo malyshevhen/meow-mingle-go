@@ -6,17 +6,16 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
-	"github.com/malyshEvhen/meow_mingle/internal/utils"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/db"
 )
 
-type Reposytory[T any] struct {
+type Repository[T any] struct {
 	driver neo4j.DriverWithContext
 }
 
-func (s *Reposytory[T]) Create(ctx context.Context, params interface{}, cypher string) (entity T, execErr error) {
+func (s *Repository[T]) Create(ctx context.Context, params any, cypher string) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -34,7 +33,7 @@ func (s *Reposytory[T]) Create(ctx context.Context, params interface{}, cypher s
 	return
 }
 
-func (s *Reposytory[T]) Retrieve(ctx context.Context, cypher string, params map[string]interface{}) (entity T, execErr error) {
+func (s *Repository[T]) Retrieve(ctx context.Context, cypher string, params map[string]any) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -53,7 +52,7 @@ func (s *Reposytory[T]) Retrieve(ctx context.Context, cypher string, params map[
 	return
 }
 
-func (s *Reposytory[T]) Write(ctx context.Context, cypher string, params interface{}) error {
+func (s *Repository[T]) Write(ctx context.Context, cypher string, params any) error {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -69,7 +68,7 @@ func (s *Reposytory[T]) Write(ctx context.Context, cypher string, params interfa
 	return nil
 }
 
-func (s *Reposytory[T]) Update(ctx context.Context, cypher string, params interface{}) (entity T, execErr error) {
+func (s *Repository[T]) Update(ctx context.Context, cypher string, params any) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -88,11 +87,11 @@ func (s *Reposytory[T]) Update(ctx context.Context, cypher string, params interf
 	return
 }
 
-func (s *Reposytory[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
+func (s *Repository[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
-	params := map[string]interface{}{
+	params := map[string]any{
 		"id": id,
 	}
 
@@ -111,7 +110,7 @@ func (s *Reposytory[T]) List(ctx context.Context, cypher string, id string) (lis
 	return
 }
 
-func (s *Reposytory[T]) Delete(ctx context.Context, cypher string, params any) error {
+func (s *Repository[T]) Delete(ctx context.Context, cypher string, params any) error {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -176,14 +175,14 @@ func persist[T any](
 		return fail(fmt.Sprintf("saving new record: %s", err.Error()))
 	}
 
-	return parceRecord[T](record)
+	return parseRecord[T](record)
 }
 
 func retrieveSingle[T any](
 	ctx context.Context,
 	tx neo4j.ManagedTransaction,
 	cypher string,
-	params map[string]interface{},
+	params map[string]any,
 ) (obj T, err error) {
 	fail := func(msg string) (res T, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
@@ -200,14 +199,14 @@ func retrieveSingle[T any](
 		return fail(fmt.Sprintf("retrieving the record: %s", err.Error()))
 	}
 
-	return parceRecord[T](record)
+	return parseRecord[T](record)
 }
 
 func retrieveMany[T any](
 	ctx context.Context,
 	tx neo4j.ManagedTransaction,
 	cypher string,
-	params map[string]interface{},
+	params map[string]any,
 ) (obj []T, err error) {
 	fail := func(msg string) (res []T, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
@@ -225,7 +224,7 @@ func retrieveMany[T any](
 	}
 
 	for _, record := range records {
-		res, err := parceRecord[T](record)
+		res, err := parseRecord[T](record)
 		if err != nil {
 			return nil, err
 		}
@@ -235,7 +234,7 @@ func retrieveMany[T any](
 	return
 }
 
-func parceRecord[T any](r *db.Record) (result T, err error) {
+func parseRecord[T any](r *db.Record) (result T, err error) {
 	fail := func(msg string) (res T, err error) {
 		err = errors.NewDatabaseError(fmt.Errorf("error occurred while %s", msg))
 		return
@@ -253,12 +252,12 @@ func parceRecord[T any](r *db.Record) (result T, err error) {
 
 	fmt.Printf("DB RECORD: \n %s", string(respJson))
 
-	return utils.Unmarshal[T](respJson)
+	return Unmarshal[T](respJson)
 }
 
 func readJsonTags(typ reflect.Type) []string {
 	rows := []string{}
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		field := typ.Field(i)
 		jsonTag := field.Tag.Get("json")
 		rows = append(rows, jsonTag)
@@ -266,8 +265,8 @@ func readJsonTags(typ reflect.Type) []string {
 	return rows
 }
 
-func getRecordValues(r *db.Record, rows []string) map[string]interface{} {
-	vals := make(map[string]interface{})
+func getRecordValues(r *db.Record, rows []string) map[string]any {
+	vals := make(map[string]any)
 	for _, key := range rows {
 		val, _ := r.Get(key)
 		vals[key] = val
@@ -275,16 +274,23 @@ func getRecordValues(r *db.Record, rows []string) map[string]interface{} {
 	return vals
 }
 
-func mapToProperties[T any](params T) (map[string]interface{}, error) {
+func mapToProperties[T any](params T) (map[string]any, error) {
 	marshaled, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
 
-	props, err := utils.Unmarshal[map[string]interface{}](marshaled)
+	props, err := Unmarshal[map[string]any](marshaled)
 	if err != nil {
 		return nil, err
 	}
 
 	return props, nil
+}
+
+func Unmarshal[T any](v []byte) (value T, err error) {
+	if err := json.Unmarshal(v, &value); err != nil {
+		return value, errors.NewValidationError("error parse JSON payload")
+	}
+	return
 }

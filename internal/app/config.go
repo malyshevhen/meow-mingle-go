@@ -1,4 +1,4 @@
-package config
+package app
 
 import (
 	"os"
@@ -25,7 +25,7 @@ type Config struct {
 	JWTSecret  string
 }
 
-func InitConfig() Config {
+func initConfig() Config {
 	return Config{
 		ServerPort: getEnv(SERVER_PORT_ENV_KEY, DEFAULT_SERVER_PORT),
 		DBConnURL:  getEnv(DB_URL_ENV_KEY, DEFAULT_DB_URL),

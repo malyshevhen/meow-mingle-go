@@ -1,4 +1,4 @@
-package utils
+package api
 
 import (
 	"log"
@@ -6,11 +6,15 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const TOKEN_COOKIE_KEY string = "access_token"
+
+type ContextKey string
+
+const UserIdKey ContextKey = "userId"
 
 func GetAuthUserId(r *http.Request) (string, error) {
 	id, ok := r.Context().Value(UserIdKey).(string)
@@ -90,7 +94,7 @@ func ValidateJWT(t, secret string) (token *jwt.Token, err error) {
 
 	log.Printf("%-15s ==> Validating JWT token...", "Authentication")
 
-	token, err = jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
+	token, err = jwt.Parse(t, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			log.Printf("%-15s ==> Unexpected signing method: %v", "Authentication", t.Header["alg"])
 			return fail()

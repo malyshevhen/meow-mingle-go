@@ -22,7 +22,7 @@ paths:
       tags:
         - Login
       operationId: login
-      responsses:
+      responses:
         204:
           description: User login successfully
         401:

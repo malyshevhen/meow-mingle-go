@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"context"
@@ -8,30 +8,15 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/malyshEvhen/meow_mingle/internal/config"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
-	"github.com/malyshEvhen/meow_mingle/internal/errors"
-	"github.com/malyshEvhen/meow_mingle/internal/types"
-	"github.com/malyshEvhen/meow_mingle/internal/utils"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
-const TOKEN_EXPIRATION_TIME int = 12
-
-type UserHandler struct {
-	userRepo db.IUserReposytory
-}
-
-func NewUserHandler(userRepo db.IUserReposytory) *UserHandler {
-	return &UserHandler{
-		userRepo: userRepo,
-	}
-}
-
-func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
+func handleRegistration(userRepo db.IUserRepository, secret string) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		uForm, err := ReadReqBody[UserRegistrationForm](r)
+		uForm, err := readReqBody[UserRegistrationForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading request body: %v\n", "User Handler", err)
 			return err
@@ -46,7 +31,7 @@ func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 
 		log.Printf("%-15s ==> Hashing password...", "User Handler")
 
-		hashedPwd, err := utils.HashPwd(user.Password)
+		hashedPwd, err := HashPwd(user.Password)
 		if err != nil {
 			log.Printf("%-15s ==> Error hashing password: %v\n", "User Handler", err)
 			return err
@@ -56,7 +41,7 @@ func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 
 		log.Printf("%-15s ==> Creating user in database...\n", "User Handler")
 
-		savedUser, err := uh.userRepo.CreateUser(ctx, user)
+		savedUser, err := userRepo.CreateUser(ctx, user)
 		if err != nil {
 			log.Printf("%-15s ==> Error creating user: %v\n", "User Handler", err)
 			return err
@@ -64,8 +49,8 @@ func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 
 		log.Printf("%-15s ==> Creating auth token...\n", "User Handler")
 
-		secret := []byte(cfg.JWTSecret)
-		token, err := utils.CreateJwt(secret, savedUser.ID)
+		secret := []byte(secret)
+		token, err := CreateJwt(secret, savedUser.ID)
 		if err != nil {
 			log.Printf("%-15s ==> Error generating JWT token: %s\n", "User Handler", err)
 			return errors.NewValidationError("error create token")
@@ -74,7 +59,7 @@ func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 		log.Printf("%-15s ==> Setting auth cookie..\n", "User Handler.")
 
 		http.SetCookie(w, &http.Cookie{
-			Name:     utils.TOKEN_COOKIE_KEY,
+			Name:     TOKEN_COOKIE_KEY,
 			Value:    token,
 			Path:     "/",
 			Expires:  time.Now().Add(time.Duration(TOKEN_EXPIRATION_TIME) * time.Hour),
@@ -84,15 +69,15 @@ func (uh *UserHandler) HandleCreateUser(cfg config.Config) types.Handler {
 
 		log.Printf("%-15s ==> User created successfully!\n", "User Handler")
 
-		return utils.WriteJson(w, http.StatusCreated, savedUser)
+		return WriteJson(w, http.StatusCreated, savedUser)
 	}
 }
 
-func (uh *UserHandler) HandleGetUser() types.Handler {
+func handleGetUser(userRepo db.IUserRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
-		id, err := utils.ParseIdParam(r)
+		id, err := parseIdParam(r)
 		if err != nil {
 			msg := fmt.Sprintf("Invalid ID parameter: '%s' Error: %v", id, err)
 			return errors.NewValidationError(msg)
@@ -100,7 +85,7 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 
 		log.Printf("User ID is %s\n", id)
 
-		authUserID, err := utils.GetAuthUserId(r)
+		authUserID, err := GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
@@ -118,7 +103,7 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 
 		log.Printf("%-15s ==> Searching for user with Id:%s\n", "User Handler", id)
 
-		savedUser, err := uh.userRepo.GetUserById(ctx, id)
+		savedUser, err := userRepo.GetUserById(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> User not found for Id:%s\n", "User Handler", id)
 			return err
@@ -126,52 +111,52 @@ func (uh *UserHandler) HandleGetUser() types.Handler {
 
 		log.Printf("%-15s ==> Found user: %s\n", "User Handler", savedUser.ID)
 
-		return utils.WriteJson(w, http.StatusOK, savedUser)
+		return WriteJson(w, http.StatusOK, savedUser)
 	}
 }
 
-func (uh *UserHandler) HandleSubscribe() types.Handler {
+func handleSubscribe(userRepo db.IUserRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
 		id := mux.Vars(r)["id"]
 
-		authUserID, err := utils.GetAuthUserId(r)
+		authUserID, err := GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
 		}
 
-		if err := uh.userRepo.CreateSubscription(ctx, db.CreateSubscriptionParams{
+		if err := userRepo.CreateSubscription(ctx, db.CreateSubscriptionParams{
 			UserID:         authUserID,
 			SubscriptionID: id,
 		}); err != nil {
 			return err
 		}
 
-		return utils.WriteJson(w, http.StatusNoContent, nil)
+		return WriteJson(w, http.StatusNoContent, nil)
 	}
 }
 
-func (uh *UserHandler) HandleUnsubscribe() types.Handler {
+func handleUnsubscribe(userRepo db.IUserRepository) Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := context.Background()
 
 		id := mux.Vars(r)["id"]
 
-		authUserID, err := utils.GetAuthUserId(r)
+		authUserID, err := GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> No authenticated user found", "User Handler")
 			return err
 		}
 
-		if err := uh.userRepo.DeleteSubscription(ctx, db.DeleteSubscriptionParams{
+		if err := userRepo.DeleteSubscription(ctx, db.DeleteSubscriptionParams{
 			UserID:         authUserID,
 			SubscriptionID: id,
 		}); err != nil {
 			return err
 		}
 
-		return utils.WriteJson(w, http.StatusNoContent, nil)
+		return WriteJson(w, http.StatusNoContent, nil)
 	}
 }
