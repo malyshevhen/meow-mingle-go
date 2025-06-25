@@ -26,7 +26,10 @@ type App struct {
 }
 
 func New(ctx context.Context) (app *App, appError error) {
-	cfg := initConfig()
+	cfg, err := initConfig()
+	if err != nil {
+		return nil, fmt.Errorf("an error occurred when config initializes: %s", err.Error())
+	}
 
 	driver, err := neo4j.NewDriverWithContext(cfg.DBConnURL, neo4j.BasicAuth(cfg.DBUser, cfg.DBPassword, ""))
 	if err != nil {
