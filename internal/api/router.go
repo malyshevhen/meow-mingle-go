@@ -4,17 +4,17 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
 	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 )
 
 func RegisterRouts(
 	authMW *auth.Provider,
-	profileRepo db.IProfileRepository,
-	commentRepo db.ICommentRepository,
-	postRepo db.IPostRepository,
-	secret string,
+	profileService app.ProfileService,
+	commentService app.CommentService,
+	postService app.PostService,
+	subscriptionService app.SubscriptionService,
 ) *mux.Router {
 	auth := func(handler api.Handler) http.HandlerFunc {
 		return authenticated(handler, authMW.WithJWTAuth)
@@ -23,26 +23,28 @@ func RegisterRouts(
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 
 	// Feed API
-	r.HandleFunc("/feed", auth(handleGetFeed(postRepo))).Methods("GET")
+	r.HandleFunc("/feed", auth(handleGetFeed(postService))).Methods("GET")
 
 	// Post API
-	r.HandleFunc("/posts", auth(handleCreatePost(postRepo))).Methods("POST")
-	r.HandleFunc("/posts", auth(handleGetPosts(postRepo))).Methods("GET")
-	r.HandleFunc("/posts/{id}", auth(handleGetPostById(postRepo))).Methods("GET")
-	r.HandleFunc("/posts/{id}", auth(handleUpdatePostById(postRepo))).Methods("PATCH")
-	r.HandleFunc("/posts/{id}", auth(handleDeletePostById(postRepo))).Methods("DELETE")
+	r.HandleFunc("/posts", auth(handleCreatePost(postService))).Methods("POST")
+	r.HandleFunc("/posts", auth(handleGetPosts(postService))).Methods("GET")
+	r.HandleFunc("/posts/{id}", auth(handleGetPostById(postService))).Methods("GET")
+	r.HandleFunc("/posts/{id}", auth(handleUpdatePostById(postService))).Methods("PATCH")
+	r.HandleFunc("/posts/{id}", auth(handleDeletePostById(postService))).Methods("DELETE")
 
 	// Comment API
-	r.HandleFunc("/comments", auth(handleCreateComment(commentRepo))).Methods("POST")
-	r.HandleFunc("/comments", auth(handleGetComments(commentRepo))).Methods("GET")
-	r.HandleFunc("/comments/{id}", auth(handleUpdateComment(commentRepo))).Methods("PUT")
-	r.HandleFunc("/comments/{id}", auth(handleDeleteComment(commentRepo))).Methods("DELETE")
+	r.HandleFunc("/comments", auth(handleCreateComment(commentService))).Methods("POST")
+	r.HandleFunc("/comments", auth(handleGetComments(commentService))).Methods("GET")
+	r.HandleFunc("/comments/{id}", auth(handleUpdateComment(commentService))).Methods("PUT")
+	r.HandleFunc("/comments/{id}", auth(handleDeleteComment(commentService))).Methods("DELETE")
 
 	// Profile API
-	r.HandleFunc("/profiles", public(handleCreateProfile(profileRepo))).Methods("POST")
-	r.HandleFunc("/profiles/{id}", auth(handleGetProfile(profileRepo))).Methods("GET")
-	r.HandleFunc("/profiles/{id}/subscriptions", auth(handleSubscribe(profileRepo))).Methods("POST")
-	r.HandleFunc("/profiles/{id}/subscriptions", auth(handleUnsubscribe(profileRepo))).Methods("DELETE")
+	r.HandleFunc("/profiles", public(handleCreateProfile(profileService))).Methods("POST")
+	r.HandleFunc("/profiles/{id}", auth(handleGetProfile(profileService))).Methods("GET")
+
+	// Subscription API
+	r.HandleFunc("/subscriptions{id}", auth(handleSubscribe(subscriptionService))).Methods("POST")
+	r.HandleFunc("/subscriptions{id}", auth(handleUnsubscribe(subscriptionService))).Methods("DELETE")
 
 	// Reaction API
 	r.HandleFunc("/reactions", auth(nil)).Methods("PUT")         // TODO: implement

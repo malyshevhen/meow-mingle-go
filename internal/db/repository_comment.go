@@ -5,6 +5,7 @@ import (
 	_ "embed"
 
 	"github.com/google/uuid"
+	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -28,28 +29,19 @@ var (
 	listPostComments string
 )
 
-type ICommentRepository interface {
-	CreateComment(ctx context.Context, params CreateCommentParams) (comment Comment, err error)
-	CreateCommentLike(ctx context.Context, params CreateCommentLikeParams) (err error)
-	ListPostComments(ctx context.Context, id string) (posts []Comment, err error)
-	UpdateComment(ctx context.Context, params UpdateCommentParams) (comment Comment, err error)
-	DeleteComment(ctx context.Context, userId, commentId string) (err error)
-	DeleteCommentLike(ctx context.Context, params DeleteCommentLikeParams) error
+type commentNeo4jRepository struct {
+	Neo4jRepository[app.Comment]
 }
 
-type CommentNeo4jRepository struct {
-	Neo4jRepository[Comment]
-}
-
-func NewCommentRepository(driver neo4j.DriverWithContext) *CommentNeo4jRepository {
-	return &CommentNeo4jRepository{
-		Neo4jRepository: Neo4jRepository[Comment]{
+func NewCommentRepository(driver neo4j.DriverWithContext) *commentNeo4jRepository {
+	return &commentNeo4jRepository{
+		Neo4jRepository: Neo4jRepository[app.Comment]{
 			driver: driver,
 		},
 	}
 }
 
-func (cr *CommentNeo4jRepository) CreateComment(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
+func (cr *commentNeo4jRepository) CreateComment(ctx context.Context, params app.CreateCommentParams) (comment app.Comment, err error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return
@@ -59,31 +51,17 @@ func (cr *CommentNeo4jRepository) CreateComment(ctx context.Context, params Crea
 	return cr.Create(ctx, params, createCommentCypher)
 }
 
-func (cr *CommentNeo4jRepository) CreateCommentLike(ctx context.Context, params CreateCommentLikeParams) (err error) {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return
-	}
-	params.ID = id.String()
-
-	return cr.Write(ctx, createLikeOnCommentCypher, params)
-}
-
-func (cr *CommentNeo4jRepository) ListPostComments(ctx context.Context, id string) (posts []Comment, err error) {
+func (cr *commentNeo4jRepository) ListPostComments(ctx context.Context, id string) (posts []app.Comment, err error) {
 	return cr.List(ctx, listPostComments, id)
 }
 
-func (cr *CommentNeo4jRepository) UpdateComment(ctx context.Context, params UpdateCommentParams) (comment Comment, err error) {
+func (cr *commentNeo4jRepository) UpdateComment(ctx context.Context, params app.UpdateCommentParams) (comment app.Comment, err error) {
 	return cr.Update(ctx, updateCommentCypher, params)
 }
 
-func (cr *CommentNeo4jRepository) DeleteComment(ctx context.Context, userId, commentId string) (err error) {
+func (cr *commentNeo4jRepository) DeleteComment(ctx context.Context, userId, commentId string) (err error) {
 	return cr.Delete(ctx, deleteCommentCypher, map[string]any{
 		"id":        commentId,
 		"author_id": userId,
 	})
-}
-
-func (cr *CommentNeo4jRepository) DeleteCommentLike(ctx context.Context, params DeleteCommentLikeParams) error {
-	return cr.Delete(ctx, deleteCommentLikeCypher, params)
 }

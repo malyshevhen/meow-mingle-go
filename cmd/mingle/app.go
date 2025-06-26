@@ -8,6 +8,10 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/malyshEvhen/meow_mingle/internal/api"
+	"github.com/malyshEvhen/meow_mingle/internal/app/comment"
+	"github.com/malyshEvhen/meow_mingle/internal/app/post"
+	"github.com/malyshEvhen/meow_mingle/internal/app/profile"
+	"github.com/malyshEvhen/meow_mingle/internal/app/subscription"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -17,15 +21,10 @@ type App struct {
 	srv *http.Server
 
 	authProvider *auth.Provider
-
-	userRepo    db.IProfileRepository
-	commentRepo db.ICommentRepository
-	postRepo    db.IPostRepository
-
-	driver neo4j.DriverWithContext
+	driver       neo4j.DriverWithContext
 }
 
-func New(ctx context.Context) (app *App, appError error) {
+func New(ctx context.Context) (mingleApp *App, appError error) {
 	cfg, err := initConfig()
 	if err != nil {
 		return nil, fmt.Errorf("an error occurred when config initializes: %s", err.Error())
@@ -36,19 +35,23 @@ func New(ctx context.Context) (app *App, appError error) {
 		return nil, fmt.Errorf("an error occurred when neo4j driver creates: %s", err.Error())
 	}
 
-	app = &App{}
-	app.driver = driver
-	app.userRepo = db.NewUserRepository(driver)
-	app.commentRepo = db.NewCommentRepository(driver)
-	app.postRepo = db.NewPostRepository(driver)
-	app.authProvider = auth.NewProvider(app.userRepo, cfg.JWTSecret)
+	authProvider := auth.NewProvider(nil, cfg.JWTSecret)
+
+	profileRepo := db.NewProfileRepository(driver)
+	commentRepo := db.NewCommentRepository(driver)
+	postRepo := db.NewPostRepository(driver)
+
+	profileService := profile.NewService(profileRepo)
+	commentService := comment.NewService(commentRepo)
+	postService := post.NewService(postRepo)
+	subscriptionService := subscription.NewService(nil)
 
 	mux := api.RegisterRouts(
-		app.authProvider,
-		app.userRepo,
-		app.commentRepo,
-		app.postRepo,
-		cfg.JWTSecret,
+		authProvider,
+		profileService,
+		commentService,
+		postService,
+		subscriptionService,
 	)
 
 	recoveryHandler := handlers.RecoveryHandler()
@@ -60,14 +63,18 @@ func New(ctx context.Context) (app *App, appError error) {
 		handlers.ExposedHeaders([]string{"Authorization", "Content-Type", "Content-Encoding", "Content-Length", "Location"}),
 	)
 
-	app.srv = &http.Server{
+	srv := &http.Server{
 		Addr:         cfg.ServerPort,
 		Handler:      corsHandler(recoveryHandler(mux)),
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,
 	}
 
-	return app, nil
+	return &App{
+		srv:          srv,
+		authProvider: authProvider,
+		driver:       driver,
+	}, nil
 }
 
 func (app *App) Start(ctx context.Context) error {

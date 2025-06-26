@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
@@ -22,11 +21,26 @@ type ContextKey string
 const UserIdKey ContextKey = "userId"
 
 type Provider struct {
-	userRepo db.IProfileRepository
+	userRepo UserRepository
 	secret   string
 }
 
-func NewProvider(userRepo db.IProfileRepository, secret string) *Provider {
+type User struct {
+	ID        string    `json:"id"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password"`
+	FirstName string    `json:"first_name"`
+	LastName  string    `json:"last_name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type UserRepository interface {
+	GetProfileById(ctx context.Context, id string) (user *User, err error)
+	GetProfileByEmail(ctx context.Context, email string) (user *User, err error)
+}
+
+func NewProvider(userRepo UserRepository, secret string) *Provider {
 	return &Provider{
 		userRepo: userRepo,
 		secret:   secret,

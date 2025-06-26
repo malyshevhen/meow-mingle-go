@@ -5,6 +5,7 @@ import (
 	_ "embed"
 
 	"github.com/google/uuid"
+	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
@@ -25,27 +26,19 @@ var (
 	unsubscribeCypher string
 )
 
-type IProfileRepository interface {
-	CreateProfile(ctx context.Context, params CreateProfileParams) (user Profile, err error)
-	CreateSubscription(ctx context.Context, params CreateSubscriptionParams) error
-	GetProfileById(ctx context.Context, id string) (user Profile, err error)
-	GetProfileByEmail(ctx context.Context, email string) (user Profile, err error)
-	DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error
+type profileNeo4jRepository struct {
+	Neo4jRepository[app.Profile]
 }
 
-type ProfileNeo4jRepository struct {
-	Neo4jRepository[Profile]
-}
-
-func NewUserRepository(driver neo4j.DriverWithContext) *ProfileNeo4jRepository {
-	return &ProfileNeo4jRepository{
-		Neo4jRepository: Neo4jRepository[Profile]{
+func NewProfileRepository(driver neo4j.DriverWithContext) *profileNeo4jRepository {
+	return &profileNeo4jRepository{
+		Neo4jRepository: Neo4jRepository[app.Profile]{
 			driver: driver,
 		},
 	}
 }
 
-func (ur *ProfileNeo4jRepository) CreateProfile(ctx context.Context, params CreateProfileParams) (user Profile, err error) {
+func (ur *profileNeo4jRepository) CreateProfile(ctx context.Context, params app.CreateProfileParams) (user app.Profile, err error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return
@@ -55,28 +48,14 @@ func (ur *ProfileNeo4jRepository) CreateProfile(ctx context.Context, params Crea
 	return ur.Create(ctx, params, createProfileCypher)
 }
 
-func (ur *ProfileNeo4jRepository) CreateSubscription(ctx context.Context, params CreateSubscriptionParams) error {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
-	params.ID = id.String()
-
-	return ur.Write(ctx, subscribeCypher, params)
-}
-
-func (ur *ProfileNeo4jRepository) GetProfileById(ctx context.Context, id string) (user Profile, err error) {
+func (ur *profileNeo4jRepository) GetProfileById(ctx context.Context, id string) (user app.Profile, err error) {
 	return ur.Retrieve(ctx, getProfileByIdCypher, map[string]any{
 		"id": id,
 	})
 }
 
-func (ur *ProfileNeo4jRepository) GetProfileByEmail(ctx context.Context, email string) (user Profile, err error) {
+func (ur *profileNeo4jRepository) GetProfileByEmail(ctx context.Context, email string) (user app.Profile, err error) {
 	return ur.Retrieve(ctx, getProfileByEmailCypher, map[string]any{
 		"email": email,
 	})
-}
-
-func (ur *ProfileNeo4jRepository) DeleteSubscription(ctx context.Context, params DeleteSubscriptionParams) error {
-	return ur.Delete(ctx, unsubscribeCypher, params)
 }
