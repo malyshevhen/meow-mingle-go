@@ -6,7 +6,6 @@ import (
 )
 
 type Profile struct {
-	ID            string          `json:"id"`
 	UserID        string          `json:"user_id"`
 	Email         string          `json:"email"`
 	FirstName     string          `json:"first_name"`
@@ -19,6 +18,5 @@ type Profile struct {
 
 type ProfileService interface {
 	Create(ctx context.Context, profile *Profile) error
-	GetById(ctx context.Context, profileId string) (user *Profile, err error)
-	GetByEmail(ctx context.Context, profileEmail string) (user *Profile, err error)
+	GetById(ctx context.Context, userId string) (profile *Profile, err error)
 }

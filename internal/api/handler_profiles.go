@@ -56,7 +56,7 @@ func handleGetProfile(profileService app.ProfileService) api.Handler {
 			return err
 		}
 
-		log.Printf("%-15s ==> Found profile: %s\n", "Profile Handler", profile.ID)
+		log.Printf("%-15s ==> Found profile: %s\n", "Profile Handler", profile.UserID)
 
 		return writeJSON(w, http.StatusOK, profile)
 	}

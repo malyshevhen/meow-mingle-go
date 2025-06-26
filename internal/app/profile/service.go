@@ -9,7 +9,6 @@ import (
 type repository interface {
 	Save(ctx context.Context, userId, email, firstName, lastName string) (user app.Profile, err error)
 	GetById(ctx context.Context, id string) (user app.Profile, err error)
-	GetByEmail(ctx context.Context, email string) (user app.Profile, err error)
 }
 
 type service struct {
@@ -18,11 +17,6 @@ type service struct {
 
 // Create implements app.ProfileService.
 func (s *service) Create(ctx context.Context, profile *app.Profile) error {
-	panic("unimplemented")
-}
-
-// GetByEmail implements app.ProfileService.
-func (s *service) GetByEmail(ctx context.Context, profileEmail string) (user *app.Profile, err error) {
 	panic("unimplemented")
 }
 

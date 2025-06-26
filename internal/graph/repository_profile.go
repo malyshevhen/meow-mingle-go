@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/google/uuid"
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
@@ -40,20 +39,13 @@ func NewProfileRepository(driver neo4j.DriverWithContext) *profileNeo4jRepositor
 
 // Save implements app.ProfileRepository.
 func (ur *profileNeo4jRepository) Save(ctx context.Context, userId, email, firstName, lastName string) (user app.Profile, err error) {
-	id, err := uuid.NewRandom()
-	if err != nil {
-		return
-	}
-
 	params := struct {
-		ID        string `json:"id"`
-		UserID    string `json:"user_id" validate:"required"`
+		ID        string `json:"id" validate:"required"`
 		Email     string `json:"email" validate:"required,email"`
 		FirstName string `json:"first_name" validate:"required"`
 		LastName  string `json:"last_name" validate:"required"`
 	}{
-		ID:        id.String(),
-		UserID:    userId,
+		ID:        userId,
 		Email:     email,
 		FirstName: firstName,
 		LastName:  lastName,
@@ -66,12 +58,5 @@ func (ur *profileNeo4jRepository) Save(ctx context.Context, userId, email, first
 func (ur *profileNeo4jRepository) GetById(ctx context.Context, id string) (user app.Profile, err error) {
 	return ur.query.Retrieve(ctx, getProfileByIdCypher, map[string]any{
 		"id": id,
-	})
-}
-
-// GetByEmail implements app.ProfileRepository.
-func (ur *profileNeo4jRepository) GetByEmail(ctx context.Context, email string) (user app.Profile, err error) {
-	return ur.query.Retrieve(ctx, getProfileByEmailCypher, map[string]any{
-		"email": email,
 	})
 }
