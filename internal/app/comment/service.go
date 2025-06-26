@@ -17,13 +17,13 @@ type service struct {
 	commentRepo CommentRepository
 }
 
-// Create implements app.CommentService.
-func (s *service) Create(ctx context.Context, comment *app.Comment) error {
+// Add implements app.CommentService.
+func (s *service) Add(ctx context.Context, comment *app.Comment) error {
 	panic("unimplemented")
 }
 
-// Delete implements app.CommentService.
-func (s *service) Delete(ctx context.Context, commentId string) error {
+// Remove implements app.CommentService.
+func (s *service) Remove(ctx context.Context, commentId string) error {
 	panic("unimplemented")
 }
 

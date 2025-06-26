@@ -7,7 +7,6 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
 	"github.com/malyshEvhen/meow_mingle/pkg/auth"
-	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
 func handleCreatePost(postService app.PostService) api.Handler {
@@ -98,7 +97,7 @@ func handleUpdatePostById(postService app.PostService) api.Handler {
 			return err
 		}
 
-		if err := postService.Update(ctx, id, req.Content); err != nil {
+		if err := postService.Edit(ctx, id, req.Content); err != nil {
 			log.Printf("%-15s ==> Error updating post by Id in store %v\n", "Post Handler", err)
 			return err
 		}
@@ -134,34 +133,11 @@ func handleGetFeed(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		authUserID, err := auth.GetAuthUserId(r)
-		if err != nil {
-			log.Printf("%-15s ==> No authenticated user found", "User Handler")
-			return err
-		}
-
-		feed, err := postService.Feed(ctx, authUserID)
+		feed, err := postService.Feed(ctx)
 		if err != nil {
 			return err
 		}
 
-		return writeJSON(w, http.StatusOK, feed)
-	}
-}
-
-func handleUsersFeed(postService app.PostService) api.Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := r.Context()
-
-		id, err := iaPathParam(r)
-		if err != nil {
-			return errors.NewValidationError("ID parameter is invalid")
-		}
-
-		feed, err := postService.Feed(ctx, id)
-		if err != nil {
-			return err
-		}
 		return writeJSON(w, http.StatusOK, feed)
 	}
 }

@@ -30,7 +30,7 @@ func (s *service) Delete(ctx context.Context, postId string) error {
 }
 
 // Feed implements app.PostService.
-func (s *service) Feed(ctx context.Context, userId string) (feed []*app.Post, err error) {
+func (s *service) Feed(ctx context.Context) (feed []*app.Post, err error) {
 	panic("unimplemented")
 }
 
@@ -44,8 +44,8 @@ func (s *service) List(ctx context.Context, authorId string) (posts []*app.Post,
 	panic("unimplemented")
 }
 
-// Update implements app.PostService.
-func (s *service) Update(ctx context.Context, postId, content string) error {
+// Edit implements app.PostService.
+func (s *service) Edit(ctx context.Context, postId, content string) error {
 	panic("unimplemented")
 }
 

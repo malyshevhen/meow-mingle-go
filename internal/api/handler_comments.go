@@ -33,7 +33,7 @@ func handleCreateComment(commentService app.CommentService) api.Handler {
 			PostID:   content.PostID,
 		}
 
-		if err := commentService.Create(ctx, &comment); err != nil {
+		if err := commentService.Add(ctx, &comment); err != nil {
 			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
 			return err
 		}
@@ -111,7 +111,7 @@ func handleDeleteComment(commentService app.CommentService) api.Handler {
 			return err
 		}
 
-		err = commentService.Delete(ctx, id)
+		err = commentService.Remove(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> Error deleting comment by Id from stor\n ", "Comment Handler")
 			return err

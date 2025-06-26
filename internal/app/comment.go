@@ -16,8 +16,8 @@ type Comment struct {
 }
 
 type CommentService interface {
-	Create(ctx context.Context, comment *Comment) error
+	Add(ctx context.Context, comment *Comment) error
 	List(ctx context.Context, postID string) (comments []*Comment, err error)
 	Update(ctx context.Context, commentId, content string) error
-	Delete(ctx context.Context, commentId string) error
+	Remove(ctx context.Context, commentId string) error
 }

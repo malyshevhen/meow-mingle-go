@@ -14,7 +14,7 @@ func handleSubscribe(subscriptionRepo app.SubscriptionService) api.Handler {
 
 		id := mux.Vars(r)["id"]
 
-		if err := subscriptionRepo.CreateSubscription(ctx, id); err != nil {
+		if err := subscriptionRepo.Subscribe(ctx, id); err != nil {
 			return err
 		}
 
@@ -28,7 +28,7 @@ func handleUnsubscribe(subscriptionRepo app.SubscriptionService) api.Handler {
 
 		id := mux.Vars(r)["id"]
 
-		if err := subscriptionRepo.DeleteSubscription(ctx, id); err != nil {
+		if err := subscriptionRepo.Unsubscribe(ctx, id); err != nil {
 			return err
 		}
 

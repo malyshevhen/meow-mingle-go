@@ -18,8 +18,8 @@ type Post struct {
 type PostService interface {
 	Create(ctx context.Context, post *Post) error
 	Get(ctx context.Context, id string) (post *Post, err error)
-	Feed(ctx context.Context, userId string) (feed []*Post, err error)
+	Feed(ctx context.Context) (feed []*Post, err error)
 	List(ctx context.Context, authorId string) (posts []*Post, err error)
-	Update(ctx context.Context, postId, content string) error
+	Edit(ctx context.Context, postId, content string) error
 	Delete(ctx context.Context, postId string) error
 }
