@@ -6,14 +6,14 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/malyshEvhen/meow_mingle/internal/app"
+	"github.com/malyshEvhen/meow_mingle/cmd/mingle"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
-	mingle, err := app.New(ctx)
+	mingle, err := mingle.New(ctx)
 	if err != nil {
 		os.Exit(1)
 	}

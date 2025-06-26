@@ -37,19 +37,19 @@ type ICommentRepository interface {
 	DeleteCommentLike(ctx context.Context, params DeleteCommentLikeParams) error
 }
 
-type CommentRepository struct {
-	Repository[Comment]
+type CommentNeo4jRepository struct {
+	Neo4jRepository[Comment]
 }
 
-func NewCommentRepository(driver neo4j.DriverWithContext) *CommentRepository {
-	return &CommentRepository{
-		Repository: Repository[Comment]{
+func NewCommentRepository(driver neo4j.DriverWithContext) *CommentNeo4jRepository {
+	return &CommentNeo4jRepository{
+		Neo4jRepository: Neo4jRepository[Comment]{
 			driver: driver,
 		},
 	}
 }
 
-func (cr *CommentRepository) CreateComment(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
+func (cr *CommentNeo4jRepository) CreateComment(ctx context.Context, params CreateCommentParams) (comment Comment, err error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return
@@ -59,7 +59,7 @@ func (cr *CommentRepository) CreateComment(ctx context.Context, params CreateCom
 	return cr.Create(ctx, params, createCommentCypher)
 }
 
-func (cr *CommentRepository) CreateCommentLike(ctx context.Context, params CreateCommentLikeParams) (err error) {
+func (cr *CommentNeo4jRepository) CreateCommentLike(ctx context.Context, params CreateCommentLikeParams) (err error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return
@@ -69,21 +69,21 @@ func (cr *CommentRepository) CreateCommentLike(ctx context.Context, params Creat
 	return cr.Write(ctx, createLikeOnCommentCypher, params)
 }
 
-func (cr *CommentRepository) ListPostComments(ctx context.Context, id string) (posts []Comment, err error) {
+func (cr *CommentNeo4jRepository) ListPostComments(ctx context.Context, id string) (posts []Comment, err error) {
 	return cr.List(ctx, listPostComments, id)
 }
 
-func (cr *CommentRepository) UpdateComment(ctx context.Context, params UpdateCommentParams) (comment Comment, err error) {
+func (cr *CommentNeo4jRepository) UpdateComment(ctx context.Context, params UpdateCommentParams) (comment Comment, err error) {
 	return cr.Update(ctx, updateCommentCypher, params)
 }
 
-func (cr *CommentRepository) DeleteComment(ctx context.Context, userId, commentId string) (err error) {
+func (cr *CommentNeo4jRepository) DeleteComment(ctx context.Context, userId, commentId string) (err error) {
 	return cr.Delete(ctx, deleteCommentCypher, map[string]any{
 		"id":        commentId,
 		"author_id": userId,
 	})
 }
 
-func (cr *CommentRepository) DeleteCommentLike(ctx context.Context, params DeleteCommentLikeParams) error {
+func (cr *CommentNeo4jRepository) DeleteCommentLike(ctx context.Context, params DeleteCommentLikeParams) error {
 	return cr.Delete(ctx, deleteCommentLikeCypher, params)
 }

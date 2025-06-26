@@ -1,4 +1,4 @@
-package api
+package auth
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/pkg/api"
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,19 +21,19 @@ type ContextKey string
 
 const UserIdKey ContextKey = "userId"
 
-type AuthProvider struct {
-	userRepo db.IUserRepository
+type Provider struct {
+	userRepo db.IProfileRepository
 	secret   string
 }
 
-func NewAuthProvider(userRepo db.IUserRepository, secret string) *AuthProvider {
-	return &AuthProvider{
+func NewProvider(userRepo db.IProfileRepository, secret string) *Provider {
+	return &Provider{
 		userRepo: userRepo,
 		secret:   secret,
 	}
 }
 
-func (ai *AuthProvider) WithJWTAuth(h Handler) Handler {
+func (ai *Provider) WithJWTAuth(h api.Handler) api.Handler {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -52,7 +53,7 @@ func (ai *AuthProvider) WithJWTAuth(h Handler) Handler {
 		claims := token.Claims.(jwt.MapClaims)
 		id := claims["userId"].(string)
 
-		user, err := ai.userRepo.GetUserById(ctx, id)
+		user, err := ai.userRepo.GetProfileById(ctx, id)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Authentication failed: User Id not found. Error: %v",
@@ -73,7 +74,7 @@ func (ai *AuthProvider) WithJWTAuth(h Handler) Handler {
 	}
 }
 
-func (ai *AuthProvider) WithBasicAuth(h Handler) Handler {
+func (ai *Provider) WithBasicAuth(h api.Handler) api.Handler {
 	ctx := context.Background()
 
 	return func(w http.ResponseWriter, r *http.Request) error {
@@ -93,7 +94,7 @@ func (ai *AuthProvider) WithBasicAuth(h Handler) Handler {
 		email := creds[0]
 		password := creds[1]
 
-		user, err := ai.userRepo.GetUserByEmail(ctx, email)
+		user, err := ai.userRepo.GetProfileByEmail(ctx, email)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Authentication failed: User Id not found. Error: %v",

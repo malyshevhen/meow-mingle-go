@@ -45,19 +45,19 @@ type IPostRepository interface {
 	DeletePostLike(ctx context.Context, params DeletePostLikeParams) error
 }
 
-type PostRepository struct {
-	Repository[Post]
+type PostNeo4jRepository struct {
+	Neo4jRepository[Post]
 }
 
-func NewPostRepository(driver neo4j.DriverWithContext) *PostRepository {
-	return &PostRepository{
-		Repository: Repository[Post]{
+func NewPostRepository(driver neo4j.DriverWithContext) *PostNeo4jRepository {
+	return &PostNeo4jRepository{
+		Neo4jRepository: Neo4jRepository[Post]{
 			driver: driver,
 		},
 	}
 }
 
-func (pr *PostRepository) CreatePost(ctx context.Context, params CreatePostParams) (post Post, err error) {
+func (pr *PostNeo4jRepository) CreatePost(ctx context.Context, params CreatePostParams) (post Post, err error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return
@@ -67,7 +67,7 @@ func (pr *PostRepository) CreatePost(ctx context.Context, params CreatePostParam
 	return pr.Create(ctx, params, createPostCypher)
 }
 
-func (pr *PostRepository) CreatePostLike(ctx context.Context, params CreatePostLikeParams) error {
+func (pr *PostNeo4jRepository) CreatePostLike(ctx context.Context, params CreatePostLikeParams) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return err
@@ -77,31 +77,31 @@ func (pr *PostRepository) CreatePostLike(ctx context.Context, params CreatePostL
 	return pr.Write(ctx, createLikeOnPostCypher, params)
 }
 
-func (pr *PostRepository) GetPost(ctx context.Context, id string) (post Post, err error) {
+func (pr *PostNeo4jRepository) GetPost(ctx context.Context, id string) (post Post, err error) {
 	return pr.Retrieve(ctx, getPostCypher, map[string]any{
 		"id": id,
 	})
 }
 
-func (pr *PostRepository) GetFeed(ctx context.Context, userId string) (feed []Post, err error) {
+func (pr *PostNeo4jRepository) GetFeed(ctx context.Context, userId string) (feed []Post, err error) {
 	return pr.List(ctx, listFeed, userId)
 }
 
-func (pr *PostRepository) ListUserPosts(ctx context.Context, userId string) (posts []Post, err error) {
+func (pr *PostNeo4jRepository) ListUserPosts(ctx context.Context, userId string) (posts []Post, err error) {
 	return pr.List(ctx, listUserPostsCypher, userId)
 }
 
-func (pr *PostRepository) UpdatePost(ctx context.Context, params UpdatePostParams) (post Post, err error) {
+func (pr *PostNeo4jRepository) UpdatePost(ctx context.Context, params UpdatePostParams) (post Post, err error) {
 	return pr.Update(ctx, updatePostCypher, params)
 }
 
-func (pr *PostRepository) DeletePost(ctx context.Context, userId, postId string) error {
+func (pr *PostNeo4jRepository) DeletePost(ctx context.Context, userId, postId string) error {
 	return pr.Delete(ctx, deletePostCypher, map[string]any{
 		"id":        postId,
 		"author_id": userId,
 	})
 }
 
-func (pr *PostRepository) DeletePostLike(ctx context.Context, params DeletePostLikeParams) error {
+func (pr *PostNeo4jRepository) DeletePostLike(ctx context.Context, params DeletePostLikeParams) error {
 	return pr.Delete(ctx, deletePostLikeCypher, params)
 }

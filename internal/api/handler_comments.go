@@ -1,41 +1,36 @@
 package api
 
 import (
-	"context"
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/pkg/api"
+	"github.com/malyshEvhen/meow_mingle/pkg/auth"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
-func handleCreateComment(commentRepo db.ICommentRepository) Handler {
+func handleCreateComment(commentRepo db.ICommentRepository) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
+		ctx := r.Context()
 
-		postId, err := parseIdParam(r)
-		if err != nil {
-			log.Printf("%-15s ==> Error parsing post Id param %v\n", "Comment Handler", err)
-			return err
-		}
-
-		content, err := readReqBody[ContentForm](r)
+		content, err := readReqBody[CreateCommentRequest](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
 		}
 
-		userId, err := GetAuthUserId(r)
+		userId, err := auth.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
 			return err
 		}
 
-		params := Map(content, func(c ContentForm) db.CreateCommentParams {
+		params := Map(content, func(c CreateCommentRequest) db.CreateCommentParams {
 			return db.CreateCommentParams{
 				Content:  c.Content,
+				PostID:   c.PostID,
 				AuthorID: userId,
-				PostID:   postId,
 			}
 		})
 
@@ -47,17 +42,20 @@ func handleCreateComment(commentRepo db.ICommentRepository) Handler {
 
 		log.Printf("%-15s ==> Successfully created comment\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusCreated, comment)
+		return writeJson(w, http.StatusCreated, comment)
 	}
 }
 
-func handleGetComments(commentRepo db.ICommentRepository) Handler {
+func handleGetComments(commentRepo db.ICommentRepository) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
+		ctx := r.Context()
 
-		id := mux.Vars(r)["id"]
+		postID := r.URL.Query().Get("postId")
+		if len(postID) == 0 {
+			return errors.NewValidationError("Post ID is required")
+		}
 
-		comments, err := commentRepo.ListPostComments(ctx, id)
+		comments, err := commentRepo.ListPostComments(ctx, postID)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Error getting comment by Id from stor %v\n",
@@ -69,13 +67,13 @@ func handleGetComments(commentRepo db.ICommentRepository) Handler {
 
 		log.Printf("%-15s ==> Successfully got comment by Id\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusOK, comments)
+		return writeJson(w, http.StatusOK, comments)
 	}
 }
 
-func handleUpdateComments(commentRepo db.ICommentRepository) Handler {
+func handleUpdateComment(commentRepo db.ICommentRepository) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
+		ctx := r.Context()
 
 		id, err := parseIdParam(r)
 		if err != nil {
@@ -89,7 +87,7 @@ func handleUpdateComments(commentRepo db.ICommentRepository) Handler {
 			return err
 		}
 
-		userId, err := GetAuthUserId(r)
+		userId, err := auth.GetAuthUserId(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
 			return err
@@ -115,13 +113,13 @@ func handleUpdateComments(commentRepo db.ICommentRepository) Handler {
 
 		log.Printf("%-15s ==> Successfully updated comment by Id\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusOK, comment)
+		return writeJson(w, http.StatusOK, comment)
 	}
 }
 
-func handleDeleteComments(commentRepo db.ICommentRepository) Handler {
+func handleDeleteComment(commentRepo db.ICommentRepository) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
+		ctx := r.Context()
 
 		id, err := parseIdParam(r)
 		if err != nil {
@@ -130,7 +128,7 @@ func handleDeleteComments(commentRepo db.ICommentRepository) Handler {
 
 		}
 
-		userId, err := GetAuthUserId(r)
+		userId, err := auth.GetAuthUserId(r)
 		if err != nil {
 			return err
 		}
@@ -143,68 +141,6 @@ func handleDeleteComments(commentRepo db.ICommentRepository) Handler {
 
 		log.Printf("%-15s ==> Successfully deleted comment by Id\n", "Comment Handler")
 
-		return WriteJson(w, http.StatusNoContent, nil)
-	}
-}
-
-func handleLikeComment(commentRepo db.ICommentRepository) Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
-
-		id, err := parseIdParam(r)
-		if err != nil {
-			return err
-		}
-
-		userId, err := GetAuthUserId(r)
-		if err != nil {
-			return err
-		}
-
-		params := db.CreateCommentLikeParams{
-			UserID:    userId,
-			CommentID: id,
-		}
-
-		if err := validate(params); err != nil {
-			return err
-		}
-
-		if err := commentRepo.CreateCommentLike(ctx, params); err != nil {
-			return err
-		}
-
-		return WriteJson(w, http.StatusNoContent, nil)
-	}
-}
-
-func handleRemoveLikeFromComment(commentRepo db.ICommentRepository) Handler {
-	return func(w http.ResponseWriter, r *http.Request) error {
-		ctx := context.Background()
-
-		commentId, err := parseIdParam(r)
-		if err != nil {
-			return err
-		}
-
-		userId, err := GetAuthUserId(r)
-		if err != nil {
-			return err
-		}
-
-		params := db.DeleteCommentLikeParams{
-			CommentID: commentId,
-			UserID:    userId,
-		}
-
-		if err := validate(params); err != nil {
-			return err
-		}
-
-		if err := commentRepo.DeleteCommentLike(ctx, params); err != nil {
-			return err
-		}
-
-		return WriteJson(w, http.StatusNoContent, nil)
+		return writeJson(w, http.StatusNoContent, nil)
 	}
 }

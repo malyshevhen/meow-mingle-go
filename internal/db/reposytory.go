@@ -11,11 +11,11 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/db"
 )
 
-type Repository[T any] struct {
+type Neo4jRepository[T any] struct {
 	driver neo4j.DriverWithContext
 }
 
-func (s *Repository[T]) Create(ctx context.Context, params any, cypher string) (entity T, execErr error) {
+func (s *Neo4jRepository[T]) Create(ctx context.Context, params any, cypher string) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -33,7 +33,7 @@ func (s *Repository[T]) Create(ctx context.Context, params any, cypher string) (
 	return
 }
 
-func (s *Repository[T]) Retrieve(ctx context.Context, cypher string, params map[string]any) (entity T, execErr error) {
+func (s *Neo4jRepository[T]) Retrieve(ctx context.Context, cypher string, params map[string]any) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -52,7 +52,7 @@ func (s *Repository[T]) Retrieve(ctx context.Context, cypher string, params map[
 	return
 }
 
-func (s *Repository[T]) Write(ctx context.Context, cypher string, params any) error {
+func (s *Neo4jRepository[T]) Write(ctx context.Context, cypher string, params any) error {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -68,7 +68,7 @@ func (s *Repository[T]) Write(ctx context.Context, cypher string, params any) er
 	return nil
 }
 
-func (s *Repository[T]) Update(ctx context.Context, cypher string, params any) (entity T, execErr error) {
+func (s *Neo4jRepository[T]) Update(ctx context.Context, cypher string, params any) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -87,7 +87,7 @@ func (s *Repository[T]) Update(ctx context.Context, cypher string, params any) (
 	return
 }
 
-func (s *Repository[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
+func (s *Neo4jRepository[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -110,7 +110,7 @@ func (s *Repository[T]) List(ctx context.Context, cypher string, id string) (lis
 	return
 }
 
-func (s *Repository[T]) Delete(ctx context.Context, cypher string, params any) error {
+func (s *Neo4jRepository[T]) Delete(ctx context.Context, cypher string, params any) error {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 

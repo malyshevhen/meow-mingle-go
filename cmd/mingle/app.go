@@ -1,4 +1,4 @@
-package app
+package mingle
 
 import (
 	"context"
@@ -9,16 +9,18 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/malyshEvhen/meow_mingle/internal/api"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 
 type App struct {
-	s *http.Server
+	srv *http.Server
 
-	userRepo     db.IUserRepository
-	commentRepo  db.ICommentRepository
-	postRepo     db.IPostRepository
-	authProvider *api.AuthProvider
+	authProvider *auth.Provider
+
+	userRepo    db.IProfileRepository
+	commentRepo db.ICommentRepository
+	postRepo    db.IPostRepository
 
 	driver neo4j.DriverWithContext
 }
@@ -39,10 +41,9 @@ func New(ctx context.Context) (app *App, appError error) {
 	app.userRepo = db.NewUserRepository(driver)
 	app.commentRepo = db.NewCommentRepository(driver)
 	app.postRepo = db.NewPostRepository(driver)
-	app.authProvider = api.NewAuthProvider(app.userRepo, cfg.JWTSecret)
+	app.authProvider = auth.NewProvider(app.userRepo, cfg.JWTSecret)
 
 	mux := api.RegisterRouts(
-		ctx,
 		app.authProvider,
 		app.userRepo,
 		app.commentRepo,
@@ -59,19 +60,18 @@ func New(ctx context.Context) (app *App, appError error) {
 		handlers.ExposedHeaders([]string{"Authorization", "Content-Type", "Content-Encoding", "Content-Length", "Location"}),
 	)
 
-	app.s = &http.Server{
+	app.srv = &http.Server{
 		Addr:         cfg.ServerPort,
 		Handler:      corsHandler(recoveryHandler(mux)),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  10 * time.Second,
+		ReadTimeout:  2 * time.Second,
+		WriteTimeout: 2 * time.Second,
 	}
 
 	return app, nil
 }
 
 func (app *App) Start(ctx context.Context) error {
-	if err := app.s.ListenAndServe(); err != nil {
+	if err := app.srv.ListenAndServe(); err != nil {
 		return err
 	}
 

@@ -50,7 +50,7 @@ type PostLike struct {
 	PostID string `json:"post_id" validate:"required"`
 }
 
-type User struct {
+type Profile struct {
 	ID        string    `json:"id"`
 	Email     string    `json:"email" validate:"required,email"`
 	FirstName string    `json:"first_name" validate:"required"`

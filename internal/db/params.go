@@ -73,12 +73,12 @@ type GetSubscriptionParams struct {
 	SubscriptionID string `json:"subscription_id"`
 }
 
-type CreateUserParams struct {
+type CreateProfileParams struct {
 	ID        string `json:"id"`
+	UserID    string `json:"user_id" validate:"required"`
 	Email     string `json:"email" validate:"required,email"`
 	FirstName string `json:"first_name" validate:"required"`
 	LastName  string `json:"last_name" validate:"required"`
-	Password  string `json:"password" validate:"required"`
 }
 
 type UpdateUserParams struct {
