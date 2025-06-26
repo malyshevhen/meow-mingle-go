@@ -22,9 +22,3 @@ type ProfileService interface {
 	GetById(ctx context.Context, profileId string) (user *Profile, err error)
 	GetByEmail(ctx context.Context, profileEmail string) (user *Profile, err error)
 }
-
-type ProfileRepository interface {
-	Save(ctx context.Context, userId, email, firstName, lastName string) (user Profile, err error)
-	GetById(ctx context.Context, id string) (user Profile, err error)
-	GetByEmail(ctx context.Context, email string) (user Profile, err error)
-}

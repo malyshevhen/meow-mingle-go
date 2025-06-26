@@ -23,12 +23,3 @@ type PostService interface {
 	Update(ctx context.Context, postId, content string) error
 	Delete(ctx context.Context, postId string) error
 }
-
-type PostRepository interface {
-	Save(ctx context.Context, authorId, content string) (post Post, err error)
-	Get(ctx context.Context, id string) (post Post, err error)
-	Feed(ctx context.Context, userId string) (feed []Post, err error)
-	List(ctx context.Context, profileId string) (posts []Post, err error)
-	Update(ctx context.Context, postId, content string) (post Post, err error)
-	Delete(ctx context.Context, postId string) error
-}

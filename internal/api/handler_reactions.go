@@ -30,7 +30,7 @@ func handleCreateReaction(reactionService app.ReactionService) api.Handler {
 			Content:  content.Content,
 		}
 
-		if err := reactionService.CreateReaction(ctx, &reaction); err != nil {
+		if err := reactionService.Add(ctx, &reaction); err != nil {
 			log.Printf("%-15s ==> Error creating reaction %v\n", "Comment Handler", err)
 			return err
 		}
@@ -49,7 +49,7 @@ func handleDeleteREaction(reactionService app.ReactionService) api.Handler {
 			return err
 		}
 
-		if err := reactionService.DeleteReaction(ctx, id); err != nil {
+		if err := reactionService.Remove(ctx, id); err != nil {
 			log.Printf("%-15s ==> Error deleting reaction %v\n", "Comment Handler", err)
 			return err
 		}

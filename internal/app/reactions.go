@@ -14,11 +14,6 @@ type Reaction struct {
 }
 
 type ReactionService interface {
-	CreateReaction(ctx context.Context, reaction *Reaction) error
-	DeleteReaction(ctx context.Context, reactionId string) error
-}
-
-type ReactionRepository interface {
-	CreateReaction(ctx context.Context, targetId, authorId, content string) error
-	DeleteReaction(ctx context.Context, targetId, authorId string) error
+	Add(ctx context.Context, reaction *Reaction) error
+	Remove(ctx context.Context, reactionId string) error
 }

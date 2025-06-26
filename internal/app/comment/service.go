@@ -6,8 +6,15 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 )
 
+type CommentRepository interface {
+	Save(ctx context.Context, authorId, postId, content string) (comment app.Comment, err error)
+	GetAll(ctx context.Context, id string) (posts []app.Comment, err error)
+	Update(ctx context.Context, commentId, content string) (comment app.Comment, err error)
+	Delete(ctx context.Context, userId, commentId string) (err error)
+}
+
 type service struct {
-	commentRepo app.CommentRepository
+	commentRepo CommentRepository
 }
 
 // Create implements app.CommentService.
@@ -30,7 +37,7 @@ func (s *service) Update(ctx context.Context, id, content string) error {
 	panic("unimplemented")
 }
 
-func NewService(commentRepo app.CommentRepository) app.CommentService {
+func NewService(commentRepo CommentRepository) app.CommentService {
 	return &service{
 		commentRepo: commentRepo,
 	}

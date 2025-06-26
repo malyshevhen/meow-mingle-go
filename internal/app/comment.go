@@ -21,10 +21,3 @@ type CommentService interface {
 	Update(ctx context.Context, commentId, content string) error
 	Delete(ctx context.Context, commentId string) error
 }
-
-type CommentRepository interface {
-	Save(ctx context.Context, authorId, postId, content string) (comment Comment, err error)
-	GetAll(ctx context.Context, id string) (posts []Comment, err error)
-	Update(ctx context.Context, commentId, content string) (comment Comment, err error)
-	Delete(ctx context.Context, userId, commentId string) (err error)
-}

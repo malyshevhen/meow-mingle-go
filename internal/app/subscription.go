@@ -18,8 +18,3 @@ type SubscriptionService interface {
 	ListSubscriptionsByFollowingId(ctx context.Context, followingId string) (subscriptions []*Subscription, err error)
 	DeleteSubscription(ctx context.Context, followingId string) error
 }
-
-type SubscriptionRepository interface {
-	CreateSubscription(ctx context.Context, followerId, followingId string) error
-	DeleteSubscription(ctx context.Context, followerId, followingId string) error
-}

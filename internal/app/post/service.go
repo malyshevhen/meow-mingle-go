@@ -6,8 +6,17 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 )
 
+type repository interface {
+	Save(ctx context.Context, authorId, content string) (post app.Post, err error)
+	Get(ctx context.Context, id string) (post app.Post, err error)
+	Feed(ctx context.Context, userId string) (feed []app.Post, err error)
+	List(ctx context.Context, profileId string) (posts []app.Post, err error)
+	Update(ctx context.Context, postId, content string) (post app.Post, err error)
+	Delete(ctx context.Context, postId string) error
+}
+
 type service struct {
-	postRepo app.PostRepository
+	postRepo repository
 }
 
 // Create implements app.PostService.
@@ -40,7 +49,7 @@ func (s *service) Update(ctx context.Context, postId, content string) error {
 	panic("unimplemented")
 }
 
-func NewService(postRepo app.PostRepository) app.PostService {
+func NewService(postRepo repository) app.PostService {
 	return &service{
 		postRepo: postRepo,
 	}
