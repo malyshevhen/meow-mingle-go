@@ -78,10 +78,10 @@ func ErrorHandler(h api.Handler) api.Handler {
 			switch e := err.(type) {
 			case errors.Error:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				writeJson(w, e.Code(), NewErrorResponse(e.Error()))
+				writeJSON(w, e.Code(), NewErrorResponse(e.Error()))
 			default:
 				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
-				writeJson(
+				writeJSON(
 					w,
 					http.StatusInternalServerError,
 					NewErrorResponse("Internal error"),

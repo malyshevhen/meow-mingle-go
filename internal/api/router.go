@@ -15,6 +15,7 @@ func RegisterRouts(
 	commentService app.CommentService,
 	postService app.PostService,
 	subscriptionService app.SubscriptionService,
+	reactionService app.ReactionService,
 ) *mux.Router {
 	auth := func(handler api.Handler) http.HandlerFunc {
 		return authenticated(handler, authMW.WithJWTAuth)
@@ -47,9 +48,8 @@ func RegisterRouts(
 	r.HandleFunc("/subscriptions{id}", auth(handleUnsubscribe(subscriptionService))).Methods("DELETE")
 
 	// Reaction API
-	r.HandleFunc("/reactions", auth(nil)).Methods("PUT")         // TODO: implement
-	r.HandleFunc("/reactions", auth(nil)).Methods("GET")         // TODO: implement
-	r.HandleFunc("/reactions/{id}", auth(nil)).Methods("DELETE") // TODO: implement
+	r.HandleFunc("/reactions", auth(handleCreateReaction(reactionService))).Methods("PUT")
+	r.HandleFunc("/reactions/{id}", auth(handleDeleteREaction(reactionService))).Methods("DELETE")
 
 	return r
 }

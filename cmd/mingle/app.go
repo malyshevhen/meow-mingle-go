@@ -11,8 +11,9 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/app/comment"
 	"github.com/malyshEvhen/meow_mingle/internal/app/post"
 	"github.com/malyshEvhen/meow_mingle/internal/app/profile"
+	"github.com/malyshEvhen/meow_mingle/internal/app/reaction"
 	"github.com/malyshEvhen/meow_mingle/internal/app/subscription"
-	"github.com/malyshEvhen/meow_mingle/internal/db"
+	"github.com/malyshEvhen/meow_mingle/internal/graph"
 	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
@@ -37,14 +38,15 @@ func New(ctx context.Context) (mingleApp *App, appError error) {
 
 	authProvider := auth.NewProvider(nil, cfg.JWTSecret)
 
-	profileRepo := db.NewProfileRepository(driver)
-	commentRepo := db.NewCommentRepository(driver)
-	postRepo := db.NewPostRepository(driver)
+	profileRepo := graph.NewProfileRepository(driver)
+	commentRepo := graph.NewCommentRepository(driver)
+	postRepo := graph.NewPostRepository(driver)
 
 	profileService := profile.NewService(profileRepo)
 	commentService := comment.NewService(commentRepo)
 	postService := post.NewService(postRepo)
 	subscriptionService := subscription.NewService(nil)
+	reactionService := reaction.NewService(nil)
 
 	mux := api.RegisterRouts(
 		authProvider,
@@ -52,6 +54,7 @@ func New(ctx context.Context) (mingleApp *App, appError error) {
 		commentService,
 		postService,
 		subscriptionService,
+		reactionService,
 	)
 
 	recoveryHandler := handlers.RecoveryHandler()

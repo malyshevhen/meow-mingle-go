@@ -1,5 +1,5 @@
 MATCH
-    (u:User {id: $author_id})-[:WRITE]->(p:Post {id: $id})
+    (u:User)-[:WRITE]->(p:Post {id: $id})
 OPTIONAL MATCH
     (p)-[l:LIKE]-()
 WITH

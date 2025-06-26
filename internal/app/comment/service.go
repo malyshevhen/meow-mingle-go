@@ -10,23 +10,23 @@ type service struct {
 	commentRepo app.CommentRepository
 }
 
-// CreateComment implements app.CommentService.
-func (s *service) CreateComment(ctx context.Context, comment *app.Comment) error {
+// Create implements app.CommentService.
+func (s *service) Create(ctx context.Context, comment *app.Comment) error {
 	panic("unimplemented")
 }
 
-// DeleteComment implements app.CommentService.
-func (s *service) DeleteComment(ctx context.Context, commentId string) error {
+// Delete implements app.CommentService.
+func (s *service) Delete(ctx context.Context, commentId string) error {
 	panic("unimplemented")
 }
 
-// ListPostComments implements app.CommentService.
-func (s *service) ListPostComments(ctx context.Context, postID string) (comments []*app.Comment, err error) {
+// List implements app.CommentService.
+func (s *service) List(ctx context.Context, postID string) (comments []*app.Comment, err error) {
 	panic("unimplemented")
 }
 
-// UpdateComment implements app.CommentService.
-func (s *service) UpdateComment(ctx context.Context, id, content string) error {
+// Update implements app.CommentService.
+func (s *service) Update(ctx context.Context, id, content string) error {
 	panic("unimplemented")
 }
 

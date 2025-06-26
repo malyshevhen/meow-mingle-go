@@ -1,3 +1,59 @@
 package api
 
-// TODO: implement handler_reactions
+import (
+	"log"
+	"net/http"
+
+	"github.com/malyshEvhen/meow_mingle/internal/app"
+	"github.com/malyshEvhen/meow_mingle/pkg/api"
+	"github.com/malyshEvhen/meow_mingle/pkg/auth"
+)
+
+func handleCreateReaction(reactionService app.ReactionService) api.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+
+		content, err := readBody[CreateCommentRequest](r)
+		if err != nil {
+			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
+			return err
+		}
+
+		userId, err := auth.GetAuthUserId(r)
+		if err != nil {
+			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
+			return err
+		}
+
+		reaction := app.Reaction{
+			AuthorID: userId,
+			Content:  content.Content,
+		}
+
+		if err := reactionService.CreateReaction(ctx, &reaction); err != nil {
+			log.Printf("%-15s ==> Error creating reaction %v\n", "Comment Handler", err)
+			return err
+		}
+
+		return writeJSON(w, http.StatusNoContent, nil)
+	}
+}
+
+func handleDeleteREaction(reactionService app.ReactionService) api.Handler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+
+		id, err := iaPathParam(r)
+		if err != nil {
+			log.Printf("%-15s ==> Error getting reaction id %v\n", "Comment Handler", err)
+			return err
+		}
+
+		if err := reactionService.DeleteReaction(ctx, id); err != nil {
+			log.Printf("%-15s ==> Error deleting reaction %v\n", "Comment Handler", err)
+			return err
+		}
+
+		return writeJSON(w, http.StatusNoContent, nil)
+	}
+}

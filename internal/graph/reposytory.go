@@ -1,4 +1,4 @@
-package db
+package graph
 
 import (
 	"context"
@@ -11,11 +11,11 @@ import (
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j/db"
 )
 
-type Neo4jRepository[T any] struct {
+type Neo4jQuerier[T any] struct {
 	driver neo4j.DriverWithContext
 }
 
-func (s *Neo4jRepository[T]) Create(ctx context.Context, params any, cypher string) (entity T, execErr error) {
+func (s *Neo4jQuerier[T]) Create(ctx context.Context, params any, cypher string) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -33,7 +33,7 @@ func (s *Neo4jRepository[T]) Create(ctx context.Context, params any, cypher stri
 	return
 }
 
-func (s *Neo4jRepository[T]) Retrieve(ctx context.Context, cypher string, params map[string]any) (entity T, execErr error) {
+func (s *Neo4jQuerier[T]) Retrieve(ctx context.Context, cypher string, params map[string]any) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -52,7 +52,7 @@ func (s *Neo4jRepository[T]) Retrieve(ctx context.Context, cypher string, params
 	return
 }
 
-func (s *Neo4jRepository[T]) Write(ctx context.Context, cypher string, params any) error {
+func (s *Neo4jQuerier[T]) Write(ctx context.Context, cypher string, params any) error {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -68,7 +68,7 @@ func (s *Neo4jRepository[T]) Write(ctx context.Context, cypher string, params an
 	return nil
 }
 
-func (s *Neo4jRepository[T]) Update(ctx context.Context, cypher string, params any) (entity T, execErr error) {
+func (s *Neo4jQuerier[T]) Update(ctx context.Context, cypher string, params any) (entity T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -87,7 +87,7 @@ func (s *Neo4jRepository[T]) Update(ctx context.Context, cypher string, params a
 	return
 }
 
-func (s *Neo4jRepository[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
+func (s *Neo4jQuerier[T]) List(ctx context.Context, cypher string, id string) (list []T, execErr error) {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 
@@ -110,7 +110,7 @@ func (s *Neo4jRepository[T]) List(ctx context.Context, cypher string, id string)
 	return
 }
 
-func (s *Neo4jRepository[T]) Delete(ctx context.Context, cypher string, params any) error {
+func (s *Neo4jQuerier[T]) Delete(ctx context.Context, cypher string, params any) error {
 	session := s.driver.NewSession(ctx, neo4j.SessionConfig{})
 	defer session.Close(ctx)
 

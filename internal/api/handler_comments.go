@@ -14,7 +14,7 @@ func handleCreateComment(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		content, err := readReqBody[CreateCommentRequest](r)
+		content, err := readBody[CreateCommentRequest](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
@@ -33,14 +33,14 @@ func handleCreateComment(commentService app.CommentService) api.Handler {
 			PostID:   content.PostID,
 		}
 
-		if err := commentService.CreateComment(ctx, &comment); err != nil {
+		if err := commentService.Create(ctx, &comment); err != nil {
 			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
 			return err
 		}
 
 		log.Printf("%-15s ==> Successfully created comment\n", "Comment Handler")
 
-		return writeJson(w, http.StatusCreated, comment)
+		return writeJSON(w, http.StatusCreated, comment)
 	}
 }
 
@@ -54,7 +54,7 @@ func handleGetComments(commentService app.CommentService) api.Handler {
 			return errors.NewValidationError("Post ID is required")
 		}
 
-		comments, err := commentService.ListPostComments(ctx, postID)
+		comments, err := commentService.List(ctx, postID)
 		if err != nil {
 			log.Printf(
 				"%-15s ==> Error getting comment by Id from stor %v\n",
@@ -66,7 +66,7 @@ func handleGetComments(commentService app.CommentService) api.Handler {
 
 		log.Printf("%-15s ==> Successfully got comment by Id\n", "Comment Handler")
 
-		return writeJson(w, http.StatusOK, comments)
+		return writeJSON(w, http.StatusOK, comments)
 	}
 }
 
@@ -74,19 +74,19 @@ func handleUpdateComment(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		id, err := parseIdParam(r)
+		id, err := iaPathParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
 			return err
 		}
 
-		content, err := readReqBody[ContentForm](r)
+		content, err := readBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
 			return err
 		}
 
-		if err := commentService.UpdateComment(ctx, id, content.Content); err != nil {
+		if err := commentService.Update(ctx, id, content.Content); err != nil {
 			log.Printf(
 				"%-15s ==> Error updating comment by Id in stor %v\n",
 				"Comment Handler",
@@ -97,7 +97,7 @@ func handleUpdateComment(commentService app.CommentService) api.Handler {
 
 		log.Printf("%-15s ==> Successfully updated comment by Id\n", "Comment Handler")
 
-		return writeJson(w, http.StatusNoContent, nil)
+		return writeJSON(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -105,13 +105,13 @@ func handleDeleteComment(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		id, err := parseIdParam(r)
+		id, err := iaPathParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para\n ", "Comment Handler")
 			return err
 		}
 
-		err = commentService.DeleteComment(ctx, id)
+		err = commentService.Delete(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> Error deleting comment by Id from stor\n ", "Comment Handler")
 			return err
@@ -119,6 +119,6 @@ func handleDeleteComment(commentService app.CommentService) api.Handler {
 
 		log.Printf("%-15s ==> Successfully deleted comment by Id\n", "Comment Handler")
 
-		return writeJson(w, http.StatusNoContent, nil)
+		return writeJSON(w, http.StatusNoContent, nil)
 	}
 }

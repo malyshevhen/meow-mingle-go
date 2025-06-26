@@ -11,7 +11,7 @@ import (
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
-func readReqBody[T any](r *http.Request) (target T, readErr error) {
+func readBody[T any](r *http.Request) (target T, readErr error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("%-15s ==> Error reading request body: %v\n", "User Handler", readErr)
@@ -52,7 +52,7 @@ func validate(s any) error {
 	return nil
 }
 
-func parseIdParam(r *http.Request) (string, error) {
+func iaPathParam(r *http.Request) (string, error) {
 	id, ok := mux.Vars(r)["id"]
 	if !ok {
 		return "", errors.NewValidationError("Invalid 'ID' parameter")
@@ -63,8 +63,4 @@ func parseIdParam(r *http.Request) (string, error) {
 
 func IsEmpty[T comparable](object *T) bool {
 	return *object == *new(T)
-}
-
-func Map[T, S any](source S, mapper func(S) T) (target T) {
-	return mapper(source)
 }

@@ -10,18 +10,18 @@ type service struct {
 	profileRepo app.ProfileRepository
 }
 
-// CreateProfile implements app.ProfileService.
-func (s *service) CreateProfile(ctx context.Context, profile *app.Profile) error {
+// Create implements app.ProfileService.
+func (s *service) Create(ctx context.Context, profile *app.Profile) error {
 	panic("unimplemented")
 }
 
-// GetProfileByEmail implements app.ProfileService.
-func (s *service) GetProfileByEmail(ctx context.Context, profileEmail string) (user *app.Profile, err error) {
+// GetByEmail implements app.ProfileService.
+func (s *service) GetByEmail(ctx context.Context, profileEmail string) (user *app.Profile, err error) {
 	panic("unimplemented")
 }
 
-// GetProfileById implements app.ProfileService.
-func (s *service) GetProfileById(ctx context.Context, profileId string) (user *app.Profile, err error) {
+// GetById implements app.ProfileService.
+func (s *service) GetById(ctx context.Context, profileId string) (user *app.Profile, err error) {
 	panic("unimplemented")
 }
 

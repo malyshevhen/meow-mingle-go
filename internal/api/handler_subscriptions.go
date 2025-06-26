@@ -18,7 +18,7 @@ func handleSubscribe(subscriptionRepo app.SubscriptionService) api.Handler {
 			return err
 		}
 
-		return writeJson(w, http.StatusNoContent, nil)
+		return writeJSON(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -32,6 +32,6 @@ func handleUnsubscribe(subscriptionRepo app.SubscriptionService) api.Handler {
 			return err
 		}
 
-		return writeJson(w, http.StatusNoContent, nil)
+		return writeJSON(w, http.StatusNoContent, nil)
 	}
 }

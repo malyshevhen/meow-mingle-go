@@ -14,7 +14,7 @@ func handleCreatePost(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		req, err := readReqBody[ContentForm](r)
+		req, err := readBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading post request: %v\n", "Post Handler", err)
 			return err
@@ -32,33 +32,46 @@ func handleCreatePost(postService app.PostService) api.Handler {
 			AuthorID: userId,
 		}
 
-		if err := postService.CreatePost(ctx, &post); err != nil {
+		if err := postService.Create(ctx, &post); err != nil {
 			log.Printf("%-15s ==> Error creating post in store %v\n", "Post Handler", err)
 			return err
 		}
 
 		log.Printf("%-15s ==> Successfully created new post\n", "Post Handler")
 
-		return writeJson(w, http.StatusCreated, post)
+		return writeJSON(w, http.StatusCreated, post)
 	}
 }
 
 func handleGetPosts(postService app.PostService) api.Handler {
-	// TODO: implement
-	return nil
+	return func(w http.ResponseWriter, r *http.Request) error {
+		ctx := r.Context()
+
+		profileId := r.URL.Query().Get("profileId")
+
+		posts, err := postService.List(ctx, profileId)
+		if err != nil {
+			log.Printf("%-15s ==> Error getting posts from store %v\n", "Post Handler", err)
+			return err
+		}
+
+		log.Printf("%-15s ==> Successfully retrieved posts\n", "Post Handler")
+
+		return writeJSON(w, http.StatusOK, posts)
+	}
 }
 
 func handleGetPostById(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		id, err := parseIdParam(r)
+		id, err := iaPathParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id para:%v\n", "Post Handler", err)
 			return err
 		}
 
-		post, err := postService.GetPost(ctx, id)
+		post, err := postService.Get(ctx, id)
 		if err != nil {
 			log.Printf("%-15s ==> Error getting post by Id from stor:%v\n", "Post Handler", err)
 			return err
@@ -66,7 +79,7 @@ func handleGetPostById(postService app.PostService) api.Handler {
 
 		log.Printf("%-15s ==> Successfully retrieved post by Id\n", "Post Handler")
 
-		return writeJson(w, http.StatusOK, post)
+		return writeJSON(w, http.StatusOK, post)
 	}
 }
 
@@ -74,25 +87,25 @@ func handleUpdatePostById(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		id, err := parseIdParam(r)
+		id, err := iaPathParam(r)
 		if err != nil {
 			return err
 		}
 
-		req, err := readReqBody[ContentForm](r)
+		req, err := readBody[ContentForm](r)
 		if err != nil {
 			log.Printf("%-15s ==> Error reading update request: %v\n", "Post Handler", err)
 			return err
 		}
 
-		if err := postService.UpdatePost(ctx, id, req.Content); err != nil {
+		if err := postService.Update(ctx, id, req.Content); err != nil {
 			log.Printf("%-15s ==> Error updating post by Id in store %v\n", "Post Handler", err)
 			return err
 		}
 
 		log.Printf("%-15s ==> Successfully updated post by Id\n", "Post Handler")
 
-		return writeJson(w, http.StatusNoContent, nil)
+		return writeJSON(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -100,20 +113,20 @@ func handleDeletePostById(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		id, err := parseIdParam(r)
+		id, err := iaPathParam(r)
 		if err != nil {
 			log.Printf("%-15s ==> Error parsing Id param %v\n", "Post Handler", err)
 			return err
 		}
 
-		if err := postService.DeletePost(ctx, id); err != nil {
+		if err := postService.Delete(ctx, id); err != nil {
 			log.Printf("%-15s ==> Error deleting post by Id from store %v\n", "Post Handler", err)
 			return err
 		}
 
 		log.Printf("%-15s ==> Successfully deleted post by Id\n", "Post Handler")
 
-		return writeJson(w, http.StatusNoContent, nil)
+		return writeJSON(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -127,28 +140,28 @@ func handleGetFeed(postService app.PostService) api.Handler {
 			return err
 		}
 
-		feed, err := postService.GetFeed(ctx, authUserID)
+		feed, err := postService.Feed(ctx, authUserID)
 		if err != nil {
 			return err
 		}
 
-		return writeJson(w, http.StatusOK, feed)
+		return writeJSON(w, http.StatusOK, feed)
 	}
 }
 
-func handleUsersFeed(postService app.PostRepository) api.Handler {
+func handleUsersFeed(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		ctx := r.Context()
 
-		id, err := parseIdParam(r)
+		id, err := iaPathParam(r)
 		if err != nil {
 			return errors.NewValidationError("ID parameter is invalid")
 		}
 
-		feed, err := postService.GetFeed(ctx, id)
+		feed, err := postService.Feed(ctx, id)
 		if err != nil {
 			return err
 		}
-		return writeJson(w, http.StatusOK, feed)
+		return writeJSON(w, http.StatusOK, feed)
 	}
 }
