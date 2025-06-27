@@ -1,30 +1,33 @@
 module github.com/malyshEvhen/meow_mingle
 
-go 1.22.1
+go 1.23.0
+
+toolchain go1.24.0
 
 require github.com/gorilla/mux v1.8.1
 
 require (
-	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 )
 
 require (
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.9 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/google/uuid v1.6.0
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/neo4j/neo4j-go-driver/v5 v5.20.0
-	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	github.com/neo4j/neo4j-go-driver/v5 v5.28.1
+	golang.org/x/net v0.41.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 )
 
 require (
-	github.com/go-playground/validator/v10 v10.19.0
+	github.com/go-playground/validator/v10 v10.26.0
 	github.com/goccy/go-yaml v1.18.0
-	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/gorilla/handlers v1.5.2
-	golang.org/x/crypto v0.21.0
+	golang.org/x/crypto v0.39.0
 )
+
+replace github.com/gocql/gocql => github.com/scylladb/gocql v1.15.1
