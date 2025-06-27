@@ -5,8 +5,8 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/internal/app"
+	"github.com/malyshEvhen/meow_mingle/internal/auth"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
-	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 )
 
 func RegisterRouts(
@@ -18,7 +18,7 @@ func RegisterRouts(
 	reactionService app.ReactionService,
 ) *mux.Router {
 	auth := func(handler api.Handler) http.HandlerFunc {
-		return authenticated(handler, authMW.WithJWTAuth)
+		return authenticated(handler, authMW.Basic)
 	}
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()

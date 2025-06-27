@@ -6,7 +6,6 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
-	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 )
 
 func handleCreateReaction(reactionService app.ReactionService) api.Handler {
@@ -19,15 +18,8 @@ func handleCreateReaction(reactionService app.ReactionService) api.Handler {
 			return err
 		}
 
-		userId, err := auth.GetAuthUserId(r)
-		if err != nil {
-			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
-			return err
-		}
-
 		reaction := app.Reaction{
-			AuthorID: userId,
-			Content:  content.Content,
+			Content: content.Content,
 		}
 
 		if err := reactionService.Add(ctx, &reaction); err != nil {

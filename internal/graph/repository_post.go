@@ -16,17 +16,11 @@ var (
 	//go:embed cypher/match_post_by_id.cypher
 	getPostCypher string
 
-	//go:embed cypher/create_like_on_post.cypher
-	createLikeOnPostCypher string
-
 	//go:embed cypher/update_post.cypher
 	updatePostCypher string
 
 	//go:embed cypher/delete_post.cypher
 	deletePostCypher string
-
-	//go:embed cypher/delete_post_like.cypher
-	deletePostLikeCypher string
 
 	//go:embed cypher/list_user_posts.cypher
 	listUserPostsCypher string

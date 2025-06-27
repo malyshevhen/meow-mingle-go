@@ -6,7 +6,6 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
-	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 )
 
 func handleCreatePost(postService app.PostService) api.Handler {
@@ -18,17 +17,9 @@ func handleCreatePost(postService app.PostService) api.Handler {
 			log.Printf("%-15s ==> Error reading post request: %v\n", "Post Handler", err)
 			return err
 		}
-
-		userId, err := auth.GetAuthUserId(r)
-		if err != nil {
-			log.Printf("%-15s ==> Error getting user Id from token %v\n", "Post Handler ", err)
-			return err
-		}
-
 		// TODO: add New function to Post struct with validation
 		post := app.Post{
-			Content:  req.Content,
-			AuthorID: userId,
+			Content: req.Content,
 		}
 
 		if err := postService.Create(ctx, &post); err != nil {

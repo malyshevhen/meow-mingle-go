@@ -13,8 +13,8 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/app/profile"
 	"github.com/malyshEvhen/meow_mingle/internal/app/reaction"
 	"github.com/malyshEvhen/meow_mingle/internal/app/subscription"
+	"github.com/malyshEvhen/meow_mingle/internal/auth"
 	"github.com/malyshEvhen/meow_mingle/internal/graph"
-	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 )
 

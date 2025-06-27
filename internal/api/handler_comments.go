@@ -6,7 +6,6 @@ import (
 
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
-	"github.com/malyshEvhen/meow_mingle/pkg/auth"
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
@@ -20,17 +19,10 @@ func handleCreateComment(commentService app.CommentService) api.Handler {
 			return err
 		}
 
-		userId, err := auth.GetAuthUserId(r)
-		if err != nil {
-			log.Printf("%-15s ==> Error getting authenticated user Id %v\n", "Comment Handler", err)
-			return err
-		}
-
 		// TODO: add New function to Comment struct with validation
 		comment := app.Comment{
-			Content:  content.Content,
-			AuthorID: userId,
-			PostID:   content.PostID,
+			Content: content.Content,
+			PostID:  content.PostID,
 		}
 
 		if err := commentService.Add(ctx, &comment); err != nil {

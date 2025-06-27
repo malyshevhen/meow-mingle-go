@@ -13,20 +13,14 @@ var (
 	//go:embed cypher/create_comment.cypher
 	createCommentCypher string
 
-	//go:embed cypher/create_like_on_comment.cypher
-	createLikeOnCommentCypher string
+	//go:embed cypher/list_post_comments.cypher
+	listPostComments string
 
 	//go:embed cypher/update_comment.cypher
 	updateCommentCypher string
 
 	//go:embed cypher/delete_comment.cypher
 	deleteCommentCypher string
-
-	//go:embed cypher/delete_comment_like.cypher
-	deleteCommentLikeCypher string
-
-	//go:embed cypher/list_post_comments.cypher
-	listPostComments string
 )
 
 type commentNeo4jRepository struct {

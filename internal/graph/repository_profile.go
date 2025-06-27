@@ -14,15 +14,6 @@ var (
 
 	//go:embed cypher/match_user_by_id.cypher
 	getProfileByIdCypher string
-
-	//go:embed cypher/match_user_by_email.cypher
-	getProfileByEmailCypher string
-
-	//go:embed cypher/create_subscription.cypher
-	subscribeCypher string
-
-	//go:embed cypher/delete_subscription.cypher
-	unsubscribeCypher string
 )
 
 type profileNeo4jRepository struct {
