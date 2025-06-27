@@ -1,36 +1,37 @@
 package api
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
+	"github.com/malyshEvhen/meow_mingle/pkg/logger"
 )
 
 func handleCreateComment(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
 		content, err := readBody[CreateCommentRequest](r)
 		if err != nil {
-			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
+			logger.WithError(err).Error("Error reading comment request")
 			return err
 		}
 
-		// TODO: add New function to Comment struct with validation
-		comment := app.Comment{
-			Content: content.Content,
-			PostID:  content.PostID,
-		}
-
-		if err := commentService.Add(ctx, &comment); err != nil {
-			log.Printf("%-15s ==> Error creating comment in store %v\n", "Comment Handler", err)
+		comment, err := app.NewComment(ctx, content.PostID, content.Content)
+		if err != nil {
+			logger.WithError(err).Error("Error creating comment")
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully created comment\n", "Comment Handler")
+		if err := commentService.Add(ctx, comment); err != nil {
+			logger.WithError(err).Error("Error creating comment")
+			return err
+		}
+
+		logger.Info("Successfully created comment")
 
 		return writeJSON(w, http.StatusCreated, comment)
 	}
@@ -39,24 +40,23 @@ func handleCreateComment(commentService app.CommentService) api.Handler {
 // TODO: add pagination
 func handleGetComments(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
 		postID := r.URL.Query().Get("postId")
 		if len(postID) == 0 {
-			return errors.NewValidationError("Post ID is required")
+			err := errors.NewValidationError("Post ID is required")
+			logger.WithError(err).Error("Error getting comment by Id")
+			return err
 		}
 
 		comments, err := commentService.List(ctx, postID)
 		if err != nil {
-			log.Printf(
-				"%-15s ==> Error getting comment by Id from stor %v\n",
-				"Comment Handler",
-				err,
-			)
+			logger.WithError(err).Error("Error getting comment by Id")
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully got comment by Id\n", "Comment Handler")
+		logger.Info("Successfully got comment by Id")
 
 		return writeJSON(w, http.StatusOK, comments)
 	}
@@ -64,30 +64,27 @@ func handleGetComments(commentService app.CommentService) api.Handler {
 
 func handleUpdateComment(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
 		id, err := iaPathParam(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error parsing Id para %v\n", "Comment Handler", err)
+			logger.WithError(err).Error("Error parsing Id parameter")
 			return err
 		}
 
 		content, err := readBody[ContentForm](r)
 		if err != nil {
-			log.Printf("%-15s ==> Error reading comment request %v\n", "Comment Handler", err)
+			logger.WithError(err).Error("Error reading comment request")
 			return err
 		}
 
 		if err := commentService.Update(ctx, id, content.Content); err != nil {
-			log.Printf(
-				"%-15s ==> Error updating comment by Id in stor %v\n",
-				"Comment Handler",
-				err,
-			)
+			logger.WithError(err).Error("Error updating comment by Id")
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully updated comment by Id\n", "Comment Handler")
+		logger.Info("Successfully updated comment by Id")
 
 		return writeJSON(w, http.StatusNoContent, nil)
 	}
@@ -95,21 +92,22 @@ func handleUpdateComment(commentService app.CommentService) api.Handler {
 
 func handleDeleteComment(commentService app.CommentService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
 		id, err := iaPathParam(r)
 		if err != nil {
-			log.Printf("%-15s ==> Error parsing Id para\n ", "Comment Handler")
+			logger.WithError(err).Error("Error parsing Id parameter")
 			return err
 		}
 
 		err = commentService.Remove(ctx, id)
 		if err != nil {
-			log.Printf("%-15s ==> Error deleting comment by Id from stor\n ", "Comment Handler")
+			logger.WithError(err).Error("Error deleting comment by Id")
 			return err
 		}
 
-		log.Printf("%-15s ==> Successfully deleted comment by Id\n", "Comment Handler")
+		logger.Info("Successfully deleted comment by Id")
 
 		return writeJSON(w, http.StatusNoContent, nil)
 	}

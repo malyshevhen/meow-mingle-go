@@ -49,7 +49,7 @@ func NewServer(
 	)
 
 	srv := &http.Server{
-		Addr:         cfg.Port,
+		Addr:         ":" + cfg.Port,
 		Handler:      corsHandler(recoveryHandler(mux)),
 		ReadTimeout:  2 * time.Second,
 		WriteTimeout: 2 * time.Second,

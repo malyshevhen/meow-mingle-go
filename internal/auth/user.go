@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"time"
@@ -49,4 +50,8 @@ func HashPwd(s string) (string, error) {
 
 	log.Printf("%-15s ==> Password hashed successfully!", "Authentication")
 	return string(hash), nil
+}
+
+func UserID(ctx context.Context) string {
+	return ctx.Value(UserIdKey).(string)
 }

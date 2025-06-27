@@ -3,6 +3,10 @@ package app
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
+	"github.com/malyshEvhen/meow_mingle/internal/auth"
+	"github.com/malyshEvhen/meow_mingle/pkg/errors"
 )
 
 type Comment struct {
@@ -13,6 +17,28 @@ type Comment struct {
 	Reactions []*Reaction `json:"reactions"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
+}
+
+func NewComment(ctx context.Context, postID, content string) (*Comment, error) {
+	if len(content) == 0 {
+		return nil, errors.NewValidationError("Comment content is required")
+	}
+
+	if len(postID) == 0 {
+		return nil, errors.NewValidationError("Post ID is required")
+	}
+
+	authorID := auth.UserID(ctx)
+	if authorID == "" {
+		return nil, errors.NewUnauthorizedError()
+	}
+
+	return &Comment{
+		ID:       uuid.New().String(),
+		AuthorID: authorID,
+		PostID:   postID,
+		Content:  content,
+	}, nil
 }
 
 type CommentService interface {

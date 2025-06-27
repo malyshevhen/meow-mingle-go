@@ -1,26 +1,25 @@
 package api
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/malyshEvhen/meow_mingle/internal/app"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
-	"github.com/malyshEvhen/meow_mingle/pkg/errors"
+	"github.com/malyshEvhen/meow_mingle/pkg/logger"
 )
 
 func handleCreateProfile(profileService app.ProfileService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		logger := logger.GetLogger().WithComponent("profile_handler")
 		ctx := r.Context()
 
 		profileForm, err := readBody[CreateProfileForm](r)
 		if err != nil {
-			log.Printf("%-15s ==> Error reading request body: %v\n", "Profile Handler", err)
+			logger.WithError(err).Error("Error reading request body")
 			return err
 		}
 
-		log.Printf("%-15s ==> Creating profile in database...\n", "Profile Handler")
+		logger.Info("Creating profile in database...")
 
 		profile := app.Profile{
 			UserID:    profileForm.UserID,
@@ -30,11 +29,11 @@ func handleCreateProfile(profileService app.ProfileService) api.Handler {
 		}
 
 		if err := profileService.Create(ctx, &profile); err != nil {
-			log.Printf("%-15s ==> Error creating profile: %v\n", "Profile Handler", err)
+			logger.WithError(err).Error("Error creating profile")
 			return err
 		}
 
-		log.Printf("%-15s ==> Profile created successfully!\n", "Profile Handler")
+		logger.Info("Profile created successfully!")
 
 		return writeJSON(w, http.StatusCreated, profile)
 	}
@@ -42,21 +41,22 @@ func handleCreateProfile(profileService app.ProfileService) api.Handler {
 
 func handleGetProfile(profileService app.ProfileService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
+		logger := logger.GetLogger().WithComponent("profile_handler")
 		ctx := r.Context()
 
 		id, err := iaPathParam(r)
 		if err != nil {
-			msg := fmt.Sprintf("Invalid ID parameter: '%s' Error: %v", id, err)
-			return errors.NewValidationError(msg)
+			logger.WithError(err).Error("Error parsing Id parameter")
+			return err
 		}
 
 		profile, err := profileService.GetById(ctx, id)
 		if err != nil {
-			log.Printf("%-15s ==> Profile not found for Id:%s\n", "Profile Handler", id)
+			logger.WithError(err).Warn("Profile not found for Id: " + id)
 			return err
 		}
 
-		log.Printf("%-15s ==> Found profile: %s\n", "Profile Handler", profile.UserID)
+		logger.Info("Found profile: " + profile.UserID)
 
 		return writeJSON(w, http.StatusOK, profile)
 	}

@@ -49,7 +49,7 @@ func RegisterRouts(
 
 	// Reaction API
 	r.HandleFunc("/reactions", auth(handleCreateReaction(reactionService))).Methods("PUT")
-	r.HandleFunc("/reactions/{id}", auth(handleDeleteREaction(reactionService))).Methods("DELETE")
+	r.HandleFunc("/reactions/{id}", auth(handleDeleteReaction(reactionService))).Methods("DELETE")
 
 	return r
 }

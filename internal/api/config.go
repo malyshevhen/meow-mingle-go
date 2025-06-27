@@ -16,11 +16,9 @@ type Config struct {
 
 func (cfg *Config) SetEnv() {
 	if serverPort := os.Getenv(SERVER_PORT_ENV_KEY); serverPort != "" {
-		cfg.Port = ":" + serverPort
+		cfg.Port = serverPort
 	} else if cfg.Port == "" {
-		cfg.Port = ":" + DEFAULT_SERVER_PORT
-	} else if cfg.Port[0] != ':' {
-		cfg.Port = ":" + cfg.Port
+		cfg.Port = DEFAULT_SERVER_PORT
 	}
 }
 

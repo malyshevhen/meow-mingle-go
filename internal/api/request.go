@@ -3,18 +3,20 @@ package api
 import (
 	"encoding/json"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
+	"github.com/malyshEvhen/meow_mingle/pkg/logger"
 )
 
 func readBody[T any](r *http.Request) (target T, readErr error) {
+	logger := logger.GetLogger().WithComponent("request_reader")
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("%-15s ==> Error reading request body: %v\n", "User Handler", readErr)
+		logger.WithError(err).Error("Error reading request body")
 		readErr = errors.NewValidationError("Invalid request body")
 		return
 	}
@@ -22,12 +24,12 @@ func readBody[T any](r *http.Request) (target T, readErr error) {
 
 	target, err = unmarshal[T](body)
 	if err != nil {
-		log.Printf("%-15s ==> Error unmarshal JSON: %v\n", "User Handler", readErr)
+		logger.WithError(err).Error("Error unmarshalling JSON")
 		readErr = err
 		return
 	}
 
-	log.Printf("%-15s ==> Validating user payload: %v\n", "User Handler", target)
+	logger.Info("Validating user payload")
 
 	if err := validate(target); err != nil {
 		readErr = err
