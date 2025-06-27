@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gocql/gocql"
 	"github.com/gorilla/handlers"
 	"github.com/malyshEvhen/meow_mingle/internal/api"
 	"github.com/malyshEvhen/meow_mingle/internal/app/comment"
@@ -14,15 +15,14 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/app/reaction"
 	"github.com/malyshEvhen/meow_mingle/internal/app/subscription"
 	"github.com/malyshEvhen/meow_mingle/internal/auth"
-	"github.com/malyshEvhen/meow_mingle/internal/graph"
-	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	"github.com/malyshEvhen/meow_mingle/internal/db"
 )
 
 type App struct {
 	srv *http.Server
 
 	authProvider *auth.Provider
-	driver       neo4j.DriverWithContext
+	session      *gocql.Session
 }
 
 func New(ctx context.Context) (mingleApp *App, appError error) {
@@ -31,22 +31,25 @@ func New(ctx context.Context) (mingleApp *App, appError error) {
 		return nil, fmt.Errorf("an error occurred when config initializes: %s", err.Error())
 	}
 
-	driver, err := neo4j.NewDriverWithContext(cfg.DBConnURL, neo4j.BasicAuth(cfg.DBUser, cfg.DBPassword, ""))
-	if err != nil {
-		return nil, fmt.Errorf("an error occurred when neo4j driver creates: %s", err.Error())
-	}
-
 	authProvider := auth.NewProvider(nil, cfg.JWTSecret)
 
-	profileRepo := graph.NewProfileRepository(driver)
-	commentRepo := graph.NewCommentRepository(driver)
-	postRepo := graph.NewPostRepository(driver)
+	cluster := gocql.NewCluster("localhost:9042")
+	session, err := cluster.CreateSession()
+	if err != nil {
+		return nil, fmt.Errorf("an error occurred when creating session: %s", err.Error())
+	}
+
+	profileRepo := db.NewProfileRepository(session)
+	commentRepo := db.NewCommentRepository(session)
+	postRepo := db.NewPostRepository(session)
+	subscriptionRepo := db.NewSubscriptionRepository(session)
+	reactionRepo := db.NewReactionRepository(session)
 
 	profileService := profile.NewService(profileRepo)
 	commentService := comment.NewService(commentRepo)
 	postService := post.NewService(postRepo)
-	subscriptionService := subscription.NewService(nil)
-	reactionService := reaction.NewService(nil)
+	subscriptionService := subscription.NewService(subscriptionRepo)
+	reactionService := reaction.NewService(reactionRepo)
 
 	mux := api.RegisterRouts(
 		authProvider,
@@ -76,7 +79,7 @@ func New(ctx context.Context) (mingleApp *App, appError error) {
 	return &App{
 		srv:          srv,
 		authProvider: authProvider,
-		driver:       driver,
+		session:      session,
 	}, nil
 }
 
@@ -89,8 +92,11 @@ func (app *App) Start(ctx context.Context) error {
 }
 
 func (app *App) Stop(ctx context.Context) error {
-	if err := app.driver.Close(ctx); err != nil {
+	defer app.session.Close()
+
+	if err := app.srv.Shutdown(ctx); err != nil {
 		return err
 	}
+
 	return nil
 }
