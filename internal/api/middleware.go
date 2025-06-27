@@ -1,12 +1,13 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/malyshEvhen/meow_mingle/pkg/api"
 	"github.com/malyshEvhen/meow_mingle/pkg/errors"
+	"github.com/malyshEvhen/meow_mingle/pkg/logger"
 )
 
 func middlewareChain(h api.Handler, m ...api.Middleware) http.HandlerFunc {
@@ -38,6 +39,11 @@ func (ww *wrappedWriter) WriteHeader(code int) {
 func loggerMW(h api.Handler) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		start := time.Now()
+		requestID := uuid.New().String()
+		reqLogger := logger.GetLogger().WithRequest(r.Method, r.URL.Path, requestID)
+
+		// Add request ID to response headers for tracing
+		w.Header().Set("X-Request-ID", requestID)
 
 		ww := &wrappedWriter{
 			ResponseWriter: w,
@@ -45,14 +51,19 @@ func loggerMW(h api.Handler) api.Handler {
 		}
 
 		err := h(ww, r)
-		log.Printf(
-			"%-15s ==> %d %s %s %s",
-			"Request",
-			ww.status,
+		duration := time.Since(start)
+
+		reqLogger.LogRequest(
 			r.Method,
-			r.RequestURI,
-			time.Since(start),
+			r.URL.Path,
+			r.RemoteAddr,
+			ww.status,
+			duration.Milliseconds(),
 		)
+
+		if err != nil {
+			reqLogger.WithError(err).Error("Request processing failed")
+		}
 
 		return err
 	}
@@ -71,16 +82,24 @@ func NewErrorResponse(message string) *ErrorResponse {
 }
 
 func ErrorHandler(h api.Handler) api.Handler {
-	log.Printf("%-15s Apply error handler", "Error Handler")
+	errLogger := logger.GetLogger().WithComponent("error_handler")
+	errLogger.Debug("Error handler middleware initialized")
 
 	return func(w http.ResponseWriter, r *http.Request) error {
 		if err := h(w, r); err != nil {
+			requestLogger := errLogger.WithRequest(r.Method, r.URL.Path, w.Header().Get("X-Request-ID"))
+
 			switch e := err.(type) {
 			case errors.Error:
-				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
+				requestLogger.WithError(err).Warn("API error occurred",
+					"error_code", e.Code(),
+					"error_type", "api_error",
+				)
 				writeJSON(w, e.Code(), NewErrorResponse(e.Error()))
 			default:
-				log.Printf("%-15s ==> Error: %v", "Error Handler", err)
+				requestLogger.WithError(err).Error("Internal server error occurred",
+					"error_type", "internal_error",
+				)
 				writeJSON(
 					w,
 					http.StatusInternalServerError,

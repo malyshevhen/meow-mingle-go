@@ -1,3 +1,0 @@
-package mingle
-
-// TODO: implement

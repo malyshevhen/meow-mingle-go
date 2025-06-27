@@ -3,10 +3,10 @@ package mingle
 import (
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/goccy/go-yaml"
+	"github.com/malyshEvhen/meow_mingle/pkg/logger"
 )
 
 const (
@@ -101,7 +101,11 @@ func readConfigFromFile() (Config, error) {
 
 	contentBytes, err := os.ReadFile(filePath)
 	if err != nil {
-		slog.Warn("Config file not defined.", "Default config location: ", DEFAULT_CONFIG_PATH)
+		appLogger := logger.GetLogger()
+		appLogger.WithComponent("config").Warn("Config file not found, using environment variables only",
+			"attempted_path", filePath,
+			"default_path", DEFAULT_CONFIG_PATH,
+		)
 		return Config{}, nil
 	}
 

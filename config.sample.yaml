@@ -1,0 +1,29 @@
+# Sample configuration file for Meow Mingle Go application
+# Copy this file and modify according to your environment
+
+# Server configuration
+server:
+  port: ":8080"
+
+# Database configuration
+database:
+  connection_url: "localhost:9042"
+  user: "cassandra"
+  password: "cassandra"
+
+# Security configuration
+secret: "your-jwt-secret-key-here-change-this-in-production"
+
+# Logging configuration (set via environment variables)
+# LOG_LEVEL: debug, info, warn, error (default: info)
+# LOG_FORMAT: json, text (default: json)
+#
+# Example environment variables:
+# export LOG_LEVEL=debug
+# export LOG_FORMAT=json
+# export SERVER_PORT=:8080
+# export DB_URL=localhost:9042
+# export DB_USER=cassandra
+# export DB_PASS=cassandra
+# export JWT_SECRET=your-secret-key
+# export CONFIG_PATH=/path/to/config.yaml
