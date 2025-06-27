@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 	"time"
@@ -11,8 +12,13 @@ import (
 )
 
 func main() {
-	// Initialize logger first
-	appLogger := logger.InitLogger()
+	cfg, err := InitConfig()
+	if err != nil {
+		slog.Error("Failed to initialize config", "error", err.Error())
+		os.Exit(1)
+	}
+
+	appLogger := logger.InitLogger(cfg.Logger)
 	appLogger.LogStartup("meow-mingle", map[string]any{
 		"version": "1.0.0",
 		"env":     os.Getenv("ENV"),
@@ -21,7 +27,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
 
-	mingle, err := mingle.New(ctx)
+	mingle, err := mingle.New(ctx, cfg.Mingle)
 	if err != nil {
 		appLogger.Error("Failed to initialize application", "error", err.Error())
 		os.Exit(1)

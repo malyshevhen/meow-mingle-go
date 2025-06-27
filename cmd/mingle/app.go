@@ -4,10 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/gocql/gocql"
-	"github.com/gorilla/handlers"
 	"github.com/malyshEvhen/meow_mingle/internal/api"
 	"github.com/malyshEvhen/meow_mingle/internal/app/comment"
 	"github.com/malyshEvhen/meow_mingle/internal/app/post"
@@ -27,22 +25,14 @@ type App struct {
 	session      *gocql.Session
 }
 
-func New(ctx context.Context) (mingleApp *App, appError error) {
+func New(ctx context.Context, cfg Config) (mingleApp *App, appError error) {
 	appLogger := logger.GetLogger()
 
-	cfg, err := initConfig()
-	if err != nil {
-		appLogger.Error("Failed to initialize config", "error", err.Error())
-		return nil, fmt.Errorf("an error occurred when config initializes: %s", err.Error())
-	}
-
-	appLogger.Info("Configuration loaded successfully")
-
-	authProvider := auth.NewProvider(nil, cfg.JWTSecret)
+	authProvider := auth.NewProvider(nil)
 	appLogger.WithComponent("auth").Info("Authentication provider initialized")
 
-	cluster := gocql.NewCluster("localhost:9042")
-	appLogger.WithComponent("database").Info("Connecting to Cassandra", "host", "localhost:9042")
+	cluster := gocql.NewCluster(cfg.Database.URL)
+	appLogger.WithComponent("database").Info("Connecting to Cassandra", "host", cfg.Database.URL)
 
 	session, err := cluster.CreateSession()
 	if err != nil {
@@ -66,44 +56,14 @@ func New(ctx context.Context) (mingleApp *App, appError error) {
 	subscriptionService := subscription.NewService(subscriptionRepo)
 	reactionService := reaction.NewService(reactionRepo)
 
-	appLogger.WithComponent("service").Info("Business services initialized")
-
-	mux := api.RegisterRouts(
+	srv := api.NewServer(
+		cfg.Server,
 		authProvider,
 		profileService,
 		commentService,
 		postService,
 		subscriptionService,
 		reactionService,
-	)
-
-	appLogger.WithComponent("api").Info("API routes registered")
-
-	recoveryHandler := handlers.RecoveryHandler()
-	corsHandler := handlers.CORS(
-		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
-		handlers.AllowedOrigins([]string{"*"}),
-		handlers.AllowedMethods([]string{"GET", "OPTIONS"}),
-		handlers.AllowCredentials(),
-		handlers.ExposedHeaders([]string{"Authorization", "Content-Type", "Content-Encoding", "Content-Length", "Location"}),
-	)
-
-	appLogger.WithComponent("middleware").Info("HTTP middleware configured",
-		"recovery", true,
-		"cors", true,
-	)
-
-	srv := &http.Server{
-		Addr:         cfg.ServerPort,
-		Handler:      corsHandler(recoveryHandler(mux)),
-		ReadTimeout:  2 * time.Second,
-		WriteTimeout: 2 * time.Second,
-	}
-
-	appLogger.WithComponent("server").Info("HTTP server configured",
-		"addr", cfg.ServerPort,
-		"read_timeout", "2s",
-		"write_timeout", "2s",
 	)
 
 	return &App{

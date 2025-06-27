@@ -49,10 +49,9 @@ func (ai *Provider) Basic(h api.Handler) api.Handler {
 	}
 }
 
-func NewProvider(userRepo UserRepository, secret string) *Provider {
+func NewProvider(userRepo UserRepository) *Provider {
 	return &Provider{
 		userRepo: userRepo,
-		secret:   secret,
 	}
 }
 

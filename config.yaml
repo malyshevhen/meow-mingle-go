@@ -1,0 +1,19 @@
+# Configuration file for Meow Mingle Go application
+# Local development configuration
+
+# Mingle application configuration
+mingle:
+  # Server configuration
+  server:
+    port: "3000"
+
+  # Database configuration
+  database:
+    url: "127.0.0.1:9042"
+    user: "scylla"
+    password: "scyllapassword"
+
+# Logger configuration
+logger:
+  level: debug
+  format: text

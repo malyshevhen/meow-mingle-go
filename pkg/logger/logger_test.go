@@ -70,7 +70,8 @@ func TestLoggerConfig(t *testing.T) {
 	os.Unsetenv(LOG_LEVEL_ENV_KEY)
 	os.Unsetenv(LOG_FORMAT_ENV_KEY)
 
-	config := getLoggerConfig()
+	config := LoggerConfig{}
+	config.setEnv()
 	if config.Level != LogLevel(DEFAULT_LOG_LEVEL) {
 		t.Errorf("Default log level = %s, want %s", config.Level, DEFAULT_LOG_LEVEL)
 	}
@@ -82,7 +83,7 @@ func TestLoggerConfig(t *testing.T) {
 	os.Setenv(LOG_LEVEL_ENV_KEY, "debug")
 	os.Setenv(LOG_FORMAT_ENV_KEY, "text")
 
-	config = getLoggerConfig()
+	config.setEnv()
 	if config.Level != LogLevelDebug {
 		t.Errorf("Custom log level = %s, want %s", config.Level, LogLevelDebug)
 	}
@@ -113,21 +114,21 @@ func TestLoggerInitialization(t *testing.T) {
 	os.Setenv(LOG_LEVEL_ENV_KEY, "info")
 	os.Setenv(LOG_FORMAT_ENV_KEY, "json")
 
-	logger := InitLogger()
+	logger := InitLogger(LoggerConfig{})
 	if logger == nil {
 		t.Error("InitLogger() returned nil")
 	}
 
 	// Test text format initialization
 	os.Setenv(LOG_FORMAT_ENV_KEY, "text")
-	logger = InitLogger()
+	logger = InitLogger(LoggerConfig{})
 	if logger == nil {
 		t.Error("InitLogger() with text format returned nil")
 	}
 }
 
 func TestLoggerWithContext(t *testing.T) {
-	logger := InitLogger()
+	logger := InitLogger(LoggerConfig{})
 
 	// Test WithComponent
 	componentLogger := logger.WithComponent("test_component")
@@ -166,7 +167,7 @@ func TestGlobalLogger(t *testing.T) {
 	}
 
 	// Test SetLogger
-	newLogger := InitLogger()
+	newLogger := InitLogger(LoggerConfig{})
 	SetLogger(newLogger)
 	logger3 := GetLogger()
 	if logger3 != newLogger {

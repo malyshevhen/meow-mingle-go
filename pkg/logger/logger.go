@@ -38,18 +38,18 @@ type Logger struct {
 
 // LoggerConfig holds configuration for logger initialization
 type LoggerConfig struct {
-	Level  LogLevel
-	Format LogFormat
+	Level  LogLevel  `yaml:"level" json:"level"`
+	Format LogFormat `yaml:"format" json:"format"`
 }
 
 // InitLogger initializes and configures the global logger
-func InitLogger() *Logger {
-	config := getLoggerConfig()
+func InitLogger(cfg LoggerConfig) *Logger {
+	cfg.setEnv()
 
 	var handler slog.Handler
 
 	opts := &slog.HandlerOptions{
-		Level:     parseLogLevel(config.Level),
+		Level:     parseLogLevel(cfg.Level),
 		AddSource: true,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			// Customize timestamp format
@@ -60,7 +60,7 @@ func InitLogger() *Logger {
 		},
 	}
 
-	switch config.Format {
+	switch cfg.Format {
 	case LogFormatJSON:
 		handler = slog.NewJSONHandler(os.Stdout, opts)
 	case LogFormatText:
@@ -77,14 +77,13 @@ func InitLogger() *Logger {
 	return &Logger{Logger: logger}
 }
 
-// getLoggerConfig reads logger configuration from environment variables
-func getLoggerConfig() LoggerConfig {
-	level := strings.ToLower(getEnvOrDefault(LOG_LEVEL_ENV_KEY, DEFAULT_LOG_LEVEL))
-	format := strings.ToLower(getEnvOrDefault(LOG_FORMAT_ENV_KEY, DEFAULT_LOG_FORMAT))
-
-	return LoggerConfig{
-		Level:  LogLevel(level),
-		Format: LogFormat(format),
+// setEnv reads logger configuration from environment variables
+func (c *LoggerConfig) setEnv() {
+	if level := strings.ToLower(getEnvOrDefault(LOG_LEVEL_ENV_KEY, DEFAULT_LOG_LEVEL)); level != "" {
+		c.Level = LogLevel(level)
+	}
+	if format := strings.ToLower(getEnvOrDefault(LOG_FORMAT_ENV_KEY, DEFAULT_LOG_FORMAT)); format != "" {
+		c.Format = LogFormat(format)
 	}
 }
 
@@ -236,7 +235,7 @@ var globalLogger *Logger
 // GetLogger returns the global logger instance
 func GetLogger() *Logger {
 	if globalLogger == nil {
-		globalLogger = InitLogger()
+		globalLogger = InitLogger(LoggerConfig{})
 	}
 	return globalLogger
 }
