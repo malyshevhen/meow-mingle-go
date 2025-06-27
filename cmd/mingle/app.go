@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gocql/gocql"
 	"github.com/malyshEvhen/meow_mingle/internal/api"
@@ -33,6 +34,13 @@ func New(ctx context.Context, cfg Config) (mingleApp *App, appError error) {
 	appLogger.WithComponent("auth").Info("Authentication provider initialized")
 
 	cluster := gocql.NewCluster(cfg.Database.URL)
+	cluster.Authenticator = gocql.PasswordAuthenticator{
+		Username: cfg.Database.User,
+		Password: cfg.Database.Password,
+	}
+	cluster.Consistency = gocql.Quorum
+	cluster.ProtoVersion = 4
+
 	appLogger.WithComponent("database").Info("Connecting to Cassandra", "host", cfg.Database.URL)
 
 	session, err := cluster.CreateSession()
@@ -43,9 +51,15 @@ func New(ctx context.Context, cfg Config) (mingleApp *App, appError error) {
 
 	appLogger.WithComponent("database").Info("Database session created successfully")
 
-	if err := migrate.ApplyMigrations(session, "migrations"); err != nil {
-		appLogger.WithComponent("database").Error("Failed to apply migrations", "error", err.Error())
-		return nil, fmt.Errorf("an error occurred when applying migrations: %s", err.Error())
+	// Run migrations if enabled
+	if shouldRunMigrations() {
+		appLogger.WithComponent("migration").Info("Running database migrations")
+		migrationsDir := getMigrationsDir()
+		if err := migrate.ApplyMigrations(session, migrationsDir); err != nil {
+			appLogger.WithComponent("migration").Error("Failed to apply migrations", "error", err.Error())
+			return nil, fmt.Errorf("migration failed: %w", err)
+		}
+		appLogger.WithComponent("migration").Info("Database migrations completed successfully")
 	}
 
 	profileRepo := db.NewProfileRepository(session)
@@ -89,6 +103,19 @@ func (app *App) Start(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// shouldRunMigrations checks if migrations should be run based on environment variable
+func shouldRunMigrations() bool {
+	return os.Getenv("RUN_MIGRATIONS") == "true"
+}
+
+// getMigrationsDir returns the migrations directory path
+func getMigrationsDir() string {
+	if dir := os.Getenv("MIGRATIONS_DIR"); dir != "" {
+		return dir
+	}
+	return "./migrations"
 }
 
 func (app *App) Stop(ctx context.Context) error {

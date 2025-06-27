@@ -52,8 +52,8 @@ type forbiddenError struct {
 	BasicError
 }
 
-func NewForbiddenError() *unauthorizedError {
-	return &unauthorizedError{
+func NewForbiddenError() *forbiddenError {
+	return &forbiddenError{
 		BasicError: BasicError{
 			message: "access denied",
 			code:    http.StatusForbidden,
