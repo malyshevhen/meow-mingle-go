@@ -15,6 +15,7 @@ import (
 	"github.com/malyshEvhen/meow_mingle/internal/auth"
 	"github.com/malyshEvhen/meow_mingle/internal/db"
 	"github.com/malyshEvhen/meow_mingle/pkg/logger"
+	"github.com/malyshEvhen/meow_mingle/pkg/migrate"
 )
 
 type App struct {
@@ -41,6 +42,11 @@ func New(ctx context.Context, cfg Config) (mingleApp *App, appError error) {
 	}
 
 	appLogger.WithComponent("database").Info("Database session created successfully")
+
+	if err := migrate.ApplyMigrations(session, "migrations"); err != nil {
+		appLogger.WithComponent("database").Error("Failed to apply migrations", "error", err.Error())
+		return nil, fmt.Errorf("an error occurred when applying migrations: %s", err.Error())
+	}
 
 	profileRepo := db.NewProfileRepository(session)
 	commentRepo := db.NewCommentRepository(session)
