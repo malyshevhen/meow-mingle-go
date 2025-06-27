@@ -99,3 +99,16 @@ func NewInternalServerError(err error) *internalServerError {
 		},
 	}
 }
+
+type conflictError struct {
+	BasicError
+}
+
+func NewConflictError(message string) *conflictError {
+	return &conflictError{
+		BasicError: BasicError{
+			message: message,
+			code:    http.StatusConflict,
+		},
+	}
+}
