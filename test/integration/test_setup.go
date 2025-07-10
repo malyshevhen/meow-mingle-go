@@ -33,7 +33,7 @@ func (otr *TestRunner) RunConcurrently(t *testing.T, operations ...func() error)
 	}
 
 	// Wait for all operations to complete
-	for i := 0; i < len(operations); i++ {
+	for i := range operations {
 		if err := <-done; err != nil {
 			t.Errorf("Concurrent operation %d failed: %v", i+1, err)
 		}

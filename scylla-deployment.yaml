@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/instrumenta/kubernetes-json-schema/refs/heads/master/v1.10.0-local/pod-v1.json
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: podmeow-mingle-go
+  name: podmeow-mingle-go
+spec:
+  containers:
+    - image: docker.io/scylladb/scylla:6.1
+      name: scyllamingle
+      args:
+        - --smp
+        - "1"
+        - --memory
+        - 1G
+        - --overprovisioned
+        - "1"
+        - --api-address
+        - 0.0.0.0
+      env:
+        - name: SCYLLA_USER
+          value: ${SCYLLA_USER:-scylla}
+        - name: SCYLLA_PASSWORD
+          value: ${SCYLLA_PASSWORD:-scyllapassword}
+      ports:
+        - containerPort: 9042
+          hostPort: 9042
+      volumeMounts:
+        - mountPath: /var/lib/scylla
+          name: meow-mingle-go-scylla-mingle-data-pvc
+      livenessProbe:
+        exec:
+          command:
+            - cqlsh
+            - -e
+            - describe keyspaces;
+        initialDelaySeconds: 5
+        periodSeconds: 5
+        failureThreshold: 5
+  volumes:
+    - name: meow-mingle-go-scylla-mingle-data-pvc
+      persistentVolumeClaim:
+        claimName: meow-mingle-go-scylla-mingle-data

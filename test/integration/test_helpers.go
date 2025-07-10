@@ -29,7 +29,7 @@ func (tg *TimeGenerator) Next() time.Time {
 // RetryOperation retries an operation with exponential backoff
 func RetryOperation(operation func() error, maxRetries int, baseDelay time.Duration) error {
 	var lastErr error
-	for i := 0; i < maxRetries; i++ {
+	for i := range maxRetries {
 		if err := operation(); err == nil {
 			return nil
 		} else {
@@ -37,10 +37,7 @@ func RetryOperation(operation func() error, maxRetries int, baseDelay time.Durat
 		}
 
 		if i < maxRetries-1 {
-			delay := baseDelay * time.Duration(1<<uint(i)) // Exponential backoff
-			if delay > 5*time.Second {
-				delay = 5 * time.Second // Cap at 5 seconds
-			}
+			delay := min(baseDelay*time.Duration(1<<uint(i)), 5*time.Second)
 			time.Sleep(delay)
 		}
 	}

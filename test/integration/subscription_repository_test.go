@@ -220,7 +220,7 @@ func (suite *SubscriptionRepositoryTestSuite) TestGetFollowers_WithLimit() {
 	followingID := "user1"
 
 	// Create 10 followers
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		followerID := "follower" + string(rune('0'+i))
 		err := suite.repo.CreateSubscription(suite.ctx, followerID, followingID)
 		require.NoError(suite.T(), err)

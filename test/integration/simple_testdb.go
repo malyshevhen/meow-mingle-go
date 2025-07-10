@@ -104,16 +104,13 @@ func createSessionWithRetries(host, port string) (*gocql.Session, error) {
 	var err error
 
 	// Retry connection with exponential backoff
-	for i := 0; i < 15; i++ {
+	for i := range 15 {
 		session, err = cluster.CreateSession()
 		if err == nil {
 			break
 		}
 
-		backoff := time.Duration(i+1) * time.Second
-		if backoff > 10*time.Second {
-			backoff = 10 * time.Second
-		}
+		backoff := min(time.Duration(i+1)*time.Second, 10*time.Second)
 
 		log.Printf("Attempt %d: Failed to connect to ScyllaDB, retrying in %v: %v", i+1, backoff, err)
 		time.Sleep(backoff)

@@ -17,47 +17,47 @@ func RegisterRouts(
 	subscriptionService app.SubscriptionService,
 	reactionService app.ReactionService,
 ) *mux.Router {
-	auth := func(handler api.Handler) http.HandlerFunc {
+	auth := func(handler api.Handler) http.Handler {
 		return authenticated(handler, authMW.Basic)
 	}
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 
 	// Feed API
-	r.HandleFunc("/feed", auth(handleGetFeed(postService))).Methods("GET")
+	r.Handle("/feed", auth(handleGetFeed(postService))).Methods("GET")
 
 	// Post API
-	r.HandleFunc("/posts", auth(handleCreatePost(postService))).Methods("POST")
-	r.HandleFunc("/posts", auth(handleGetPosts(postService))).Methods("GET")
-	r.HandleFunc("/posts/{id}", auth(handleGetPostById(postService))).Methods("GET")
-	r.HandleFunc("/posts/{id}", auth(handleUpdatePostById(postService))).Methods("PATCH")
-	r.HandleFunc("/posts/{id}", auth(handleDeletePostById(postService))).Methods("DELETE")
+	r.Handle("/posts", auth(handleCreatePost(postService))).Methods("POST")
+	r.Handle("/posts", auth(handleGetPosts(postService))).Methods("GET")
+	r.Handle("/posts/{id}", auth(handleGetPostById(postService))).Methods("GET")
+	r.Handle("/posts/{id}", auth(handleUpdatePostById(postService))).Methods("PATCH")
+	r.Handle("/posts/{id}", auth(handleDeletePostById(postService))).Methods("DELETE")
 
 	// Comment API
-	r.HandleFunc("/comments", auth(handleCreateComment(commentService))).Methods("POST")
-	r.HandleFunc("/comments", auth(handleGetComments(commentService))).Methods("GET")
-	r.HandleFunc("/comments/{id}", auth(handleUpdateComment(commentService))).Methods("PUT")
-	r.HandleFunc("/comments/{id}", auth(handleDeleteComment(commentService))).Methods("DELETE")
+	r.Handle("/comments", auth(handleCreateComment(commentService))).Methods("POST")
+	r.Handle("/comments", auth(handleGetComments(commentService))).Methods("GET")
+	r.Handle("/comments/{id}", auth(handleUpdateComment(commentService))).Methods("PUT")
+	r.Handle("/comments/{id}", auth(handleDeleteComment(commentService))).Methods("DELETE")
 
 	// Profile API
-	r.HandleFunc("/profiles", public(handleCreateProfile(profileService))).Methods("POST")
-	r.HandleFunc("/profiles/{id}", auth(handleGetProfile(profileService))).Methods("GET")
+	r.Handle("/profiles", public(handleCreateProfile(profileService))).Methods("POST")
+	r.Handle("/profiles/{id}", auth(handleGetProfile(profileService))).Methods("GET")
 
 	// Subscription API
-	r.HandleFunc("/subscriptions{id}", auth(handleSubscribe(subscriptionService))).Methods("POST")
-	r.HandleFunc("/subscriptions{id}", auth(handleUnsubscribe(subscriptionService))).Methods("DELETE")
+	r.Handle("/subscriptions{id}", auth(handleSubscribe(subscriptionService))).Methods("POST")
+	r.Handle("/subscriptions{id}", auth(handleUnsubscribe(subscriptionService))).Methods("DELETE")
 
 	// Reaction API
-	r.HandleFunc("/reactions", auth(handleCreateReaction(reactionService))).Methods("PUT")
-	r.HandleFunc("/reactions/{id}", auth(handleDeleteReaction(reactionService))).Methods("DELETE")
+	r.Handle("/reactions", auth(handleCreateReaction(reactionService))).Methods("PUT")
+	r.Handle("/reactions/{id}", auth(handleDeleteReaction(reactionService))).Methods("DELETE")
 
 	return r
 }
 
-func authenticated(handler api.Handler, authMW api.Middleware) http.HandlerFunc {
+func authenticated(handler api.Handler, authMW api.Middleware) http.Handler {
 	return middlewareChain(handler, loggerMW, ErrorHandler, authMW)
 }
 
-func public(handler api.Handler) http.HandlerFunc {
+func public(handler api.Handler) http.Handler {
 	return middlewareChain(handler, loggerMW, ErrorHandler)
 }

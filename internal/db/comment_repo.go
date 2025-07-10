@@ -88,8 +88,17 @@ func (cr *commentRepository) SaveComment(ctx context.Context, comment *app.Comme
 	comment.UpdatedAt = now
 
 	// Insert into main comments table
-	query := `INSERT INTO mingle.comments (id, post_id, author_id, content, created_at, updated_at)
-			  VALUES (?, ?, ?, ?, ?, ?)`
+	query := `
+INSERT INTO mingle.comments
+(
+	id,
+	post_id,
+	author_id,
+	content,
+	created_at,
+	updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?)`
 
 	err := cr.session.Query(query,
 		comment.ID,
@@ -110,8 +119,17 @@ func (cr *commentRepository) SaveComment(ctx context.Context, comment *app.Comme
 	}
 
 	// Insert into comments_by_post table for efficient post comment queries
-	postQuery := `INSERT INTO mingle.comments_by_post (post_id, created_at, comment_id, author_id, content, updated_at)
-				  VALUES (?, ?, ?, ?, ?, ?)`
+	postQuery := `
+INSERT INTO mingle.comments_by_post
+(
+	post_id,
+	created_at,
+	comment_id,
+	author_id,
+	content,
+	updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?)`
 
 	err = cr.session.Query(postQuery,
 		comment.PostID,
@@ -156,9 +174,17 @@ func (cr *commentRepository) GetByPost(ctx context.Context, postId string, limit
 
 	var comments []app.Comment
 
-	query := `SELECT comment_id, author_id, content, created_at, updated_at
-			  FROM mingle.comments_by_post WHERE post_id = ?
-			  ORDER BY created_at DESC LIMIT ?`
+	query := `
+SELECT
+	comment_id,
+	author_id,
+	content,
+	created_at,
+	updated_at
+FROM mingle.comments_by_post
+WHERE post_id = ?
+ORDER BY created_at DESC
+LIMIT ?`
 
 	iter := cr.session.Query(query, postId, limit).WithContext(ctx).Iter()
 	defer iter.Close()
@@ -201,8 +227,16 @@ func (cr *commentRepository) GetById(ctx context.Context, commentId string) (app
 
 	var comment app.Comment
 
-	query := `SELECT id, post_id, author_id, content, created_at, updated_at
-			  FROM mingle.comments WHERE id = ?`
+	query := `
+SELECT
+	id,
+	post_id,
+	author_id,
+	content,
+	created_at,
+	updated_at
+FROM mingle.comments
+WHERE id = ?`
 
 	err := cr.session.Query(query, commentId).WithContext(ctx).Scan(
 		&comment.ID,
@@ -252,7 +286,11 @@ func (cr *commentRepository) Update(ctx context.Context, commentId, content stri
 	now := time.Now()
 
 	// Update main comments table
-	query := `UPDATE mingle.comments SET content = ?, updated_at = ? WHERE id = ?`
+	query := `
+UPDATE mingle.comments
+SET content = ?, updated_at = ?
+WHERE id = ?`
+
 	err = cr.session.Query(query, content, now, commentId).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to update comment in main table",
@@ -263,8 +301,13 @@ func (cr *commentRepository) Update(ctx context.Context, commentId, content stri
 	}
 
 	// Update comments_by_post table
-	postQuery := `UPDATE mingle.comments_by_post SET content = ?, updated_at = ?
-				  WHERE post_id = ? AND created_at = ? AND comment_id = ?`
+	postQuery := `
+UPDATE mingle.comments_by_post
+SET content = ?, updated_at = ?
+WHERE post_id = ?
+AND created_at = ?
+AND comment_id = ?`
+
 	err = cr.session.Query(postQuery, content, now, currentComment.PostID, currentComment.CreatedAt, commentId).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to update comment in post table",
@@ -320,8 +363,12 @@ func (cr *commentRepository) Delete(ctx context.Context, userId, commentId strin
 	}
 
 	// Delete from comments_by_post table
-	postQuery := `DELETE FROM mingle.comments_by_post
-				  WHERE post_id = ? AND created_at = ? AND comment_id = ?`
+	postQuery := `
+DELETE FROM mingle.comments_by_post
+WHERE post_id = ?
+AND created_at = ?
+AND comment_id = ?`
+
 	err = cr.session.Query(postQuery, comment.PostID, comment.CreatedAt, commentId).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to delete comment from post table",

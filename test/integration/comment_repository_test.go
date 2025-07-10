@@ -195,7 +195,7 @@ func TestCommentRepository(t *testing.T) {
 		postID := uuid.New().String()
 
 		// Save 10 comments
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			_, err := repo.Save(ctx, authorID, postID, "Comment "+string(rune('0'+i)))
 			require.NoError(t, err)
 			time.Sleep(10 * time.Millisecond)
@@ -429,7 +429,7 @@ func TestCommentRepository(t *testing.T) {
 		postID := uuid.New().String()
 
 		// Save multiple comments
-		for i := 0; i < 5; i++ {
+		for i := range 5 {
 			_, err := repo.Save(ctx, authorID, postID, "Comment "+string(rune('0'+i)))
 			require.NoError(t, err)
 		}

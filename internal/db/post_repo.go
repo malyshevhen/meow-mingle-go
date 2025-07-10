@@ -79,8 +79,17 @@ func (pr *postRepository) SavePost(ctx context.Context, post *app.Post) error {
 	post.UpdatedAt = now
 
 	// Insert into main posts table
-	query := `INSERT INTO mingle.posts (id, author_id, content, image_urls, created_at, updated_at)
-			  VALUES (?, ?, ?, ?, ?, ?)`
+	query := `
+INSERT INTO mingle.posts
+(
+	id,
+	author_id,
+	content,
+	image_urls,
+	created_at,
+	updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?)`
 
 	var imageUrls []string // Empty list for now
 	err := pr.session.Query(query,
@@ -101,8 +110,17 @@ func (pr *postRepository) SavePost(ctx context.Context, post *app.Post) error {
 	}
 
 	// Insert into posts_by_author table for efficient author queries
-	authorQuery := `INSERT INTO mingle.posts_by_author (author_id, created_at, post_id, content, image_urls, updated_at)
-					VALUES (?, ?, ?, ?, ?, ?)`
+	authorQuery := `
+INSERT INTO mingle.posts_by_author
+(
+	author_id,
+	created_at,
+	post_id,
+	content,
+	image_urls,
+	updated_at
+)
+VALUES (?, ?, ?, ?, ?, ?)`
 
 	err = pr.session.Query(authorQuery,
 		post.AuthorID,
@@ -138,8 +156,16 @@ func (pr *postRepository) Get(ctx context.Context, postId string) (app.Post, err
 	var post app.Post
 	var imageUrls []string
 
-	query := `SELECT id, author_id, content, image_urls, created_at, updated_at
-			  FROM mingle.posts WHERE id = ?`
+	query := `
+SELECT
+	id,
+	author_id,
+	content,
+	image_urls,
+	created_at,
+	updated_at
+FROM mingle.posts
+WHERE id = ?`
 
 	err := pr.session.Query(query, postId).WithContext(ctx).Scan(
 		&post.ID,
@@ -180,9 +206,17 @@ func (pr *postRepository) Feed(ctx context.Context, userId string) ([]app.Post, 
 	// In a full implementation, this would be populated by a feed generation service
 	var posts []app.Post
 
-	query := `SELECT post_id, author_id, content, image_urls, created_at
-			  FROM mingle.user_feed WHERE user_id = ?
-			  ORDER BY created_at DESC LIMIT 20`
+	query := `
+SELECT
+	post_id,
+	author_id,
+	content,
+	image_urls,
+	created_at
+FROM mingle.user_feed
+WHERE user_id = ?
+ORDER BY created_at DESC
+LIMIT 20`
 
 	iter := pr.session.Query(query, userId).WithContext(ctx).Iter()
 	defer iter.Close()
@@ -234,9 +268,17 @@ func (pr *postRepository) GetByAuthor(ctx context.Context, authorId string, limi
 
 	var posts []app.Post
 
-	query := `SELECT post_id, content, image_urls, created_at, updated_at
-			  FROM mingle.posts_by_author WHERE author_id = ?
-			  ORDER BY created_at DESC LIMIT ?`
+	query := `
+SELECT
+	post_id,
+	content,
+	image_urls,
+	created_at,
+	updated_at
+FROM mingle.posts_by_author
+WHERE author_id = ?
+ORDER BY created_at DESC
+LIMIT ?`
 
 	iter := pr.session.Query(query, authorId, limit).WithContext(ctx).Iter()
 	defer iter.Close()
@@ -301,8 +343,13 @@ func (pr *postRepository) Update(ctx context.Context, postId, content string) (a
 	}
 
 	// Update posts_by_author table
-	authorQuery := `UPDATE mingle.posts_by_author SET content = ?, updated_at = ?
-					WHERE author_id = ? AND created_at = ? AND post_id = ?`
+	authorQuery := `
+UPDATE mingle.posts_by_author
+SET content = ?, updated_at = ?
+WHERE author_id = ?
+AND created_at = ?
+AND post_id = ?`
+
 	err = pr.session.Query(authorQuery, content, now, currentPost.AuthorID, currentPost.CreatedAt, postId).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to update post in author table",
@@ -349,8 +396,12 @@ func (pr *postRepository) Delete(ctx context.Context, postId string) error {
 	}
 
 	// Delete from posts_by_author table
-	authorQuery := `DELETE FROM mingle.posts_by_author
-					WHERE author_id = ? AND created_at = ? AND post_id = ?`
+	authorQuery := `
+DELETE FROM mingle.posts_by_author
+WHERE author_id = ?
+AND created_at = ?
+AND post_id = ?`
+
 	err = pr.session.Query(authorQuery, post.AuthorID, post.CreatedAt, postId).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to delete post from author table",

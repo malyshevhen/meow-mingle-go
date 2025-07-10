@@ -428,7 +428,7 @@ func TestProfileRepository(t *testing.T) {
 		// Given
 		numProfiles := 5
 		profiles := make([]TestProfile, numProfiles)
-		for i := 0; i < numProfiles; i++ {
+		for i := range numProfiles {
 			profiles[i] = dataBuilder.CreateTestProfile(string(rune('b' + i)))
 		}
 

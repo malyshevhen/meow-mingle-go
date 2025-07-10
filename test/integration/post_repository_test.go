@@ -200,7 +200,7 @@ func TestPostRepository(t *testing.T) {
 		authorID := "author123"
 
 		// Save 10 posts
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			_, err := repo.Save(ctx, authorID, "Post "+string(rune('0'+i)))
 			require.NoError(t, err)
 			time.Sleep(10 * time.Millisecond)
