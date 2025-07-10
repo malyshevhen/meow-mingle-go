@@ -15,5 +15,5 @@ type Reaction struct {
 
 type ReactionService interface {
 	Add(ctx context.Context, reaction *Reaction) error
-	Remove(ctx context.Context, reactionId string) error
+	Remove(ctx context.Context, reactionID string) error
 }

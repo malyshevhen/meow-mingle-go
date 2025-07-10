@@ -19,7 +19,7 @@ type profileRepository struct {
 type ProfileRepository interface {
 	Save(ctx context.Context, userId, email, firstName, lastName string) (app.Profile, error)
 	SaveProfile(ctx context.Context, profile *app.Profile) error
-	GetById(ctx context.Context, id string) (app.Profile, error)
+	GetByID(ctx context.Context, id string) (app.Profile, error)
 	GetByEmail(ctx context.Context, email string) (app.Profile, error)
 	Update(ctx context.Context, profile *app.Profile) error
 	Delete(ctx context.Context, userId string) error
@@ -98,7 +98,7 @@ func (pr *profileRepository) SaveProfile(ctx context.Context, profile *app.Profi
 }
 
 // GetById retrieves a profile by user ID
-func (pr *profileRepository) GetById(ctx context.Context, id string) (app.Profile, error) {
+func (pr *profileRepository) GetByID(ctx context.Context, id string) (app.Profile, error) {
 	if id == "" {
 		return app.Profile{}, errors.NewValidationError("user ID is required")
 	}

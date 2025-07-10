@@ -44,6 +44,6 @@ func NewComment(ctx context.Context, postID, content string) (*Comment, error) {
 type CommentService interface {
 	Add(ctx context.Context, comment *Comment) error
 	List(ctx context.Context, postID string) (comments []*Comment, err error)
-	Update(ctx context.Context, commentId, content string) error
-	Remove(ctx context.Context, commentId string) error
+	Update(ctx context.Context, commentID, content string) error
+	Remove(ctx context.Context, commentID string) error
 }

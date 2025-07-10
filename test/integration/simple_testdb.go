@@ -148,28 +148,10 @@ func (db *SimpleTestDB) ApplyMigrations(ctx context.Context) error {
 
 // Clean truncates all tables for test cleanup
 func (db *SimpleTestDB) Clean(ctx context.Context) error {
-	tables := []string{
-		"mingle.profiles",
-		"mingle.posts",
-		"mingle.posts_by_author",
-		"mingle.comments",
-		"mingle.comments_by_post",
-		"mingle.reactions",
-		"mingle.reactions_by_target",
-		"mingle.subscriptions",
-		"mingle.followers",
-		"mingle.user_feed",
-		"mingle.user_activity",
+	if err := db.Session.Query("DROP KEYSPACE IF EXISTS mingle").Exec(); err != nil {
+		log.Printf("Warning: failed to drop keyspace: %v", err)
 	}
-
-	for _, table := range tables {
-		query := fmt.Sprintf("TRUNCATE %s", table)
-		if err := db.Session.Query(query).Exec(); err != nil {
-			log.Printf("Warning: failed to truncate table %s: %v", table, err)
-		}
-	}
-
-	return nil
+	return db.ApplyMigrations(ctx)
 }
 
 // Close closes the session and terminates the container

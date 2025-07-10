@@ -18,5 +18,5 @@ type Profile struct {
 
 type ProfileService interface {
 	Create(ctx context.Context, profile *Profile) error
-	GetById(ctx context.Context, userId string) (profile *Profile, err error)
+	GetByID(ctx context.Context, userID string) (profile *Profile, err error)
 }

@@ -13,8 +13,8 @@ type Subscription struct {
 }
 
 type SubscriptionService interface {
-	Subscribe(ctx context.Context, followingId string) error
-	Unsubscribe(ctx context.Context, followingId string) error
-	ListFollowings(ctx context.Context, followerId string) (subscriptions []*Subscription, err error)
-	ListFollowers(ctx context.Context, followingId string) (subscriptions []*Subscription, err error)
+	Subscribe(ctx context.Context, followingID string) error
+	Unsubscribe(ctx context.Context, followingID string) error
+	ListFollowings(ctx context.Context, followerID string) (subscriptions []*Subscription, err error)
+	ListFollowers(ctx context.Context, followingID string) (subscriptions []*Subscription, err error)
 }

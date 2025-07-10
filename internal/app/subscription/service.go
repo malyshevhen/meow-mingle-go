@@ -7,8 +7,8 @@ import (
 )
 
 type repository interface {
-	CreateSubscription(ctx context.Context, followerId, followingId string) error
-	DeleteSubscription(ctx context.Context, followerId, followingId string) error
+	CreateSubscription(ctx context.Context, followerID, followingID string) error
+	DeleteSubscription(ctx context.Context, followerID, followingID string) error
 }
 
 type service struct {
@@ -16,22 +16,22 @@ type service struct {
 }
 
 // Subscribe implements app.SubscriptionService.
-func (s *service) Subscribe(ctx context.Context, followingId string) error {
+func (s *service) Subscribe(ctx context.Context, followingID string) error {
 	panic("unimplemented")
 }
 
 // Unsubscribe implements app.SubscriptionService.
-func (s *service) Unsubscribe(ctx context.Context, subscriptionId string) error {
+func (s *service) Unsubscribe(ctx context.Context, subscriptionID string) error {
 	panic("unimplemented")
 }
 
 // ListFollowings implements app.SubscriptionService.
-func (s *service) ListFollowings(ctx context.Context, followerId string) (subscriptions []*app.Subscription, err error) {
+func (s *service) ListFollowings(ctx context.Context, followerID string) (subscriptions []*app.Subscription, err error) {
 	panic("unimplemented")
 }
 
 // ListFollowers implements app.SubscriptionService.
-func (s *service) ListFollowers(ctx context.Context, followingId string) (subscriptions []*app.Subscription, err error) {
+func (s *service) ListFollowers(ctx context.Context, followingID string) (subscriptions []*app.Subscription, err error) {
 	panic("unimplemented")
 }
 

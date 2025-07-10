@@ -96,7 +96,7 @@ func TestProfileRepository(t *testing.T) {
 		assert.Contains(t, err.Error(), "profile cannot be nil")
 	})
 
-	t.Run("GetById Success", func(t *testing.T) {
+	t.Run("GetByID Success", func(t *testing.T) {
 		// Given
 		testData := dataBuilder.CreateTestProfile("get-by-id-success")
 
@@ -105,7 +105,7 @@ func TestProfileRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// When
-		profile, err := repo.GetById(ctx, testData.UserID)
+		profile, err := repo.GetByID(ctx, testData.UserID)
 
 		// Then
 		assert.NoError(t, err)
@@ -115,21 +115,21 @@ func TestProfileRepository(t *testing.T) {
 		assert.Equal(t, testData.LastName, profile.LastName)
 	})
 
-	t.Run("GetById Not Found", func(t *testing.T) {
+	t.Run("GetByID Not Found", func(t *testing.T) {
 		// Given
 		userID := dataBuilder.UserID("nonexistent-get-by-id")
 
 		// When
-		_, err = repo.GetById(ctx, userID)
+		_, err = repo.GetByID(ctx, userID)
 
 		// Then
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "profile not found")
 	})
 
-	t.Run("GetById Validation Error - Empty UserID", func(t *testing.T) {
+	t.Run("GetByID Validation Error - Empty UserID", func(t *testing.T) {
 		// When
-		_, err = repo.GetById(ctx, "")
+		_, err = repo.GetByID(ctx, "")
 
 		// Then
 		assert.Error(t, err)
@@ -196,7 +196,7 @@ func TestProfileRepository(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Verify update
-		updatedProfile, err := repo.GetById(ctx, testData.UserID)
+		updatedProfile, err := repo.GetByID(ctx, testData.UserID)
 		require.NoError(t, err)
 		assert.Equal(t, "UpdatedFirstName", updatedProfile.FirstName)
 		assert.Equal(t, dataBuilder.Email("updated-email"), updatedProfile.Email)
@@ -262,7 +262,7 @@ func TestProfileRepository(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Verify deletion
-		_, err = repo.GetById(ctx, testData.UserID)
+		_, err = repo.GetByID(ctx, testData.UserID)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "profile not found")
 	})
@@ -343,11 +343,11 @@ func TestProfileRepository(t *testing.T) {
 		)
 
 		// Then - verify both profiles exist
-		profile1, err := repo.GetById(ctx, testData1.UserID)
+		profile1, err := repo.GetByID(ctx, testData1.UserID)
 		assert.NoError(t, err)
 		assert.Equal(t, testData1.UserID, profile1.UserID)
 
-		profile2, err := repo.GetById(ctx, testData2.UserID)
+		profile2, err := repo.GetByID(ctx, testData2.UserID)
 		assert.NoError(t, err)
 		assert.Equal(t, testData2.UserID, profile2.UserID)
 	})
@@ -390,7 +390,7 @@ func TestProfileRepository(t *testing.T) {
 		assert.Equal(t, string(largeLastName), profile.LastName)
 
 		// Verify by retrieving
-		retrievedProfile, err := repo.GetById(ctx, profile.UserID)
+		retrievedProfile, err := repo.GetByID(ctx, profile.UserID)
 		assert.NoError(t, err)
 		assert.Equal(t, string(largeFirstName), retrievedProfile.FirstName)
 		assert.Equal(t, string(largeLastName), retrievedProfile.LastName)
@@ -410,7 +410,7 @@ func TestProfileRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify update
-		updatedProfile, err := repo.GetById(ctx, testData.UserID)
+		updatedProfile, err := repo.GetByID(ctx, testData.UserID)
 		require.NoError(t, err)
 		assert.Equal(t, "UpdatedName", updatedProfile.FirstName)
 
@@ -419,7 +419,7 @@ func TestProfileRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify deletion
-		_, err = repo.GetById(ctx, testData.UserID)
+		_, err = repo.GetByID(ctx, testData.UserID)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "profile not found")
 	})
@@ -440,7 +440,7 @@ func TestProfileRepository(t *testing.T) {
 
 		// Then - verify all profiles exist
 		for _, testData := range profiles {
-			profile, err := repo.GetById(ctx, testData.UserID)
+			profile, err := repo.GetByID(ctx, testData.UserID)
 			assert.NoError(t, err)
 			assert.Equal(t, testData.UserID, profile.UserID)
 			assert.Equal(t, testData.Email, profile.Email)

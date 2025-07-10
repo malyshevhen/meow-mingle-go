@@ -40,7 +40,7 @@ type PostService interface {
 	Create(ctx context.Context, post *Post) error
 	Get(ctx context.Context, id string) (post *Post, err error)
 	Feed(ctx context.Context) (feed []*Post, err error)
-	List(ctx context.Context, authorId string) (posts []*Post, err error)
-	Edit(ctx context.Context, postId, content string) error
-	Delete(ctx context.Context, postId string) error
+	List(ctx context.Context, authorID string) (posts []*Post, err error)
+	Edit(ctx context.Context, postID, content string) error
+	Delete(ctx context.Context, postID string) error
 }

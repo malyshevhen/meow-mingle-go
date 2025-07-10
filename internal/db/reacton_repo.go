@@ -17,23 +17,23 @@ type reactionRepository struct {
 
 // ReactionRepository defines the interface for reaction data operations
 type ReactionRepository interface {
-	Save(ctx context.Context, targetId, authorId, content string) error
+	Save(ctx context.Context, targetID, authorID, content string) error
 	SaveReaction(ctx context.Context, reaction *app.Reaction) error
-	Delete(ctx context.Context, targetId, authorId string) error
-	GetByTarget(ctx context.Context, targetId, targetType string) ([]app.Reaction, error)
-	GetByAuthor(ctx context.Context, authorId string, limit int) ([]app.Reaction, error)
-	Exists(ctx context.Context, targetId, authorId string) (bool, error)
-	CountByTarget(ctx context.Context, targetId, targetType string) (map[string]int, error)
-	GetReactionTypes(ctx context.Context, targetId, targetType string) ([]string, error)
+	Delete(ctx context.Context, targetID, authorID string) error
+	GetByTarget(ctx context.Context, targetID, targetType string) ([]app.Reaction, error)
+	GetByAuthor(ctx context.Context, authorID string, limit int) ([]app.Reaction, error)
+	Exists(ctx context.Context, targetID, authorID string) (bool, error)
+	CountByTarget(ctx context.Context, targetID, targetType string) (map[string]int, error)
+	GetReactionTypes(ctx context.Context, targetID, targetType string) ([]string, error)
 }
 
 // Save creates a new reaction with the given parameters (legacy method)
-func (rr *reactionRepository) Save(ctx context.Context, targetId, authorId, content string) error {
-	if targetId == "" {
+func (rr *reactionRepository) Save(ctx context.Context, targetID, authorID, content string) error {
+	if targetID == "" {
 		return errors.NewValidationError("target ID is required")
 	}
 
-	if authorId == "" {
+	if authorID == "" {
 		return errors.NewValidationError("author ID is required")
 	}
 
@@ -42,8 +42,8 @@ func (rr *reactionRepository) Save(ctx context.Context, targetId, authorId, cont
 	}
 
 	reaction := &app.Reaction{
-		TargetID:  targetId,
-		AuthorID:  authorId,
+		TargetID:  targetID,
+		AuthorID:  authorID,
 		Content:   content,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -135,17 +135,17 @@ func (rr *reactionRepository) SaveReaction(ctx context.Context, reaction *app.Re
 }
 
 // Delete removes a reaction
-func (rr *reactionRepository) Delete(ctx context.Context, targetId, authorId string) error {
-	if targetId == "" {
+func (rr *reactionRepository) Delete(ctx context.Context, targetID, authorID string) error {
+	if targetID == "" {
 		return errors.NewValidationError("target ID is required")
 	}
 
-	if authorId == "" {
+	if authorID == "" {
 		return errors.NewValidationError("author ID is required")
 	}
 
 	// Check if reaction exists
-	exists, err := rr.Exists(ctx, targetId, authorId)
+	exists, err := rr.Exists(ctx, targetID, authorID)
 	if err != nil {
 		return err
 	}
@@ -159,11 +159,11 @@ func (rr *reactionRepository) Delete(ctx context.Context, targetId, authorId str
 
 	// Delete from main reactions table
 	query := `DELETE FROM mingle.reactions WHERE target_id = ? AND target_type = ? AND author_id = ?`
-	err = rr.session.Query(query, targetId, targetType, authorId).WithContext(ctx).Exec()
+	err = rr.session.Query(query, targetID, targetType, authorID).WithContext(ctx).Exec()
 	if err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to delete reaction from main table",
-			"target_id", targetId,
-			"author_id", authorId,
+			"target_id", targetID,
+			"author_id", authorID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
@@ -172,27 +172,27 @@ func (rr *reactionRepository) Delete(ctx context.Context, targetId, authorId str
 	// Delete from reactions_by_target table
 	// Note: We need to get the reaction type first for proper deletion
 	targetQuery := `DELETE FROM mingle.reactions_by_target WHERE target_id = ? AND target_type = ? AND author_id = ?`
-	err = rr.session.Query(targetQuery, targetId, targetType, authorId).WithContext(ctx).Exec()
+	err = rr.session.Query(targetQuery, targetID, targetType, authorID).WithContext(ctx).Exec()
 	if err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to delete reaction from target table",
-			"target_id", targetId,
-			"author_id", authorId,
+			"target_id", targetID,
+			"author_id", authorID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
 	}
 
 	rr.logger.WithComponent("reaction-repository").Info("Reaction deleted successfully",
-		"target_id", targetId,
-		"author_id", authorId,
+		"target_id", targetID,
+		"author_id", authorID,
 	)
 
 	return nil
 }
 
 // GetByTarget retrieves reactions for a specific target
-func (rr *reactionRepository) GetByTarget(ctx context.Context, targetId, targetType string) ([]app.Reaction, error) {
-	if targetId == "" {
+func (rr *reactionRepository) GetByTarget(ctx context.Context, targetID, targetType string) ([]app.Reaction, error) {
+	if targetID == "" {
 		return nil, errors.NewValidationError("target ID is required")
 	}
 
@@ -205,16 +205,16 @@ func (rr *reactionRepository) GetByTarget(ctx context.Context, targetId, targetT
 	query := `SELECT reaction_type, author_id, created_at
 			  FROM mingle.reactions_by_target WHERE target_id = ? AND target_type = ?`
 
-	iter := rr.session.Query(query, targetId, targetType).WithContext(ctx).Iter()
+	iter := rr.session.Query(query, targetID, targetType).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var reactionType, authorId string
+	var reactionType, authorID string
 	var createdAt time.Time
 
-	for iter.Scan(&reactionType, &authorId, &createdAt) {
+	for iter.Scan(&reactionType, &authorID, &createdAt) {
 		reactions = append(reactions, app.Reaction{
-			TargetID:  targetId,
-			AuthorID:  authorId,
+			TargetID:  targetID,
+			AuthorID:  authorID,
 			Content:   reactionType,
 			CreatedAt: createdAt,
 			UpdatedAt: createdAt,
@@ -223,7 +223,7 @@ func (rr *reactionRepository) GetByTarget(ctx context.Context, targetId, targetT
 
 	if err := iter.Close(); err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to get reactions by target",
-			"target_id", targetId,
+			"target_id", targetID,
 			"target_type", targetType,
 			"error", err.Error(),
 		)
@@ -231,7 +231,7 @@ func (rr *reactionRepository) GetByTarget(ctx context.Context, targetId, targetT
 	}
 
 	rr.logger.WithComponent("reaction-repository").Debug("Reactions by target retrieved successfully",
-		"target_id", targetId,
+		"target_id", targetID,
 		"target_type", targetType,
 		"reactions_count", len(reactions),
 	)
@@ -240,8 +240,8 @@ func (rr *reactionRepository) GetByTarget(ctx context.Context, targetId, targetT
 }
 
 // GetByAuthor retrieves reactions by a specific author
-func (rr *reactionRepository) GetByAuthor(ctx context.Context, authorId string, limit int) ([]app.Reaction, error) {
-	if authorId == "" {
+func (rr *reactionRepository) GetByAuthor(ctx context.Context, authorID string, limit int) ([]app.Reaction, error) {
+	if authorID == "" {
 		return nil, errors.NewValidationError("author ID is required")
 	}
 
@@ -254,16 +254,16 @@ func (rr *reactionRepository) GetByAuthor(ctx context.Context, authorId string, 
 	query := `SELECT target_id, target_type, reaction_type, created_at
 			  FROM mingle.reactions WHERE author_id = ? LIMIT ?`
 
-	iter := rr.session.Query(query, authorId, limit).WithContext(ctx).Iter()
+	iter := rr.session.Query(query, authorID, limit).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var targetId, targetType, reactionType string
+	var targetID, targetType, reactionType string
 	var createdAt time.Time
 
-	for iter.Scan(&targetId, &targetType, &reactionType, &createdAt) {
+	for iter.Scan(&targetID, &targetType, &reactionType, &createdAt) {
 		reactions = append(reactions, app.Reaction{
-			TargetID:  targetId,
-			AuthorID:  authorId,
+			TargetID:  targetID,
+			AuthorID:  authorID,
 			Content:   reactionType,
 			CreatedAt: createdAt,
 			UpdatedAt: createdAt,
@@ -272,14 +272,14 @@ func (rr *reactionRepository) GetByAuthor(ctx context.Context, authorId string, 
 
 	if err := iter.Close(); err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to get reactions by author",
-			"author_id", authorId,
+			"author_id", authorID,
 			"error", err.Error(),
 		)
 		return nil, errors.NewDatabaseError(err)
 	}
 
 	rr.logger.WithComponent("reaction-repository").Debug("Reactions by author retrieved successfully",
-		"author_id", authorId,
+		"author_id", authorID,
 		"reactions_count", len(reactions),
 	)
 
@@ -287,12 +287,12 @@ func (rr *reactionRepository) GetByAuthor(ctx context.Context, authorId string, 
 }
 
 // Exists checks if a reaction exists for a target by a specific author
-func (rr *reactionRepository) Exists(ctx context.Context, targetId, authorId string) (bool, error) {
-	if targetId == "" {
+func (rr *reactionRepository) Exists(ctx context.Context, targetID, authorID string) (bool, error) {
+	if targetID == "" {
 		return false, errors.NewValidationError("target ID is required")
 	}
 
-	if authorId == "" {
+	if authorID == "" {
 		return false, errors.NewValidationError("author ID is required")
 	}
 
@@ -301,11 +301,11 @@ func (rr *reactionRepository) Exists(ctx context.Context, targetId, authorId str
 
 	query := `SELECT COUNT(*) FROM mingle.reactions WHERE target_id = ? AND target_type = ? AND author_id = ?`
 
-	err := rr.session.Query(query, targetId, targetType, authorId).WithContext(ctx).Scan(&count)
+	err := rr.session.Query(query, targetID, targetType, authorID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to check reaction existence",
-			"target_id", targetId,
-			"author_id", authorId,
+			"target_id", targetID,
+			"author_id", authorID,
 			"error", err.Error(),
 		)
 		return false, errors.NewDatabaseError(err)
@@ -315,8 +315,8 @@ func (rr *reactionRepository) Exists(ctx context.Context, targetId, authorId str
 }
 
 // CountByTarget counts reactions by type for a specific target
-func (rr *reactionRepository) CountByTarget(ctx context.Context, targetId, targetType string) (map[string]int, error) {
-	if targetId == "" {
+func (rr *reactionRepository) CountByTarget(ctx context.Context, targetID, targetType string) (map[string]int, error) {
+	if targetID == "" {
 		return nil, errors.NewValidationError("target ID is required")
 	}
 
@@ -329,7 +329,7 @@ func (rr *reactionRepository) CountByTarget(ctx context.Context, targetId, targe
 	query := `SELECT reaction_type, COUNT(*) FROM mingle.reactions_by_target
 			  WHERE target_id = ? AND target_type = ? GROUP BY reaction_type`
 
-	iter := rr.session.Query(query, targetId, targetType).WithContext(ctx).Iter()
+	iter := rr.session.Query(query, targetID, targetType).WithContext(ctx).Iter()
 	defer iter.Close()
 
 	var reactionType string
@@ -341,7 +341,7 @@ func (rr *reactionRepository) CountByTarget(ctx context.Context, targetId, targe
 
 	if err := iter.Close(); err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to count reactions by target",
-			"target_id", targetId,
+			"target_id", targetID,
 			"target_type", targetType,
 			"error", err.Error(),
 		)
@@ -352,8 +352,8 @@ func (rr *reactionRepository) CountByTarget(ctx context.Context, targetId, targe
 }
 
 // GetReactionTypes retrieves unique reaction types for a target
-func (rr *reactionRepository) GetReactionTypes(ctx context.Context, targetId, targetType string) ([]string, error) {
-	if targetId == "" {
+func (rr *reactionRepository) GetReactionTypes(ctx context.Context, targetID, targetType string) ([]string, error) {
+	if targetID == "" {
 		return nil, errors.NewValidationError("target ID is required")
 	}
 
@@ -366,7 +366,7 @@ func (rr *reactionRepository) GetReactionTypes(ctx context.Context, targetId, ta
 	query := `SELECT DISTINCT reaction_type FROM mingle.reactions_by_target
 			  WHERE target_id = ? AND target_type = ?`
 
-	iter := rr.session.Query(query, targetId, targetType).WithContext(ctx).Iter()
+	iter := rr.session.Query(query, targetID, targetType).WithContext(ctx).Iter()
 	defer iter.Close()
 
 	var reactionType string
@@ -377,7 +377,7 @@ func (rr *reactionRepository) GetReactionTypes(ctx context.Context, targetId, ta
 
 	if err := iter.Close(); err != nil {
 		rr.logger.WithComponent("reaction-repository").Error("Failed to get reaction types",
-			"target_id", targetId,
+			"target_id", targetID,
 			"target_type", targetType,
 			"error", err.Error(),
 		)

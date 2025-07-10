@@ -7,8 +7,8 @@ import (
 )
 
 type repository interface {
-	Save(ctx context.Context, targetId, authorId, content string) error
-	Delete(ctx context.Context, targetId, authorId string) error
+	Save(ctx context.Context, targetID, authorID, content string) error
+	Delete(ctx context.Context, targetID, authorID string) error
 }
 
 type service struct {
@@ -21,7 +21,7 @@ func (s *service) Add(ctx context.Context, reaction *app.Reaction) error {
 }
 
 // Remove implements app.ReactionService.
-func (s *service) Remove(ctx context.Context, reactionId string) error {
+func (s *service) Remove(ctx context.Context, reactionID string) error {
 	panic("unimplemented")
 }
 

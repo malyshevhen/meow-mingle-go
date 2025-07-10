@@ -50,7 +50,7 @@ func handleGetProfile(profileService app.ProfileService) api.Handler {
 			return err
 		}
 
-		profile, err := profileService.GetById(ctx, id)
+		profile, err := profileService.GetByID(ctx, id)
 		if err != nil {
 			logger.WithError(err).Warn("Profile not found for Id: " + id)
 			return err
