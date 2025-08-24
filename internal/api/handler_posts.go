@@ -13,7 +13,7 @@ func handleCreatePost(postService app.PostService) api.Handler {
 		logger := logger.GetLogger().WithComponent("post_handler")
 		ctx := r.Context()
 
-		req, err := readBody[ContentForm](r)
+		req, err := readValidBody[ContentForm](r)
 		if err != nil {
 			logger.WithError(err).Error("Error reading post request")
 			return err
@@ -55,12 +55,12 @@ func handleGetPosts(postService app.PostService) api.Handler {
 	}
 }
 
-func handleGetPostById(postService app.PostService) api.Handler {
+func handleGetPostByID(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		logger := logger.GetLogger().WithComponent("post_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error parsing Id parameter")
 			return err
@@ -78,18 +78,18 @@ func handleGetPostById(postService app.PostService) api.Handler {
 	}
 }
 
-func handleUpdatePostById(postService app.PostService) api.Handler {
+func handleUpdatePostByID(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		logger := logger.GetLogger().WithComponent("post_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error parsing Id parameter")
 			return err
 		}
 
-		req, err := readBody[ContentForm](r)
+		req, err := readValidBody[ContentForm](r)
 		if err != nil {
 			logger.WithError(err).Error("Error reading update request")
 			return err
@@ -106,12 +106,12 @@ func handleUpdatePostById(postService app.PostService) api.Handler {
 	}
 }
 
-func handleDeletePostById(postService app.PostService) api.Handler {
+func handleDeletePostByID(postService app.PostService) api.Handler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		logger := logger.GetLogger().WithComponent("post_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error parsing Id parameter")
 			return err

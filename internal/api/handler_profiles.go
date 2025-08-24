@@ -13,7 +13,7 @@ func handleCreateProfile(profileService app.ProfileService) api.Handler {
 		logger := logger.GetLogger().WithComponent("profile_handler")
 		ctx := r.Context()
 
-		profileForm, err := readBody[CreateProfileForm](r)
+		profileForm, err := readValidBody[CreateProfileForm](r)
 		if err != nil {
 			logger.WithError(err).Error("Error reading request body")
 			return err
@@ -44,7 +44,7 @@ func handleGetProfile(profileService app.ProfileService) api.Handler {
 		logger := logger.GetLogger().WithComponent("profile_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error parsing Id parameter")
 			return err

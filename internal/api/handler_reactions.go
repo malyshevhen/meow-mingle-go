@@ -13,7 +13,7 @@ func handleCreateReaction(reactionService app.ReactionService) api.Handler {
 		logger := logger.GetLogger().WithComponent("reaction_handler")
 		ctx := r.Context()
 
-		content, err := readBody[CreateCommentRequest](r)
+		content, err := readValidBody[CreateCommentRequest](r)
 		if err != nil {
 			logger.WithError(err).Error("Error reading reaction request")
 			return err
@@ -39,7 +39,7 @@ func handleDeleteReaction(reactionService app.ReactionService) api.Handler {
 		logger := logger.GetLogger().WithComponent("reaction_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error getting reaction id")
 			return err

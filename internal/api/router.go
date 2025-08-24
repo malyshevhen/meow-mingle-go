@@ -29,9 +29,9 @@ func RegisterRouts(
 	// Post API
 	r.Handle("/posts", auth(handleCreatePost(postService))).Methods("POST")
 	r.Handle("/posts", auth(handleGetPosts(postService))).Methods("GET")
-	r.Handle("/posts/{id}", auth(handleGetPostById(postService))).Methods("GET")
-	r.Handle("/posts/{id}", auth(handleUpdatePostById(postService))).Methods("PATCH")
-	r.Handle("/posts/{id}", auth(handleDeletePostById(postService))).Methods("DELETE")
+	r.Handle("/posts/{id}", auth(handleGetPostByID(postService))).Methods("GET")
+	r.Handle("/posts/{id}", auth(handleUpdatePostByID(postService))).Methods("PATCH")
+	r.Handle("/posts/{id}", auth(handleDeletePostByID(postService))).Methods("DELETE")
 
 	// Comment API
 	r.Handle("/comments", auth(handleCreateComment(commentService))).Methods("POST")
@@ -44,8 +44,8 @@ func RegisterRouts(
 	r.Handle("/profiles/{id}", auth(handleGetProfile(profileService))).Methods("GET")
 
 	// Subscription API
-	r.Handle("/subscriptions{id}", auth(handleSubscribe(subscriptionService))).Methods("POST")
-	r.Handle("/subscriptions{id}", auth(handleUnsubscribe(subscriptionService))).Methods("DELETE")
+	r.Handle("/subscriptions/{id}", auth(handleSubscribe(subscriptionService))).Methods("POST")
+	r.Handle("/subscriptions/{id}", auth(handleUnsubscribe(subscriptionService))).Methods("DELETE")
 
 	// Reaction API
 	r.Handle("/reactions", auth(handleCreateReaction(reactionService))).Methods("PUT")

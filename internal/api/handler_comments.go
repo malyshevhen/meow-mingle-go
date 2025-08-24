@@ -14,7 +14,7 @@ func handleCreateComment(commentService app.CommentService) api.Handler {
 		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
-		content, err := readBody[CreateCommentRequest](r)
+		content, err := readValidBody[CreateCommentRequest](r)
 		if err != nil {
 			logger.WithError(err).Error("Error reading comment request")
 			return err
@@ -67,13 +67,13 @@ func handleUpdateComment(commentService app.CommentService) api.Handler {
 		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error parsing Id parameter")
 			return err
 		}
 
-		content, err := readBody[ContentForm](r)
+		content, err := readValidBody[ContentForm](r)
 		if err != nil {
 			logger.WithError(err).Error("Error reading comment request")
 			return err
@@ -95,7 +95,7 @@ func handleDeleteComment(commentService app.CommentService) api.Handler {
 		logger := logger.GetLogger().WithComponent("comment_handler")
 		ctx := r.Context()
 
-		id, err := iaPathParam(r)
+		id, err := idPathParam(r)
 		if err != nil {
 			logger.WithError(err).Error("Error parsing Id parameter")
 			return err
