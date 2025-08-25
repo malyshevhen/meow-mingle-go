@@ -49,39 +49,39 @@ func TestGetEnvOrDefault(t *testing.T) {
 
 func TestLoggerConfig(t *testing.T) {
 	// Save original environment variables
-	originalLevel := os.Getenv(LOG_LEVEL_ENV_KEY)
-	originalFormat := os.Getenv(LOG_FORMAT_ENV_KEY)
+	originalLevel := os.Getenv(LogLevelEnvKey)
+	originalFormat := os.Getenv(LogFormatEnvKey)
 
 	// Clean up after test
 	defer func() {
 		if originalLevel != "" {
-			os.Setenv(LOG_LEVEL_ENV_KEY, originalLevel)
+			os.Setenv(LogLevelEnvKey, originalLevel)
 		} else {
-			os.Unsetenv(LOG_LEVEL_ENV_KEY)
+			os.Unsetenv(LogLevelEnvKey)
 		}
 		if originalFormat != "" {
-			os.Setenv(LOG_FORMAT_ENV_KEY, originalFormat)
+			os.Setenv(LogFormatEnvKey, originalFormat)
 		} else {
-			os.Unsetenv(LOG_FORMAT_ENV_KEY)
+			os.Unsetenv(LogFormatEnvKey)
 		}
 	}()
 
 	// Test default values
-	os.Unsetenv(LOG_LEVEL_ENV_KEY)
-	os.Unsetenv(LOG_FORMAT_ENV_KEY)
+	os.Unsetenv(LogLevelEnvKey)
+	os.Unsetenv(LogFormatEnvKey)
 
 	config := LoggerConfig{}
 	config.setEnv()
-	if config.Level != LogLevel(DEFAULT_LOG_LEVEL) {
-		t.Errorf("Default log level = %s, want %s", config.Level, DEFAULT_LOG_LEVEL)
+	if config.Level != LogLevel(DefaultLogLevel) {
+		t.Errorf("Default log level = %s, want %s", config.Level, DefaultLogLevel)
 	}
-	if config.Format != LogFormat(DEFAULT_LOG_FORMAT) {
-		t.Errorf("Default log format = %s, want %s", config.Format, DEFAULT_LOG_FORMAT)
+	if config.Format != LogFormat(DefaultLogFormat) {
+		t.Errorf("Default log format = %s, want %s", config.Format, DefaultLogFormat)
 	}
 
 	// Test custom values
-	os.Setenv(LOG_LEVEL_ENV_KEY, "debug")
-	os.Setenv(LOG_FORMAT_ENV_KEY, "text")
+	os.Setenv(LogLevelEnvKey, "debug")
+	os.Setenv(LogFormatEnvKey, "text")
 
 	config.setEnv()
 	if config.Level != LogLevelDebug {
@@ -94,25 +94,25 @@ func TestLoggerConfig(t *testing.T) {
 
 func TestLoggerInitialization(t *testing.T) {
 	// Save original environment
-	originalLevel := os.Getenv(LOG_LEVEL_ENV_KEY)
-	originalFormat := os.Getenv(LOG_FORMAT_ENV_KEY)
+	originalLevel := os.Getenv(LogLevelEnvKey)
+	originalFormat := os.Getenv(LogFormatEnvKey)
 
 	defer func() {
 		if originalLevel != "" {
-			os.Setenv(LOG_LEVEL_ENV_KEY, originalLevel)
+			os.Setenv(LogLevelEnvKey, originalLevel)
 		} else {
-			os.Unsetenv(LOG_LEVEL_ENV_KEY)
+			os.Unsetenv(LogLevelEnvKey)
 		}
 		if originalFormat != "" {
-			os.Setenv(LOG_FORMAT_ENV_KEY, originalFormat)
+			os.Setenv(LogFormatEnvKey, originalFormat)
 		} else {
-			os.Unsetenv(LOG_FORMAT_ENV_KEY)
+			os.Unsetenv(LogFormatEnvKey)
 		}
 	}()
 
 	// Test JSON format initialization
-	os.Setenv(LOG_LEVEL_ENV_KEY, "info")
-	os.Setenv(LOG_FORMAT_ENV_KEY, "json")
+	os.Setenv(LogLevelEnvKey, "info")
+	os.Setenv(LogFormatEnvKey, "json")
 
 	logger := InitLogger(LoggerConfig{})
 	if logger == nil {
@@ -120,7 +120,7 @@ func TestLoggerInitialization(t *testing.T) {
 	}
 
 	// Test text format initialization
-	os.Setenv(LOG_FORMAT_ENV_KEY, "text")
+	os.Setenv(LogFormatEnvKey, "text")
 	logger = InitLogger(LoggerConfig{})
 	if logger == nil {
 		t.Error("InitLogger() with text format returned nil")

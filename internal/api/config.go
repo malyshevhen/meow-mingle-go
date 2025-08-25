@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	SERVER_PORT_ENV_KEY string = "SERVER_PORT"
-	DEFAULT_SERVER_PORT string = "3000"
+	ServerPortEnvKey  string = "SERVER_PORT"
+	DefaultServerPort string = "3000"
 )
 
 type Config struct {
@@ -15,10 +15,10 @@ type Config struct {
 }
 
 func (cfg *Config) SetEnv() {
-	if serverPort := os.Getenv(SERVER_PORT_ENV_KEY); serverPort != "" {
+	if serverPort := os.Getenv(ServerPortEnvKey); serverPort != "" {
 		cfg.Port = serverPort
 	} else if cfg.Port == "" {
-		cfg.Port = DEFAULT_SERVER_PORT
+		cfg.Port = DefaultServerPort
 	}
 }
 

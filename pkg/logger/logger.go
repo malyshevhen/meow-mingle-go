@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	LOG_LEVEL_ENV_KEY  string = "LOG_LEVEL"
-	LOG_FORMAT_ENV_KEY string = "LOG_FORMAT"
-	DEFAULT_LOG_LEVEL  string = "info"
-	DEFAULT_LOG_FORMAT string = "json"
+	LogLevelEnvKey   string = "LOG_LEVEL"
+	LogFormatEnvKey  string = "LOG_FORMAT"
+	DefaultLogLevel  string = "info"
+	DefaultLogFormat string = "json"
 )
 
 // LogLevel represents the available log levels
@@ -79,10 +79,10 @@ func InitLogger(cfg LoggerConfig) *Logger {
 
 // setEnv reads logger configuration from environment variables
 func (c *LoggerConfig) setEnv() {
-	if level := strings.ToLower(getEnvOrDefault(LOG_LEVEL_ENV_KEY, DEFAULT_LOG_LEVEL)); level != "" {
+	if level := strings.ToLower(getEnvOrDefault(LogLevelEnvKey, DefaultLogLevel)); level != "" {
 		c.Level = LogLevel(level)
 	}
-	if format := strings.ToLower(getEnvOrDefault(LOG_FORMAT_ENV_KEY, DEFAULT_LOG_FORMAT)); format != "" {
+	if format := strings.ToLower(getEnvOrDefault(LogFormatEnvKey, DefaultLogFormat)); format != "" {
 		c.Format = LogFormat(format)
 	}
 }
@@ -198,7 +198,7 @@ func (l *Logger) LogAuth(event, userID string, success bool, reason string) {
 }
 
 // LogStartup logs application startup information
-func (l *Logger) LogStartup(component string, config map[string]interface{}) {
+func (l *Logger) LogStartup(component string, config map[string]any) {
 	attrs := []slog.Attr{
 		slog.String("event", "startup"),
 		slog.String("component", component),
