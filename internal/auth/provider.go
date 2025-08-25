@@ -40,7 +40,7 @@ func (ai *Provider) Basic(h api.Handler) api.Handler {
 			return errors.NewUnauthorizedError()
 		}
 
-		rCtx := context.WithValue(r.Context(), UserIdKey, user.ID)
+		rCtx := context.WithValue(r.Context(), UserIDKey, user.ID)
 		r = r.WithContext(rCtx)
 
 		log.Printf("%-15s ==> User %s authenticate successfully", "Auth", email)

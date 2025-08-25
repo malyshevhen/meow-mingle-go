@@ -123,7 +123,7 @@ func TestCommentRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// When
-		comment, err := repo.GetById(ctx, savedComment.ID)
+		comment, err := repo.GetByID(ctx, savedComment.ID)
 
 		// Then
 		assert.NoError(t, err)
@@ -139,7 +139,7 @@ func TestCommentRepository(t *testing.T) {
 		commentID := uuid.New().String()
 
 		// When
-		_, err = repo.GetById(ctx, commentID)
+		_, err = repo.GetByID(ctx, commentID)
 
 		// Then
 		assert.Error(t, err)
@@ -148,7 +148,7 @@ func TestCommentRepository(t *testing.T) {
 
 	t.Run("GetById CommentID Empty", func(t *testing.T) {
 		// When
-		_, err = repo.GetById(ctx, "")
+		_, err = repo.GetByID(ctx, "")
 
 		// Then
 		assert.Error(t, err)
@@ -273,7 +273,7 @@ func TestCommentRepository(t *testing.T) {
 		assert.True(t, updatedComment.UpdatedAt.After(savedComment.CreatedAt))
 
 		// Verify by getting the comment
-		retrievedComment, err := repo.GetById(ctx, savedComment.ID)
+		retrievedComment, err := repo.GetByID(ctx, savedComment.ID)
 		require.NoError(t, err)
 		assert.Equal(t, newContent, retrievedComment.Content)
 	})
@@ -329,7 +329,7 @@ func TestCommentRepository(t *testing.T) {
 		assert.NoError(t, err)
 
 		// Verify deletion
-		_, err = repo.GetById(ctx, savedComment.ID)
+		_, err = repo.GetByID(ctx, savedComment.ID)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "comment not found")
 	})
@@ -510,7 +510,7 @@ func TestCommentRepository(t *testing.T) {
 		assert.Equal(t, string(largeContent), comment.Content)
 
 		// Verify by retrieving
-		retrievedComment, err := repo.GetById(ctx, comment.ID)
+		retrievedComment, err := repo.GetByID(ctx, comment.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, string(largeContent), retrievedComment.Content)
 	})
@@ -536,7 +536,7 @@ func TestCommentRepository(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify deletion
-		_, err = repo.GetById(ctx, savedComment.ID)
+		_, err = repo.GetByID(ctx, savedComment.ID)
 		assert.Error(t, err)
 	})
 }

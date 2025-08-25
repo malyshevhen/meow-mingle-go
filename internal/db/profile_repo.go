@@ -17,19 +17,19 @@ type profileRepository struct {
 
 // ProfileRepository defines the interface for profile data operations
 type ProfileRepository interface {
-	Save(ctx context.Context, userId, email, firstName, lastName string) (app.Profile, error)
+	Save(ctx context.Context, userID, email, firstName, lastName string) (app.Profile, error)
 	SaveProfile(ctx context.Context, profile *app.Profile) error
 	GetByID(ctx context.Context, id string) (app.Profile, error)
 	GetByEmail(ctx context.Context, email string) (app.Profile, error)
 	Update(ctx context.Context, profile *app.Profile) error
-	Delete(ctx context.Context, userId string) error
-	Exists(ctx context.Context, userId string) (bool, error)
+	Delete(ctx context.Context, userID string) error
+	Exists(ctx context.Context, userID string) (bool, error)
 }
 
 // Save creates a new profile with the given parameters
-func (pr *profileRepository) Save(ctx context.Context, userId, email, firstName, lastName string) (app.Profile, error) {
+func (pr *profileRepository) Save(ctx context.Context, userID, email, firstName, lastName string) (app.Profile, error) {
 	profile := app.Profile{
-		UserID:    userId,
+		UserID:    userID,
 		Email:     email,
 		FirstName: firstName,
 		LastName:  lastName,
@@ -233,13 +233,13 @@ func (pr *profileRepository) Update(ctx context.Context, profile *app.Profile) e
 }
 
 // Delete removes a profile
-func (pr *profileRepository) Delete(ctx context.Context, userId string) error {
-	if userId == "" {
+func (pr *profileRepository) Delete(ctx context.Context, userID string) error {
+	if userID == "" {
 		return errors.NewValidationError("user ID is required")
 	}
 
 	// Check if profile exists
-	exists, err := pr.Exists(ctx, userId)
+	exists, err := pr.Exists(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -250,35 +250,35 @@ func (pr *profileRepository) Delete(ctx context.Context, userId string) error {
 
 	query := `DELETE FROM mingle.profiles WHERE user_id = ?`
 
-	err = pr.session.Query(query, userId).WithContext(ctx).Exec()
+	err = pr.session.Query(query, userID).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("profile-repository").Error("Failed to delete profile",
-			"user_id", userId,
+			"user_id", userID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
 	}
 
 	pr.logger.WithComponent("profile-repository").Info("Profile deleted successfully",
-		"user_id", userId,
+		"user_id", userID,
 	)
 
 	return nil
 }
 
 // Exists checks if a profile exists
-func (pr *profileRepository) Exists(ctx context.Context, userId string) (bool, error) {
-	if userId == "" {
+func (pr *profileRepository) Exists(ctx context.Context, userID string) (bool, error) {
+	if userID == "" {
 		return false, errors.NewValidationError("user ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.profiles WHERE user_id = ?`
 
-	err := pr.session.Query(query, userId).WithContext(ctx).Scan(&count)
+	err := pr.session.Query(query, userID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		pr.logger.WithComponent("profile-repository").Error("Failed to check profile existence",
-			"user_id", userId,
+			"user_id", userID,
 			"error", err.Error(),
 		)
 		return false, errors.NewDatabaseError(err)

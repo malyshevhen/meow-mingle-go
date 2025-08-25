@@ -12,7 +12,7 @@ import (
 
 type ContextKey string
 
-const UserIdKey ContextKey = "userId"
+const UserIDKey ContextKey = "userId"
 
 type User struct {
 	ID        string    `json:"id"`
@@ -24,8 +24,8 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func GetAuthUserId(r *http.Request) (string, error) {
-	id, ok := r.Context().Value(UserIdKey).(string)
+func GetAuthUserID(r *http.Request) (string, error) {
+	id, ok := r.Context().Value(UserIDKey).(string)
 	if !ok {
 		log.Printf("%-15s ==> Failed to convert user Id to integer", "Authentication")
 		return "", errors.NewUnauthorizedError()
@@ -53,5 +53,5 @@ func HashPwd(s string) (string, error) {
 }
 
 func UserID(ctx context.Context) string {
-	return ctx.Value(UserIdKey).(string)
+	return ctx.Value(UserIDKey).(string)
 }

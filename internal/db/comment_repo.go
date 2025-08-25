@@ -18,24 +18,24 @@ type commentRepository struct {
 
 // CommentRepository defines the interface for comment data operations
 type CommentRepository interface {
-	Save(ctx context.Context, authorId, postId, content string) (app.Comment, error)
+	Save(ctx context.Context, authorID, postID, content string) (app.Comment, error)
 	SaveComment(ctx context.Context, comment *app.Comment) error
 	GetAll(ctx context.Context, id string) ([]app.Comment, error)
-	GetByPost(ctx context.Context, postId string, limit int) ([]app.Comment, error)
-	GetById(ctx context.Context, commentId string) (app.Comment, error)
-	Update(ctx context.Context, commentId, content string) (app.Comment, error)
-	Delete(ctx context.Context, userId, commentId string) error
-	Exists(ctx context.Context, commentId string) (bool, error)
-	CountByPost(ctx context.Context, postId string) (int, error)
+	GetByPost(ctx context.Context, postID string, limit int) ([]app.Comment, error)
+	GetByID(ctx context.Context, commentID string) (app.Comment, error)
+	Update(ctx context.Context, commentID, content string) (app.Comment, error)
+	Delete(ctx context.Context, userID, commentID string) error
+	Exists(ctx context.Context, commentID string) (bool, error)
+	CountByPost(ctx context.Context, postID string) (int, error)
 }
 
 // Save creates a new comment with the given parameters
-func (cr *commentRepository) Save(ctx context.Context, authorId, postId, content string) (app.Comment, error) {
-	if authorId == "" {
+func (cr *commentRepository) Save(ctx context.Context, authorID, postID, content string) (app.Comment, error) {
+	if authorID == "" {
 		return app.Comment{}, errors.NewValidationError("author ID is required")
 	}
 
-	if postId == "" {
+	if postID == "" {
 		return app.Comment{}, errors.NewValidationError("post ID is required")
 	}
 
@@ -45,8 +45,8 @@ func (cr *commentRepository) Save(ctx context.Context, authorId, postId, content
 
 	comment := app.Comment{
 		ID:        uuid.New().String(),
-		AuthorID:  authorId,
-		PostID:    postId,
+		AuthorID:  authorID,
+		PostID:    postID,
 		Content:   content,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -163,8 +163,8 @@ func (cr *commentRepository) GetAll(ctx context.Context, id string) ([]app.Comme
 }
 
 // GetByPost retrieves comments for a specific post with limit
-func (cr *commentRepository) GetByPost(ctx context.Context, postId string, limit int) ([]app.Comment, error) {
-	if postId == "" {
+func (cr *commentRepository) GetByPost(ctx context.Context, postID string, limit int) ([]app.Comment, error) {
+	if postID == "" {
 		return nil, errors.NewValidationError("post ID is required")
 	}
 
@@ -186,17 +186,17 @@ WHERE post_id = ?
 ORDER BY created_at DESC
 LIMIT ?`
 
-	iter := cr.session.Query(query, postId, limit).WithContext(ctx).Iter()
+	iter := cr.session.Query(query, postID, limit).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var commentId, authorId, content string
+	var commentID, authorID, content string
 	var createdAt, updatedAt time.Time
 
-	for iter.Scan(&commentId, &authorId, &content, &createdAt, &updatedAt) {
+	for iter.Scan(&commentID, &authorID, &content, &createdAt, &updatedAt) {
 		comments = append(comments, app.Comment{
-			ID:        commentId,
-			PostID:    postId,
-			AuthorID:  authorId,
+			ID:        commentID,
+			PostID:    postID,
+			AuthorID:  authorID,
 			Content:   content,
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -205,23 +205,23 @@ LIMIT ?`
 
 	if err := iter.Close(); err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to get comments by post",
-			"post_id", postId,
+			"post_id", postID,
 			"error", err.Error(),
 		)
 		return nil, errors.NewDatabaseError(err)
 	}
 
 	cr.logger.WithComponent("comment-repository").Debug("Comments by post retrieved successfully",
-		"post_id", postId,
+		"post_id", postID,
 		"comments_count", len(comments),
 	)
 
 	return comments, nil
 }
 
-// GetById retrieves a comment by ID
-func (cr *commentRepository) GetById(ctx context.Context, commentId string) (app.Comment, error) {
-	if commentId == "" {
+// GetByID retrieves a comment by ID
+func (cr *commentRepository) GetByID(ctx context.Context, commentID string) (app.Comment, error) {
+	if commentID == "" {
 		return app.Comment{}, errors.NewValidationError("comment ID is required")
 	}
 
@@ -238,7 +238,7 @@ SELECT
 FROM mingle.comments
 WHERE id = ?`
 
-	err := cr.session.Query(query, commentId).WithContext(ctx).Scan(
+	err := cr.session.Query(query, commentID).WithContext(ctx).Scan(
 		&comment.ID,
 		&comment.PostID,
 		&comment.AuthorID,
@@ -249,27 +249,27 @@ WHERE id = ?`
 	if err != nil {
 		if err == gocql.ErrNotFound {
 			cr.logger.WithComponent("comment-repository").Info("Comment not found",
-				"comment_id", commentId,
+				"comment_id", commentID,
 			)
 			return app.Comment{}, errors.NewNotFoundError("comment not found")
 		}
 		cr.logger.WithComponent("comment-repository").Error("Failed to get comment",
-			"comment_id", commentId,
+			"comment_id", commentID,
 			"error", err.Error(),
 		)
 		return app.Comment{}, errors.NewDatabaseError(err)
 	}
 
 	cr.logger.WithComponent("comment-repository").Debug("Comment retrieved successfully",
-		"comment_id", commentId,
+		"comment_id", commentID,
 	)
 
 	return comment, nil
 }
 
 // Update updates a comment's content
-func (cr *commentRepository) Update(ctx context.Context, commentId, content string) (app.Comment, error) {
-	if commentId == "" {
+func (cr *commentRepository) Update(ctx context.Context, commentID, content string) (app.Comment, error) {
+	if commentID == "" {
 		return app.Comment{}, errors.NewValidationError("comment ID is required")
 	}
 
@@ -278,7 +278,7 @@ func (cr *commentRepository) Update(ctx context.Context, commentId, content stri
 	}
 
 	// Check if comment exists and get current data
-	currentComment, err := cr.GetById(ctx, commentId)
+	currentComment, err := cr.GetByID(ctx, commentID)
 	if err != nil {
 		return app.Comment{}, err
 	}
@@ -291,10 +291,10 @@ UPDATE mingle.comments
 SET content = ?, updated_at = ?
 WHERE id = ?`
 
-	err = cr.session.Query(query, content, now, commentId).WithContext(ctx).Exec()
+	err = cr.session.Query(query, content, now, commentID).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to update comment in main table",
-			"comment_id", commentId,
+			"comment_id", commentID,
 			"error", err.Error(),
 		)
 		return app.Comment{}, errors.NewDatabaseError(err)
@@ -308,10 +308,10 @@ WHERE post_id = ?
 AND created_at = ?
 AND comment_id = ?`
 
-	err = cr.session.Query(postQuery, content, now, currentComment.PostID, currentComment.CreatedAt, commentId).WithContext(ctx).Exec()
+	err = cr.session.Query(postQuery, content, now, currentComment.PostID, currentComment.CreatedAt, commentID).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to update comment in post table",
-			"comment_id", commentId,
+			"comment_id", commentID,
 			"post_id", currentComment.PostID,
 			"error", err.Error(),
 		)
@@ -324,39 +324,39 @@ AND comment_id = ?`
 	updatedComment.UpdatedAt = now
 
 	cr.logger.WithComponent("comment-repository").Info("Comment updated successfully",
-		"comment_id", commentId,
+		"comment_id", commentID,
 	)
 
 	return updatedComment, nil
 }
 
 // Delete removes a comment
-func (cr *commentRepository) Delete(ctx context.Context, userId, commentId string) error {
-	if userId == "" {
+func (cr *commentRepository) Delete(ctx context.Context, userID, commentID string) error {
+	if userID == "" {
 		return errors.NewValidationError("user ID is required")
 	}
 
-	if commentId == "" {
+	if commentID == "" {
 		return errors.NewValidationError("comment ID is required")
 	}
 
 	// Get comment details before deletion for authorization and cleanup
-	comment, err := cr.GetById(ctx, commentId)
+	comment, err := cr.GetByID(ctx, commentID)
 	if err != nil {
 		return err
 	}
 
 	// Check if the user is authorized to delete this comment
-	if comment.AuthorID != userId {
+	if comment.AuthorID != userID {
 		return errors.NewForbiddenError()
 	}
 
 	// Delete from main comments table
 	query := `DELETE FROM mingle.comments WHERE id = ?`
-	err = cr.session.Query(query, commentId).WithContext(ctx).Exec()
+	err = cr.session.Query(query, commentID).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to delete comment from main table",
-			"comment_id", commentId,
+			"comment_id", commentID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
@@ -369,10 +369,10 @@ WHERE post_id = ?
 AND created_at = ?
 AND comment_id = ?`
 
-	err = cr.session.Query(postQuery, comment.PostID, comment.CreatedAt, commentId).WithContext(ctx).Exec()
+	err = cr.session.Query(postQuery, comment.PostID, comment.CreatedAt, commentID).WithContext(ctx).Exec()
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to delete comment from post table",
-			"comment_id", commentId,
+			"comment_id", commentID,
 			"post_id", comment.PostID,
 			"error", err.Error(),
 		)
@@ -380,26 +380,26 @@ AND comment_id = ?`
 	}
 
 	cr.logger.WithComponent("comment-repository").Info("Comment deleted successfully",
-		"comment_id", commentId,
-		"user_id", userId,
+		"comment_id", commentID,
+		"user_id", userID,
 	)
 
 	return nil
 }
 
 // Exists checks if a comment exists
-func (cr *commentRepository) Exists(ctx context.Context, commentId string) (bool, error) {
-	if commentId == "" {
+func (cr *commentRepository) Exists(ctx context.Context, commentID string) (bool, error) {
+	if commentID == "" {
 		return false, errors.NewValidationError("comment ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.comments WHERE id = ?`
 
-	err := cr.session.Query(query, commentId).WithContext(ctx).Scan(&count)
+	err := cr.session.Query(query, commentID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to check comment existence",
-			"comment_id", commentId,
+			"comment_id", commentID,
 			"error", err.Error(),
 		)
 		return false, errors.NewDatabaseError(err)
@@ -409,18 +409,18 @@ func (cr *commentRepository) Exists(ctx context.Context, commentId string) (bool
 }
 
 // CountByPost counts comments for a specific post
-func (cr *commentRepository) CountByPost(ctx context.Context, postId string) (int, error) {
-	if postId == "" {
+func (cr *commentRepository) CountByPost(ctx context.Context, postID string) (int, error) {
+	if postID == "" {
 		return 0, errors.NewValidationError("post ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.comments_by_post WHERE post_id = ?`
 
-	err := cr.session.Query(query, postId).WithContext(ctx).Scan(&count)
+	err := cr.session.Query(query, postID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		cr.logger.WithComponent("comment-repository").Error("Failed to count comments by post",
-			"post_id", postId,
+			"post_id", postID,
 			"error", err.Error(),
 		)
 		return 0, errors.NewDatabaseError(err)

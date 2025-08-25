@@ -17,32 +17,32 @@ type subscriptionRepository struct {
 
 // SubscriptionRepository defines the interface for subscription data operations
 type SubscriptionRepository interface {
-	CreateSubscription(ctx context.Context, followerId, followingId string) error
-	DeleteSubscription(ctx context.Context, followerId, followingId string) error
-	GetFollowers(ctx context.Context, followingId string, limit int) ([]app.Subscription, error)
-	GetFollowing(ctx context.Context, followerId string, limit int) ([]app.Subscription, error)
-	IsFollowing(ctx context.Context, followerId, followingId string) (bool, error)
-	CountFollowers(ctx context.Context, followingId string) (int, error)
-	CountFollowing(ctx context.Context, followerId string) (int, error)
-	GetMutualFollowings(ctx context.Context, userId1, userId2 string) ([]app.Subscription, error)
+	CreateSubscription(ctx context.Context, followerID, followingID string) error
+	DeleteSubscription(ctx context.Context, followerID, followingID string) error
+	GetFollowers(ctx context.Context, followingID string, limit int) ([]app.Subscription, error)
+	GetFollowing(ctx context.Context, followerID string, limit int) ([]app.Subscription, error)
+	IsFollowing(ctx context.Context, followerID, followingID string) (bool, error)
+	CountFollowers(ctx context.Context, followingID string) (int, error)
+	CountFollowing(ctx context.Context, followerID string) (int, error)
+	GetMutualFollowings(ctx context.Context, firstUserID, secondUserID string) ([]app.Subscription, error)
 }
 
 // CreateSubscription creates a new follow relationship
-func (sr *subscriptionRepository) CreateSubscription(ctx context.Context, followerId, followingId string) error {
-	if followerId == "" {
+func (sr *subscriptionRepository) CreateSubscription(ctx context.Context, followerID, followingID string) error {
+	if followerID == "" {
 		return errors.NewValidationError("follower ID is required")
 	}
 
-	if followingId == "" {
+	if followingID == "" {
 		return errors.NewValidationError("following ID is required")
 	}
 
-	if followerId == followingId {
+	if followerID == followingID {
 		return errors.NewValidationError("cannot follow yourself")
 	}
 
 	// Check if already following
-	isFollowing, err := sr.IsFollowing(ctx, followerId, followingId)
+	isFollowing, err := sr.IsFollowing(ctx, followerID, followingID)
 	if err != nil {
 		return err
 	}
@@ -57,11 +57,11 @@ func (sr *subscriptionRepository) CreateSubscription(ctx context.Context, follow
 	query := `INSERT INTO mingle.subscriptions (follower_id, following_id, created_at)
 			  VALUES (?, ?, ?)`
 
-	err = sr.session.Query(query, followerId, followingId, now).WithContext(ctx).Exec()
+	err = sr.session.Query(query, followerID, followingID, now).WithContext(ctx).Exec()
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to create subscription",
-			"follower_id", followerId,
-			"following_id", followingId,
+			"follower_id", followerID,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
@@ -71,36 +71,36 @@ func (sr *subscriptionRepository) CreateSubscription(ctx context.Context, follow
 	followersQuery := `INSERT INTO mingle.followers (following_id, follower_id, created_at)
 					   VALUES (?, ?, ?)`
 
-	err = sr.session.Query(followersQuery, followingId, followerId, now).WithContext(ctx).Exec()
+	err = sr.session.Query(followersQuery, followingID, followerID, now).WithContext(ctx).Exec()
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to create follower entry",
-			"follower_id", followerId,
-			"following_id", followingId,
+			"follower_id", followerID,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
 	}
 
 	sr.logger.WithComponent("subscription-repository").Info("Subscription created successfully",
-		"follower_id", followerId,
-		"following_id", followingId,
+		"follower_id", followerID,
+		"following_id", followingID,
 	)
 
 	return nil
 }
 
 // DeleteSubscription removes a follow relationship
-func (sr *subscriptionRepository) DeleteSubscription(ctx context.Context, followerId, followingId string) error {
-	if followerId == "" {
+func (sr *subscriptionRepository) DeleteSubscription(ctx context.Context, followerID, followingID string) error {
+	if followerID == "" {
 		return errors.NewValidationError("follower ID is required")
 	}
 
-	if followingId == "" {
+	if followingID == "" {
 		return errors.NewValidationError("following ID is required")
 	}
 
 	// Check if currently following
-	isFollowing, err := sr.IsFollowing(ctx, followerId, followingId)
+	isFollowing, err := sr.IsFollowing(ctx, followerID, followingID)
 	if err != nil {
 		return err
 	}
@@ -111,11 +111,11 @@ func (sr *subscriptionRepository) DeleteSubscription(ctx context.Context, follow
 
 	// Delete from subscriptions table
 	query := `DELETE FROM mingle.subscriptions WHERE follower_id = ? AND following_id = ?`
-	err = sr.session.Query(query, followerId, followingId).WithContext(ctx).Exec()
+	err = sr.session.Query(query, followerID, followingID).WithContext(ctx).Exec()
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to delete subscription",
-			"follower_id", followerId,
-			"following_id", followingId,
+			"follower_id", followerID,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
@@ -123,27 +123,27 @@ func (sr *subscriptionRepository) DeleteSubscription(ctx context.Context, follow
 
 	// Delete from followers table
 	followersQuery := `DELETE FROM mingle.followers WHERE following_id = ? AND follower_id = ?`
-	err = sr.session.Query(followersQuery, followingId, followerId).WithContext(ctx).Exec()
+	err = sr.session.Query(followersQuery, followingID, followerID).WithContext(ctx).Exec()
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to delete follower entry",
-			"follower_id", followerId,
-			"following_id", followingId,
+			"follower_id", followerID,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
 	}
 
 	sr.logger.WithComponent("subscription-repository").Info("Subscription deleted successfully",
-		"follower_id", followerId,
-		"following_id", followingId,
+		"follower_id", followerID,
+		"following_id", followingID,
 	)
 
 	return nil
 }
 
 // GetFollowers retrieves followers for a user
-func (sr *subscriptionRepository) GetFollowers(ctx context.Context, followingId string, limit int) ([]app.Subscription, error) {
-	if followingId == "" {
+func (sr *subscriptionRepository) GetFollowers(ctx context.Context, followingID string, limit int) ([]app.Subscription, error) {
+	if followingID == "" {
 		return nil, errors.NewValidationError("following ID is required")
 	}
 
@@ -156,16 +156,16 @@ func (sr *subscriptionRepository) GetFollowers(ctx context.Context, followingId 
 	query := `SELECT follower_id, created_at FROM mingle.followers
 			  WHERE following_id = ? LIMIT ?`
 
-	iter := sr.session.Query(query, followingId, limit).WithContext(ctx).Iter()
+	iter := sr.session.Query(query, followingID, limit).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var followerId string
+	var followerID string
 	var createdAt time.Time
 
-	for iter.Scan(&followerId, &createdAt) {
+	for iter.Scan(&followerID, &createdAt) {
 		subscriptions = append(subscriptions, app.Subscription{
-			FollowerID:  followerId,
-			FollowingID: followingId,
+			FollowerID:  followerID,
+			FollowingID: followingID,
 			CreatedAt:   createdAt,
 			UpdatedAt:   createdAt,
 		})
@@ -173,14 +173,14 @@ func (sr *subscriptionRepository) GetFollowers(ctx context.Context, followingId 
 
 	if err := iter.Close(); err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to get followers",
-			"following_id", followingId,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return nil, errors.NewDatabaseError(err)
 	}
 
 	sr.logger.WithComponent("subscription-repository").Debug("Followers retrieved successfully",
-		"following_id", followingId,
+		"following_id", followingID,
 		"followers_count", len(subscriptions),
 	)
 
@@ -188,8 +188,8 @@ func (sr *subscriptionRepository) GetFollowers(ctx context.Context, followingId 
 }
 
 // GetFollowing retrieves users that a user is following
-func (sr *subscriptionRepository) GetFollowing(ctx context.Context, followerId string, limit int) ([]app.Subscription, error) {
-	if followerId == "" {
+func (sr *subscriptionRepository) GetFollowing(ctx context.Context, followerID string, limit int) ([]app.Subscription, error) {
+	if followerID == "" {
 		return nil, errors.NewValidationError("follower ID is required")
 	}
 
@@ -202,16 +202,16 @@ func (sr *subscriptionRepository) GetFollowing(ctx context.Context, followerId s
 	query := `SELECT following_id, created_at FROM mingle.subscriptions
 			  WHERE follower_id = ? LIMIT ?`
 
-	iter := sr.session.Query(query, followerId, limit).WithContext(ctx).Iter()
+	iter := sr.session.Query(query, followerID, limit).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var followingId string
+	var followingID string
 	var createdAt time.Time
 
-	for iter.Scan(&followingId, &createdAt) {
+	for iter.Scan(&followingID, &createdAt) {
 		subscriptions = append(subscriptions, app.Subscription{
-			FollowerID:  followerId,
-			FollowingID: followingId,
+			FollowerID:  followerID,
+			FollowingID: followingID,
 			CreatedAt:   createdAt,
 			UpdatedAt:   createdAt,
 		})
@@ -219,14 +219,14 @@ func (sr *subscriptionRepository) GetFollowing(ctx context.Context, followerId s
 
 	if err := iter.Close(); err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to get following",
-			"follower_id", followerId,
+			"follower_id", followerID,
 			"error", err.Error(),
 		)
 		return nil, errors.NewDatabaseError(err)
 	}
 
 	sr.logger.WithComponent("subscription-repository").Debug("Following retrieved successfully",
-		"follower_id", followerId,
+		"follower_id", followerID,
 		"following_count", len(subscriptions),
 	)
 
@@ -234,23 +234,23 @@ func (sr *subscriptionRepository) GetFollowing(ctx context.Context, followerId s
 }
 
 // IsFollowing checks if a user is following another user
-func (sr *subscriptionRepository) IsFollowing(ctx context.Context, followerId, followingId string) (bool, error) {
-	if followerId == "" {
+func (sr *subscriptionRepository) IsFollowing(ctx context.Context, followerID, followingID string) (bool, error) {
+	if followerID == "" {
 		return false, errors.NewValidationError("follower ID is required")
 	}
 
-	if followingId == "" {
+	if followingID == "" {
 		return false, errors.NewValidationError("following ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.subscriptions WHERE follower_id = ? AND following_id = ?`
 
-	err := sr.session.Query(query, followerId, followingId).WithContext(ctx).Scan(&count)
+	err := sr.session.Query(query, followerID, followingID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to check following status",
-			"follower_id", followerId,
-			"following_id", followingId,
+			"follower_id", followerID,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return false, errors.NewDatabaseError(err)
@@ -260,18 +260,18 @@ func (sr *subscriptionRepository) IsFollowing(ctx context.Context, followerId, f
 }
 
 // CountFollowers counts the number of followers for a user
-func (sr *subscriptionRepository) CountFollowers(ctx context.Context, followingId string) (int, error) {
-	if followingId == "" {
+func (sr *subscriptionRepository) CountFollowers(ctx context.Context, followingID string) (int, error) {
+	if followingID == "" {
 		return 0, errors.NewValidationError("following ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.followers WHERE following_id = ?`
 
-	err := sr.session.Query(query, followingId).WithContext(ctx).Scan(&count)
+	err := sr.session.Query(query, followingID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to count followers",
-			"following_id", followingId,
+			"following_id", followingID,
 			"error", err.Error(),
 		)
 		return 0, errors.NewDatabaseError(err)
@@ -281,18 +281,18 @@ func (sr *subscriptionRepository) CountFollowers(ctx context.Context, followingI
 }
 
 // CountFollowing counts the number of users a user is following
-func (sr *subscriptionRepository) CountFollowing(ctx context.Context, followerId string) (int, error) {
-	if followerId == "" {
+func (sr *subscriptionRepository) CountFollowing(ctx context.Context, followerID string) (int, error) {
+	if followerID == "" {
 		return 0, errors.NewValidationError("follower ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.subscriptions WHERE follower_id = ?`
 
-	err := sr.session.Query(query, followerId).WithContext(ctx).Scan(&count)
+	err := sr.session.Query(query, followerID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		sr.logger.WithComponent("subscription-repository").Error("Failed to count following",
-			"follower_id", followerId,
+			"follower_id", followerID,
 			"error", err.Error(),
 		)
 		return 0, errors.NewDatabaseError(err)
@@ -302,25 +302,25 @@ func (sr *subscriptionRepository) CountFollowing(ctx context.Context, followerId
 }
 
 // GetMutualFollowings finds mutual followings between two users
-func (sr *subscriptionRepository) GetMutualFollowings(ctx context.Context, userId1, userId2 string) ([]app.Subscription, error) {
-	if userId1 == "" {
+func (sr *subscriptionRepository) GetMutualFollowings(ctx context.Context, firstUserID, secondUserID string) ([]app.Subscription, error) {
+	if firstUserID == "" {
 		return nil, errors.NewValidationError("user ID 1 is required")
 	}
 
-	if userId2 == "" {
+	if secondUserID == "" {
 		return nil, errors.NewValidationError("user ID 2 is required")
 	}
 
 	var mutualFollowings []app.Subscription
 
 	// Get all users that userId1 is following
-	user1Following, err := sr.GetFollowing(ctx, userId1, 1000) // Large limit for comparison
+	user1Following, err := sr.GetFollowing(ctx, firstUserID, 1000) // Large limit for comparison
 	if err != nil {
 		return nil, err
 	}
 
 	// Get all users that userId2 is following
-	user2Following, err := sr.GetFollowing(ctx, userId2, 1000) // Large limit for comparison
+	user2Following, err := sr.GetFollowing(ctx, secondUserID, 1000) // Large limit for comparison
 	if err != nil {
 		return nil, err
 	}
@@ -338,8 +338,8 @@ func (sr *subscriptionRepository) GetMutualFollowings(ctx context.Context, userI
 	}
 
 	sr.logger.WithComponent("subscription-repository").Debug("Mutual followings retrieved successfully",
-		"user_id_1", userId1,
-		"user_id_2", userId2,
+		"user_id_1", firstUserID,
+		"user_id_2", secondUserID,
 		"mutual_count", len(mutualFollowings),
 	)
 

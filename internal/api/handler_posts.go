@@ -41,9 +41,9 @@ func handleGetPosts(postService app.PostService) api.Handler {
 		logger := logger.GetLogger().WithComponent("post_handler")
 		ctx := r.Context()
 
-		profileId := r.URL.Query().Get("profileId")
+		profileID := r.URL.Query().Get("profileId")
 
-		posts, err := postService.List(ctx, profileId)
+		posts, err := postService.List(ctx, profileID)
 		if err != nil {
 			logger.WithError(err).Error("Error getting posts from store")
 			return err

@@ -18,20 +18,20 @@ type postRepository struct {
 
 // PostRepository defines the interface for post data operations
 type PostRepository interface {
-	Save(ctx context.Context, authorId, content string) (app.Post, error)
+	Save(ctx context.Context, authorID, content string) (app.Post, error)
 	SavePost(ctx context.Context, post *app.Post) error
-	Get(ctx context.Context, postId string) (app.Post, error)
-	Feed(ctx context.Context, userId string) ([]app.Post, error)
-	List(ctx context.Context, profileId string) ([]app.Post, error)
-	Update(ctx context.Context, postId, content string) (app.Post, error)
-	Delete(ctx context.Context, postId string) error
-	Exists(ctx context.Context, postId string) (bool, error)
-	GetByAuthor(ctx context.Context, authorId string, limit int) ([]app.Post, error)
+	Get(ctx context.Context, postID string) (app.Post, error)
+	Feed(ctx context.Context, userID string) ([]app.Post, error)
+	List(ctx context.Context, profileID string) ([]app.Post, error)
+	Update(ctx context.Context, postID, content string) (app.Post, error)
+	Delete(ctx context.Context, postID string) error
+	Exists(ctx context.Context, postID string) (bool, error)
+	GetByAuthor(ctx context.Context, authorID string, limit int) ([]app.Post, error)
 }
 
 // Save creates a new post with the given parameters
-func (pr *postRepository) Save(ctx context.Context, authorId, content string) (app.Post, error) {
-	if authorId == "" {
+func (pr *postRepository) Save(ctx context.Context, authorID, content string) (app.Post, error) {
+	if authorID == "" {
 		return app.Post{}, errors.NewValidationError("author ID is required")
 	}
 
@@ -41,7 +41,7 @@ func (pr *postRepository) Save(ctx context.Context, authorId, content string) (a
 
 	post := app.Post{
 		ID:        uuid.New().String(),
-		AuthorID:  authorId,
+		AuthorID:  authorID,
 		Content:   content,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
@@ -148,8 +148,8 @@ VALUES (?, ?, ?, ?, ?, ?)`
 }
 
 // Get retrieves a post by ID
-func (pr *postRepository) Get(ctx context.Context, postId string) (app.Post, error) {
-	if postId == "" {
+func (pr *postRepository) Get(ctx context.Context, postID string) (app.Post, error) {
+	if postID == "" {
 		return app.Post{}, errors.NewValidationError("post ID is required")
 	}
 
@@ -167,7 +167,7 @@ SELECT
 FROM mingle.posts
 WHERE id = ?`
 
-	err := pr.session.Query(query, postId).WithContext(ctx).Scan(
+	err := pr.session.Query(query, postID).WithContext(ctx).Scan(
 		&post.ID,
 		&post.AuthorID,
 		&post.Content,
@@ -178,27 +178,27 @@ WHERE id = ?`
 	if err != nil {
 		if err == gocql.ErrNotFound {
 			pr.logger.WithComponent("post-repository").Info("Post not found",
-				"post_id", postId,
+				"post_id", postID,
 			)
 			return app.Post{}, errors.NewNotFoundError("post not found")
 		}
 		pr.logger.WithComponent("post-repository").Error("Failed to get post",
-			"post_id", postId,
+			"post_id", postID,
 			"error", err.Error(),
 		)
 		return app.Post{}, errors.NewDatabaseError(err)
 	}
 
 	pr.logger.WithComponent("post-repository").Debug("Post retrieved successfully",
-		"post_id", postId,
+		"post_id", postID,
 	)
 
 	return post, nil
 }
 
 // Feed retrieves posts for a user's feed (could be enhanced with following logic)
-func (pr *postRepository) Feed(ctx context.Context, userId string) ([]app.Post, error) {
-	if userId == "" {
+func (pr *postRepository) Feed(ctx context.Context, userID string) ([]app.Post, error) {
+	if userID == "" {
 		return nil, errors.NewValidationError("user ID is required")
 	}
 
@@ -218,17 +218,17 @@ WHERE user_id = ?
 ORDER BY created_at DESC
 LIMIT 20`
 
-	iter := pr.session.Query(query, userId).WithContext(ctx).Iter()
+	iter := pr.session.Query(query, userID).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var postId, authorId, content string
+	var postID, authorID, content string
 	var imageUrls []string
 	var createdAt time.Time
 
-	for iter.Scan(&postId, &authorId, &content, &imageUrls, &createdAt) {
+	for iter.Scan(&postID, &authorID, &content, &imageUrls, &createdAt) {
 		posts = append(posts, app.Post{
-			ID:        postId,
-			AuthorID:  authorId,
+			ID:        postID,
+			AuthorID:  authorID,
 			Content:   content,
 			CreatedAt: createdAt,
 			UpdatedAt: createdAt, // Use created_at as fallback
@@ -237,14 +237,14 @@ LIMIT 20`
 
 	if err := iter.Close(); err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to get user feed",
-			"user_id", userId,
+			"user_id", userID,
 			"error", err.Error(),
 		)
 		return nil, errors.NewDatabaseError(err)
 	}
 
 	pr.logger.WithComponent("post-repository").Debug("Feed retrieved successfully",
-		"user_id", userId,
+		"user_id", userID,
 		"posts_count", len(posts),
 	)
 
@@ -252,13 +252,13 @@ LIMIT 20`
 }
 
 // List retrieves posts by author ID
-func (pr *postRepository) List(ctx context.Context, profileId string) ([]app.Post, error) {
-	return pr.GetByAuthor(ctx, profileId, 50) // Default limit of 50
+func (pr *postRepository) List(ctx context.Context, profileID string) ([]app.Post, error) {
+	return pr.GetByAuthor(ctx, profileID, 50) // Default limit of 50
 }
 
 // GetByAuthor retrieves posts by author with limit
-func (pr *postRepository) GetByAuthor(ctx context.Context, authorId string, limit int) ([]app.Post, error) {
-	if authorId == "" {
+func (pr *postRepository) GetByAuthor(ctx context.Context, authorID string, limit int) ([]app.Post, error) {
+	if authorID == "" {
 		return nil, errors.NewValidationError("author ID is required")
 	}
 
@@ -280,17 +280,17 @@ WHERE author_id = ?
 ORDER BY created_at DESC
 LIMIT ?`
 
-	iter := pr.session.Query(query, authorId, limit).WithContext(ctx).Iter()
+	iter := pr.session.Query(query, authorID, limit).WithContext(ctx).Iter()
 	defer iter.Close()
 
-	var postId, content string
+	var postID, content string
 	var imageUrls []string
 	var createdAt, updatedAt time.Time
 
-	for iter.Scan(&postId, &content, &imageUrls, &createdAt, &updatedAt) {
+	for iter.Scan(&postID, &content, &imageUrls, &createdAt, &updatedAt) {
 		posts = append(posts, app.Post{
-			ID:        postId,
-			AuthorID:  authorId,
+			ID:        postID,
+			AuthorID:  authorID,
 			Content:   content,
 			CreatedAt: createdAt,
 			UpdatedAt: updatedAt,
@@ -299,14 +299,14 @@ LIMIT ?`
 
 	if err := iter.Close(); err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to get posts by author",
-			"author_id", authorId,
+			"author_id", authorID,
 			"error", err.Error(),
 		)
 		return nil, errors.NewDatabaseError(err)
 	}
 
 	pr.logger.WithComponent("post-repository").Debug("Posts by author retrieved successfully",
-		"author_id", authorId,
+		"author_id", authorID,
 		"posts_count", len(posts),
 	)
 
@@ -314,8 +314,8 @@ LIMIT ?`
 }
 
 // Update updates a post's content
-func (pr *postRepository) Update(ctx context.Context, postId, content string) (app.Post, error) {
-	if postId == "" {
+func (pr *postRepository) Update(ctx context.Context, postID, content string) (app.Post, error) {
+	if postID == "" {
 		return app.Post{}, errors.NewValidationError("post ID is required")
 	}
 
@@ -324,7 +324,7 @@ func (pr *postRepository) Update(ctx context.Context, postId, content string) (a
 	}
 
 	// Check if post exists and get current data
-	currentPost, err := pr.Get(ctx, postId)
+	currentPost, err := pr.Get(ctx, postID)
 	if err != nil {
 		return app.Post{}, err
 	}
@@ -333,10 +333,10 @@ func (pr *postRepository) Update(ctx context.Context, postId, content string) (a
 
 	// Update main posts table
 	query := `UPDATE mingle.posts SET content = ?, updated_at = ? WHERE id = ?`
-	err = pr.session.Query(query, content, now, postId).WithContext(ctx).Exec()
+	err = pr.session.Query(query, content, now, postID).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to update post in main table",
-			"post_id", postId,
+			"post_id", postID,
 			"error", err.Error(),
 		)
 		return app.Post{}, errors.NewDatabaseError(err)
@@ -350,10 +350,10 @@ WHERE author_id = ?
 AND created_at = ?
 AND post_id = ?`
 
-	err = pr.session.Query(authorQuery, content, now, currentPost.AuthorID, currentPost.CreatedAt, postId).WithContext(ctx).Exec()
+	err = pr.session.Query(authorQuery, content, now, currentPost.AuthorID, currentPost.CreatedAt, postID).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to update post in author table",
-			"post_id", postId,
+			"post_id", postID,
 			"author_id", currentPost.AuthorID,
 			"error", err.Error(),
 		)
@@ -366,30 +366,30 @@ AND post_id = ?`
 	updatedPost.UpdatedAt = now
 
 	pr.logger.WithComponent("post-repository").Info("Post updated successfully",
-		"post_id", postId,
+		"post_id", postID,
 	)
 
 	return updatedPost, nil
 }
 
 // Delete removes a post
-func (pr *postRepository) Delete(ctx context.Context, postId string) error {
-	if postId == "" {
+func (pr *postRepository) Delete(ctx context.Context, postID string) error {
+	if postID == "" {
 		return errors.NewValidationError("post ID is required")
 	}
 
 	// Get post details before deletion
-	post, err := pr.Get(ctx, postId)
+	post, err := pr.Get(ctx, postID)
 	if err != nil {
 		return err
 	}
 
 	// Delete from main posts table
 	query := `DELETE FROM mingle.posts WHERE id = ?`
-	err = pr.session.Query(query, postId).WithContext(ctx).Exec()
+	err = pr.session.Query(query, postID).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to delete post from main table",
-			"post_id", postId,
+			"post_id", postID,
 			"error", err.Error(),
 		)
 		return errors.NewDatabaseError(err)
@@ -402,10 +402,10 @@ WHERE author_id = ?
 AND created_at = ?
 AND post_id = ?`
 
-	err = pr.session.Query(authorQuery, post.AuthorID, post.CreatedAt, postId).WithContext(ctx).Exec()
+	err = pr.session.Query(authorQuery, post.AuthorID, post.CreatedAt, postID).WithContext(ctx).Exec()
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to delete post from author table",
-			"post_id", postId,
+			"post_id", postID,
 			"author_id", post.AuthorID,
 			"error", err.Error(),
 		)
@@ -413,25 +413,25 @@ AND post_id = ?`
 	}
 
 	pr.logger.WithComponent("post-repository").Info("Post deleted successfully",
-		"post_id", postId,
+		"post_id", postID,
 	)
 
 	return nil
 }
 
 // Exists checks if a post exists
-func (pr *postRepository) Exists(ctx context.Context, postId string) (bool, error) {
-	if postId == "" {
+func (pr *postRepository) Exists(ctx context.Context, postID string) (bool, error) {
+	if postID == "" {
 		return false, errors.NewValidationError("post ID is required")
 	}
 
 	var count int
 	query := `SELECT COUNT(*) FROM mingle.posts WHERE id = ?`
 
-	err := pr.session.Query(query, postId).WithContext(ctx).Scan(&count)
+	err := pr.session.Query(query, postID).WithContext(ctx).Scan(&count)
 	if err != nil {
 		pr.logger.WithComponent("post-repository").Error("Failed to check post existence",
-			"post_id", postId,
+			"post_id", postID,
 			"error", err.Error(),
 		)
 		return false, errors.NewDatabaseError(err)

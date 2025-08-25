@@ -24,7 +24,7 @@ type Config struct {
 	Password string `yaml:"password" json:"password"`
 }
 
-// Updates config with values from environment if available
+// SetEnv Updates config with values from environment if available
 func (c *Config) SetEnv() {
 	if url := os.Getenv(SCYLLA_URL_ENV_KEY); url != "" {
 		c.URL = url
